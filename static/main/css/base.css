@@ -285,36 +285,74 @@ img.global-header-logo {
 main {
     flex: 1;
     margin: 1rem 2rem;
-    animation: page-in 0.3s ease-out both;
 }
 
-@keyframes page-in {
+/* ややこしいアニメーションなのでコメントあり by梶原 */
+/* 戻る：新しいページが左から入る */
+@keyframes page-in-back {
     from {
         opacity: 0;
         transform: translateX(-24px);
     }
-
     to {
         opacity: 1;
         transform: translateX(0);
     }
 }
-
-@keyframes page-out {
+/* 戻る：現在のページが右へ出る */
+@keyframes page-out-back {
     from {
         opacity: 1;
         transform: translateX(0);
     }
-
     to {
         opacity: 0;
         transform: translateX(24px);
     }
 }
-
-main.page-leaving {
-    animation: page-out 0.25s ease-in both;
+/* 進む：新しいページが右から入る */
+@keyframes page-in-forward {
+    from {
+        opacity: 0;
+        transform: translateX(24px);
+    }
+    to {
+        opacity: 1;
+        transform: translateX(0);
+    }
 }
+/* 進む：現在のページが左へ出る */
+@keyframes page-out-forward {
+    from {
+        opacity: 1;
+        transform: translateX(0);
+    }
+    to {
+        opacity: 0;
+        transform: translateX(-24px);
+    }
+}
+/* 戻る */
+main.page-back {
+    animation: page-in-back 0.3s ease-out both;
+}
+/* 進む */
+main.page-forward {
+    animation: page-in-forward 0.3s ease-out both;
+}
+/* 戻るときに現在のページを出す */
+main.page-leaving-back {
+    animation: page-out-back 0.25s ease-in both;
+}
+/* 進むときに現在のページを出す */
+main.page-leaving-forward {
+    animation: page-out-forward 0.25s ease-in both;
+}
+/* 通常リンク */
+main.page-leaving {
+    animation: page-out-forward 0.25s ease-in both;
+}
+/* ここまでだよ */
 
 section {
 
