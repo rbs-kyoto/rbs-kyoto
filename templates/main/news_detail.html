@@ -37,6 +37,11 @@
         <span>この記事には本文がありません．</span>
     </div>
     {% endif %}
+    <div class="page_control">
+        <a class="page-control-style-back" href="{% url 'main:news_all' %}">
+            記事一覧へ
+        </a>
+    </div>
 </section>
 
 {% endblock %}

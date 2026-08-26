@@ -149,9 +149,85 @@ span.low {
 }
 
 a {
+    display: inline-block;
     color: inherit;
     text-decoration: none;
     cursor: pointer;
+}
+
+a.common-style {
+    color: var(--textcolor);
+    font-weight: 600;
+    font-size: 0.9rem;
+    padding: .5rem 1rem;
+    border: .15rem solid var(--Gray-500);
+    border-radius: .5rem;
+    corner-shape: superellipse(1.4);
+    transition: all .3s;
+}
+
+a.common-style:hover {
+    color: var(--Gray-900);
+    background-color: var(--Gray-300);
+    border-color: var(--Gray-300);
+}
+
+a.page-control-style-back {
+    position: relative;
+    color: var(--textcolor);
+    font-weight: 600;
+    padding-top: .5rem;
+    padding-bottom: .75rem;
+    padding-left: 4.5rem;
+    padding-right: 3.5rem;
+    font-size: 0.9rem;
+    transition: all .3s;
+}
+
+a.page-control-style-back::after {
+    content: "";
+    position: absolute;
+    left: 50%;
+    transform: translateX(-50%);
+    bottom: -20%;
+    width: 200px;
+    height: 50px;
+    mask: url("../img/back.svg") no-repeat left top / contain;
+    background-color: var(--Gray-600);
+    transition: all .3s;
+}
+
+a.page-control-style-back:hover::after {
+    background-color: var(--Gray-50);
+}
+
+a.page-control-style-forward {
+    position: relative;
+    color: var(--textcolor);
+    font-weight: 600;
+    padding-top: .5rem;
+    padding-bottom: .75rem;
+    padding-left: 3.5rem;
+    padding-right: 4.5rem;
+    font-size: 0.9rem;
+    transition: all .3s;
+}
+
+a.page-control-style-forward::after {
+    content: "";
+    position: absolute;
+    left: 50%;
+    transform: translateX(-50%);
+    bottom: -20%;
+    width: 200px;
+    height: 50px;
+    mask: url("../img/forward.svg") no-repeat left top / contain;
+    background-color: var(--Gray-600);
+    transition: all .3s;
+}
+
+a.page-control-style-forward:hover::after {
+    background-color: var(--Gray-50);
 }
 
 ul {
@@ -248,22 +324,6 @@ section {
     display: flex;
     align-items: center;
     justify-content: space-between;
-}
-
-.section-heading__link {
-    color: var(--textcolor);
-    font-size: 0.9rem;
-    padding: .5rem 1rem;
-    border: .1rem solid var(--Gray-700);
-    border-radius: .5rem;
-    corner-shape: superellipse(1.4);
-    transition: all .2s;
-}
-
-.section-heading__link:hover {
-    color: var(--Gray-900);
-    background-color: var(--Gray-300);
-    border-color: var(--Gray-300);
 }
 
 section h2.heading {
@@ -364,7 +424,7 @@ a.list__hover-item {
     padding: .5rem 1rem;
     border-radius: .2rem;
     corner-shape: superellipse(1.4);
-    transition: all .2s;
+    transition: all .3s;
 }
 
 a.list__hover-item:hover {
@@ -395,7 +455,7 @@ a.list__hover-item:hover {
     padding: 0 .2rem;
     font-size: .8rem;
     color: var(--textcolor);
-    transition: all .2s;
+    transition: all .3s;
 }
 
 a.list__hover-item:hover .list__content span.list__date {
@@ -405,7 +465,7 @@ a.list__hover-item:hover .list__content span.list__date {
 .list__content span.list__title {
     font-size: 1.2rem;
     color: var(--textcolor);
-    transition: all .2s;
+    transition: all .3s;
 }
 
 a.list__hover-item:hover .list__content span.list__title {
@@ -426,7 +486,7 @@ span.category__element {
     border: .1rem solid var(--Gray-100);
     border-radius: .5rem;
     corner-shape: superellipse(1.4);
-    transition: all .2s;
+    transition: all .3s;
 }
 
 a.list__hover-item:hover span.category__element {
@@ -434,6 +494,10 @@ a.list__hover-item:hover span.category__element {
     border: .1rem solid var(--Gray-900);
 }
 
+.page_control {
+    width: 100%;
+    margin: 2rem 0;
+}
 
 
 footer {
