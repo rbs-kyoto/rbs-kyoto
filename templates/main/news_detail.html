@@ -1,0 +1,42 @@
+{% extends "main/base.html" %}
+{% load static %}
+
+{% block title %}{{ news.title }}｜RBS京都{% endblock %}
+{% block extra_css %}<link rel="stylesheet" href="{% static 'main/css/news.css' %}">{% endblock %}
+{% block content %}
+
+<section class="news-detail-section">
+    <div class="news-detail__header">
+        <img src="{% static 'main/img/title_bg.svg' %}">
+        <div class="news-detail__header__info">
+            <div class="news-detail__meta">
+                <span class="news-detail__date">
+                    {{ news.date|date:"Y.m.d" }}
+                </span>
+
+                <span class="category__element">
+                    {{ news.category }}
+                </span>
+            </div>
+            <h1 class="news-detail__title">
+                {{ news.title }}
+            </h1>
+        </div>
+    </div>
+    {% if news.image %}
+        <div class="news-detail__image">
+            <img src="{{ news.image.url }}" alt="">
+        </div>
+    {% endif %}
+    {% if news.caption %}
+    <div class="news-detail__content">
+        <span>{{ news.caption|safe }}</span>
+    </div>
+    {% else %}
+    <div class="news-detail__content">
+        <span>この記事には本文がありません．</span>
+    </div>
+    {% endif %}
+</section>
+
+{% endblock %}

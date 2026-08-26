@@ -1,0 +1,34 @@
+.news-detail__header {
+    position: relative;
+    width: 100%;
+    height: auto;
+    padding: .5rem 1rem;
+    aspect-ratio: 1000 / 150;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+}
+
+.news-detail__header__info {
+    margin-top: 1rem;
+    width: 70%;
+    margin-left: auto;
+    margin-right: auto;
+}
+
+.news-detail__header img {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+}
+
+.news-detail__content {
+    width: 60%;
+    margin: 2rem auto;
+}
+
+.news-detail__content span {
+    font-size: 1.2rem;
+    line-height: 2.5rem;
+}

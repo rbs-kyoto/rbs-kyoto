@@ -14,6 +14,7 @@ idna==3.19
 Incremental==24.11.0
 msgpack==1.2.1
 packaging==26.3
+pillow==12.3.0
 pycparser==3.0
 pyOpenSSL==26.4.0
 service-identity==26.1.0

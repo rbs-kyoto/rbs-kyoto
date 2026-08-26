@@ -1,0 +1,32 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}{% endblock %}</title>
+    <link rel="stylesheet" href="{% static 'main/css/base.css' %}">
+    {% block extra_css %}{% endblock %}
+    <script src="{% static 'main/js/base.js' %}"></script>
+    {% block extra_js %}{% endblock %}
+</head>
+<body>
+    <header class="global-header">
+        <nav class="global-header__nav">
+            <img class="global-header-logo", src="{% static 'main/img/rbs.svg' %}">
+        </nav>
+        <a class="global-header__login">
+            <img src="{% static 'main/img/login.svg' %}">
+            <span>login</span>
+        </a>
+    </header>
+    <main>
+    {% block content %}{% endblock %}
+    </main>
+    <footer>
+        <div class="footer__logo">
+            <img class="global-header-logo", src="{% static 'main/img/rbs_long.svg' %}">
+        </div>
+    </footer>
+</body>
+</html>

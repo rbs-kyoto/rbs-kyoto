@@ -16,3 +16,5 @@ db.sqlite3
 # IDE
 .vscode/
 .idea/
+
+media/

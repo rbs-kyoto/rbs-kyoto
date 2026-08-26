@@ -1,0 +1,67 @@
+{% extends "main/base.html" %}
+{% load static %}
+
+{% block title %}RBS京都｜洛南高等学校放送部{% endblock %}
+
+{% block content %}
+<section class="top-pickup">
+    <div class="top-pickup__slide">
+        <div class="top-pickup__images">
+            {% for pickup in pickups %}
+            <a class="top-pickup__image" href="{{ pickup.url }}" data-text="{{ pickup.title }}">
+                <img class="thumbnail" src="{{ pickup.image.url }}" alt="{{ pickup.title }}">
+            </a>
+            {% endfor %}
+        </div>
+        <div class="top-pickup__bnr">
+            <span class="low"></span>
+        </div>
+    </div>
+</section>
+<section class="top-news-section">
+    <div class="section-heading">
+        <h2 class="heading">News</h2>
+        <a class="section-heading__link" href="{% url 'main:news_all' %}">
+            記事一覧へ
+        </a>
+    </div>
+    <div class="list-table">
+        <ul class="list">
+            {% for item in news %}
+            <li class="list__element">
+                <a class="list__hover-item" href="{% url 'main:news_detail' item.pk %}">
+                    <div class="list__image">
+                        {% if item.image %}
+                            <img class="thumbnail" src="{{ item.image.url }}" alt="{{ item.title }}">
+                        {% else %}
+                            <img class="thumbnail" src="{% static 'main/img/rbs_standard.svg' %}" alt="" >
+                        {% endif %}
+                    </div>
+                    <div class="list__content">
+                        <span class="list__date">
+                            {{ item.date|date:"Y.m.d" }}
+                        </span>
+                        <span class="list__title">
+                            {{ item.title }}
+                        </span>
+                    </div>
+                    <div class="category">
+                        <span class="category__element">
+                            {{ item.category }}
+                        </span>
+                    </div>
+                </a>
+            </li>
+            {% endfor %}
+        </ul>
+    </div>
+</section>
+{% comment %} <section class="top-about-section">
+    <h2 class="heading">About</h2>
+</section> {% endcomment %}
+
+{% endblock %}
+
+{% block extra_js %}
+<script src="{% static 'main/js/index.js' %}"></script>
+{% endblock %}
