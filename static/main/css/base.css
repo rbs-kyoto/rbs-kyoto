@@ -149,9 +149,85 @@ span.low {
 }
 
 a {
+    display: inline-block;
     color: inherit;
     text-decoration: none;
     cursor: pointer;
+}
+
+a.common-style {
+    color: var(--textcolor);
+    font-weight: 600;
+    font-size: 0.9rem;
+    padding: .5rem 1rem;
+    border: .15rem solid var(--Gray-500);
+    border-radius: .5rem;
+    corner-shape: superellipse(1.4);
+    transition: all .3s;
+}
+
+a.common-style:hover {
+    color: var(--Gray-900);
+    background-color: var(--Gray-300);
+    border-color: var(--Gray-300);
+}
+
+a.page-control-style-back {
+    position: relative;
+    color: var(--textcolor);
+    font-weight: 600;
+    padding-top: .5rem;
+    padding-bottom: .75rem;
+    padding-left: 4.5rem;
+    padding-right: 3.5rem;
+    font-size: 0.9rem;
+    transition: all .3s;
+}
+
+a.page-control-style-back::after {
+    content: "";
+    position: absolute;
+    left: 50%;
+    transform: translateX(-50%);
+    bottom: -20%;
+    width: 200px;
+    height: 50px;
+    mask: url("../img/back.svg") no-repeat left top / contain;
+    background-color: var(--Gray-600);
+    transition: all .3s;
+}
+
+a.page-control-style-back:hover::after {
+    background-color: var(--Gray-50);
+}
+
+a.page-control-style-forward {
+    position: relative;
+    color: var(--textcolor);
+    font-weight: 600;
+    padding-top: .5rem;
+    padding-bottom: .75rem;
+    padding-left: 3.5rem;
+    padding-right: 4.5rem;
+    font-size: 0.9rem;
+    transition: all .3s;
+}
+
+a.page-control-style-forward::after {
+    content: "";
+    position: absolute;
+    left: 50%;
+    transform: translateX(-50%);
+    bottom: -20%;
+    width: 200px;
+    height: 50px;
+    mask: url("../img/forward.svg") no-repeat left top / contain;
+    background-color: var(--Gray-600);
+    transition: all .3s;
+}
+
+a.page-control-style-forward:hover::after {
+    background-color: var(--Gray-50);
 }
 
 ul {
@@ -209,36 +285,74 @@ img.global-header-logo {
 main {
     flex: 1;
     margin: 1rem 2rem;
-    animation: page-in 0.3s ease-out both;
 }
 
-@keyframes page-in {
+/* ややこしいアニメーションなのでコメントあり by梶原 */
+/* 戻る：新しいページが左から入る */
+@keyframes page-in-back {
     from {
         opacity: 0;
         transform: translateX(-24px);
     }
-
     to {
         opacity: 1;
         transform: translateX(0);
     }
 }
-
-@keyframes page-out {
+/* 戻る：現在のページが右へ出る */
+@keyframes page-out-back {
     from {
         opacity: 1;
         transform: translateX(0);
     }
-
     to {
         opacity: 0;
         transform: translateX(24px);
     }
 }
-
-main.page-leaving {
-    animation: page-out 0.25s ease-in both;
+/* 進む：新しいページが右から入る */
+@keyframes page-in-forward {
+    from {
+        opacity: 0;
+        transform: translateX(24px);
+    }
+    to {
+        opacity: 1;
+        transform: translateX(0);
+    }
 }
+/* 進む：現在のページが左へ出る */
+@keyframes page-out-forward {
+    from {
+        opacity: 1;
+        transform: translateX(0);
+    }
+    to {
+        opacity: 0;
+        transform: translateX(-24px);
+    }
+}
+/* 戻る */
+main.page-back {
+    animation: page-in-back 0.3s ease-out both;
+}
+/* 進む */
+main.page-forward {
+    animation: page-in-forward 0.3s ease-out both;
+}
+/* 戻るときに現在のページを出す */
+main.page-leaving-back {
+    animation: page-out-back 0.25s ease-in both;
+}
+/* 進むときに現在のページを出す */
+main.page-leaving-forward {
+    animation: page-out-forward 0.25s ease-in both;
+}
+/* 通常リンク */
+main.page-leaving {
+    animation: page-out-forward 0.25s ease-in both;
+}
+/* ここまでだよ */
 
 section {
 
@@ -248,22 +362,6 @@ section {
     display: flex;
     align-items: center;
     justify-content: space-between;
-}
-
-.section-heading__link {
-    color: var(--textcolor);
-    font-size: 0.9rem;
-    padding: .5rem 1rem;
-    border: .1rem solid var(--Gray-700);
-    border-radius: .5rem;
-    corner-shape: superellipse(1.4);
-    transition: all .2s;
-}
-
-.section-heading__link:hover {
-    color: var(--Gray-900);
-    background-color: var(--Gray-300);
-    border-color: var(--Gray-300);
 }
 
 section h2.heading {
@@ -364,7 +462,7 @@ a.list__hover-item {
     padding: .5rem 1rem;
     border-radius: .2rem;
     corner-shape: superellipse(1.4);
-    transition: all .2s;
+    transition: all .3s;
 }
 
 a.list__hover-item:hover {
@@ -395,7 +493,7 @@ a.list__hover-item:hover {
     padding: 0 .2rem;
     font-size: .8rem;
     color: var(--textcolor);
-    transition: all .2s;
+    transition: all .3s;
 }
 
 a.list__hover-item:hover .list__content span.list__date {
@@ -405,7 +503,7 @@ a.list__hover-item:hover .list__content span.list__date {
 .list__content span.list__title {
     font-size: 1.2rem;
     color: var(--textcolor);
-    transition: all .2s;
+    transition: all .3s;
 }
 
 a.list__hover-item:hover .list__content span.list__title {
@@ -426,7 +524,7 @@ span.category__element {
     border: .1rem solid var(--Gray-100);
     border-radius: .5rem;
     corner-shape: superellipse(1.4);
-    transition: all .2s;
+    transition: all .3s;
 }
 
 a.list__hover-item:hover span.category__element {
@@ -434,6 +532,53 @@ a.list__hover-item:hover span.category__element {
     border: .1rem solid var(--Gray-900);
 }
 
+.page_control {
+    position: relative;
+    display: flex;
+    align-items: center;
+    width: 100%;
+    margin: 2rem 0;
+}
+
+.page_control__paginator {
+    position: absolute;
+    left: 50%;
+    transform: translateX(-50%);
+
+    display: flex;
+    align-items: center;
+    gap: .5rem;
+}
+
+.page-control-style-back {
+    margin-right: auto;
+}
+
+.page-control-style-forward {
+    margin-left: auto;
+}
+
+span.active-page {
+    width: 3rem;
+    aspect-ratio: 1 / 1;
+    display: grid;
+    place-items: center;
+    border: .15rem solid var(--Gray-100);
+    color: var(--Gray-100);
+    font-size: 1.2rem;
+    border-radius: 1.5rem;
+}
+
+span.active-page > span {
+    display: inline-block;
+    line-height: 1;
+    transform: translateY(1px);
+}
+
+.page_control__paginator {
+    display: flex;
+    gap: 1.5rem;
+}
 
 
 footer {

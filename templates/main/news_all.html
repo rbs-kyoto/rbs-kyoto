@@ -1,36 +1,24 @@
 {% extends "main/base.html" %}
 {% load static %}
 
-{% block title %}News｜RBS京都{% endblock %}
+{% block title %}記事一覧｜RBS京都{% endblock %}
 
 {% block content %}
 
 <section class="news-all-section">
     <h2 class="heading">News</h2>
-
     <div class="list-table">
         <ul class="list">
-
             {% for news in news_list %}
             <li class="list__element">
                 <a class="list__hover-item" href="{% url 'main:news_detail' news.pk %}">
-
                     <div class="list__image">
                         {% if news.image %}
-                            <img
-                                class="thumbnail"
-                                src="{{ news.image.url }}"
-                                alt=""
-                            >
+                            <img class="thumbnail" src="{{ news.image.url }}" alt="">
                         {% else %}
-                            <img
-                                class="thumbnail"
-                                src="{% static 'main/img/rbs_standard.svg' %}"
-                                alt=""
-                            >
+                            <img class="thumbnail" src="{% static 'main/img/rbs_standard.svg' %}" alt="">
                         {% endif %}
                     </div>
-
                     <div class="list__content">
                         <span class="list__date">
                             {{ news.date|date:"Y.m.d" }}
@@ -40,17 +28,14 @@
                             {{ news.title }}
                         </span>
                     </div>
-
                     <div class="category">
                         <span class="category__element">
                             {{ news.category }}
                         </span>
                     </div>
-
                 </a>
             </li>
             {% empty %}
-
             <li class="list__element">
                 <div class="list__hover-item">
                     <div class="list__content">
@@ -60,10 +45,26 @@
                     </div>
                 </div>
             </li>
-
             {% endfor %}
-
         </ul>
+    </div>
+    <div class="page_control">
+        <a class="page-control-style-back" href="{% url 'main:index' %}">
+            ホームへ
+        </a>
+        <div class="page_control__paginator">
+        {% for page_num in page_obj.paginator.page_range %}
+            {% if page_num == page_obj.number %}
+                <span class="page-number active-page">
+                    <span>{{ page_num }}</span>
+                </span>
+            {% else %}
+                <a href="?page={{ page_num }}" class="page-number">
+                    {{ page_num }}
+                </a>
+            {% endif %}
+        {% endfor %}
+        </div>
     </div>
 </section>
 

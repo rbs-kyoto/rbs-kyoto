@@ -1,9 +1,12 @@
 from django.shortcuts import get_object_or_404, render
+from django.core.paginator import Paginator
 from .models import Pickup, News
 
 def index(request):
     pickups = Pickup.objects.filter(is_active=True)
-    news = News.objects.filter(is_active=True)
+    news = News.objects.filter(
+        is_active=True
+    ).order_by("-date")[:5]
 
     return render(
         request,
@@ -19,10 +22,19 @@ def news_all(request):
         is_active=True
     ).order_by("-date")
 
-    return render(request, "main/news_all.html", {
-        "news_list": news_list,
-    })
+    paginator = Paginator(news_list, 20)
 
+    page_number = request.GET.get("page")
+    page_obj = paginator.get_page(page_number)
+
+    return render(
+        request,
+        "main/news_all.html",
+        {
+            "news_list": page_obj,
+            "page_obj": page_obj,
+        },
+    )
 
 def news_detail(request, pk):
     news = get_object_or_404(
@@ -31,6 +43,10 @@ def news_detail(request, pk):
         is_active=True,
     )
 
-    return render(request, "main/news_detail.html", {
-        "news": news,
-    })
+    return render(
+        request,
+        "main/news_detail.html",
+        {
+            "news": news,
+        },
+    )
