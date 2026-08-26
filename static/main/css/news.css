@@ -29,7 +29,7 @@
     padding: 2rem 0;
 }
 
-.news-detail__content span {
+.news-detail__content p {
     font-size: 1.2rem;
     line-height: 2.5rem;
 }
