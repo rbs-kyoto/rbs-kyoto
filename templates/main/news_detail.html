@@ -28,14 +28,14 @@
             <img src="{{ news.image.url }}" alt="">
         </div>
     {% endif %}
-    {% if news.caption %}
-    <div class="news-detail__content">
-        <span>{{ news.caption|safe }}</span>
-    </div>
+    {% if news.has_caption %}
+        <div class="news-detail__content">
+            {{ news.caption|safe }}
+        </div>
     {% else %}
-    <div class="news-detail__content">
-        <span>この記事には本文がありません．</span>
-    </div>
+        <div class="news-detail__content">
+            <span>この記事には本文がありません．</span>
+        </div>
     {% endif %}
     <div class="page_control">
         <a class="page-control-style-back" href="{% url 'main:news_all' %}">

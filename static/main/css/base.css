@@ -533,8 +533,51 @@ a.list__hover-item:hover span.category__element {
 }
 
 .page_control {
+    position: relative;
+    display: flex;
+    align-items: center;
     width: 100%;
     margin: 2rem 0;
+}
+
+.page_control__paginator {
+    position: absolute;
+    left: 50%;
+    transform: translateX(-50%);
+
+    display: flex;
+    align-items: center;
+    gap: .5rem;
+}
+
+.page-control-style-back {
+    margin-right: auto;
+}
+
+.page-control-style-forward {
+    margin-left: auto;
+}
+
+span.active-page {
+    width: 3rem;
+    aspect-ratio: 1 / 1;
+    display: grid;
+    place-items: center;
+    border: .15rem solid var(--Gray-100);
+    color: var(--Gray-100);
+    font-size: 1.2rem;
+    border-radius: 1.5rem;
+}
+
+span.active-page > span {
+    display: inline-block;
+    line-height: 1;
+    transform: translateY(1px);
+}
+
+.page_control__paginator {
+    display: flex;
+    gap: 1.5rem;
 }
 
 

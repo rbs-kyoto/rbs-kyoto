@@ -52,6 +52,19 @@
         <a class="page-control-style-back" href="{% url 'main:index' %}">
             ホームへ
         </a>
+        <div class="page_control__paginator">
+        {% for page_num in page_obj.paginator.page_range %}
+            {% if page_num == page_obj.number %}
+                <span class="page-number active-page">
+                    <span>{{ page_num }}</span>
+                </span>
+            {% else %}
+                <a href="?page={{ page_num }}" class="page-number">
+                    {{ page_num }}
+                </a>
+            {% endif %}
+        {% endfor %}
+        </div>
     </div>
 </section>
 
