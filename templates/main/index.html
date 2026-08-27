@@ -56,6 +56,21 @@
         </ul>
     </div>
 </section>
+{% if apps %}
+<section class="top-apps-section">
+    <div class="section-heading">
+        <h2 class="heading">Apps</h2>
+    </div>
+    <div class="app-grid">
+        {% for app in apps %}
+        <a class="app-tile" href="{{ app.url }}">
+            <span class="app-tile__title">{{ app.title }}</span>
+            <span class="app-tile__desc">{{ app.description }}</span>
+        </a>
+        {% endfor %}
+    </div>
+</section>
+{% endif %}
 {% comment %} <section class="top-about-section">
     <h2 class="heading">About</h2>
 </section> {% endcomment %}
