@@ -46,7 +46,8 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
     "django_ckeditor_5",
     'main',
-    'accounts'
+    'accounts',
+    'manuals',
 ]
 
 ASGI_APPLICATION = 'config.asgi.application'
