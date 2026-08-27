@@ -2,6 +2,7 @@
 {% load static %}
 
 {% block title %}マニュアル｜rbs京都{% endblock %}
+{% block extra_css %}<link rel="stylesheet" href="{% static 'main/css/manual.css' %}">{% endblock %}
 
 {% block content %}
 
@@ -13,6 +14,12 @@
             新規作成
         </a>
         {% endif %}
+    </div>
+    <div class="manual-list__sort">
+        <span class="manual-list__sort-label">並び替え：</span>
+        <a class="manual-list__sort-link{% if sort == 'order' %} is-active{% endif %}" href="?sort=order">表示順</a>
+        <a class="manual-list__sort-link{% if sort == 'date' %} is-active{% endif %}" href="?sort=date">日付順</a>
+        <a class="manual-list__sort-link{% if sort == 'title' %} is-active{% endif %}" href="?sort=title">タイトル順</a>
     </div>
     <div class="list-table">
         <ul class="list">
@@ -27,6 +34,13 @@
                             {{ manual.uploaded_at|date:"Y.m.d" }}
                         </span>
                     </div>
+                    {% if user.is_staff and not manual.is_active %}
+                    <div class="category">
+                        <span class="category__element manual-list__draft-badge">
+                            非公開
+                        </span>
+                    </div>
+                    {% endif %}
                 </a>
             </li>
             {% empty %}

@@ -2,6 +2,39 @@
     padding: 1rem;
 }
 
+.manual-list__sort {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    padding: 0 1rem 1rem;
+}
+
+.manual-list__sort-label {
+    color: var(--Gray-500);
+    font-size: .85rem;
+}
+
+.manual-list__sort-link {
+    color: var(--Gray-500);
+    font-size: .85rem;
+    transition: color .3s;
+}
+
+.manual-list__sort-link:hover {
+    color: var(--Gray-100);
+}
+
+.manual-list__sort-link.is-active {
+    color: var(--Textcolor);
+    font-weight: 600;
+    text-decoration: underline;
+}
+
+.manual-list__draft-badge {
+    color: var(--Red-300) !important;
+    border-color: var(--Red-300) !important;
+}
+
 .manual-detail__header {
     position: relative;
 }

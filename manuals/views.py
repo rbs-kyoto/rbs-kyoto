@@ -1,24 +1,41 @@
 from django.contrib.auth.decorators import login_required, user_passes_test
+from django.http import Http404
 from django.shortcuts import get_object_or_404, redirect, render
 from .models import Manual
 
 staff_required = user_passes_test(lambda user: user.is_staff)
 
+SORT_OPTIONS = {
+    "date": "-uploaded_at",
+    "title": "title",
+}
+DEFAULT_SORT = "order"
+
 
 @login_required
 def manual_list(request):
-    manuals = Manual.objects.filter(is_active=True)
+    manuals = Manual.objects.all()
+    if not request.user.is_staff:
+        manuals = manuals.filter(is_active=True)
+
+    sort = request.GET.get("sort")
+    if sort in SORT_OPTIONS:
+        manuals = manuals.order_by(SORT_OPTIONS[sort])
+    else:
+        sort = DEFAULT_SORT
 
     return render(
         request,
         "manuals/manual_list.html",
-        {"manuals": manuals},
+        {"manuals": manuals, "sort": sort},
     )
 
 
 @login_required
 def manual_detail(request, pk):
-    manual = get_object_or_404(Manual, pk=pk, is_active=True)
+    manual = get_object_or_404(Manual, pk=pk)
+    if not manual.is_active and not request.user.is_staff:
+        raise Http404
 
     return render(
         request,
