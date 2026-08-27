@@ -9,3 +9,5 @@ db.sqlite3
 .idea/
 media/
 staticfiles/
+*.sqlite3.backup
+*.json
