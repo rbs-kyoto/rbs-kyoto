@@ -3,7 +3,7 @@ from .models import Pickup, News, Category
 
 @admin.register(Pickup)
 class PickupAdmin(admin.ModelAdmin):
-    list_display = ("title", "caption", "order", "is_active")
+    list_display = ("title", "order", "is_active")
     list_editable = ("order", "is_active")
     ordering = ("order",)
 
