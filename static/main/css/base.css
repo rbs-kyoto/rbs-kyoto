@@ -148,6 +148,9 @@ span.low {
     margin: 0;
 }
 
+label {
+  white-space: nowrap;
+}
 
 label.common-style {
     font-size: .9rem;
@@ -175,6 +178,23 @@ input.common-style {
 input.common-style:focus {
     border-color: var(--Gray-50);
     box-shadow: 0 0 0 3px rgba(0, 0, 0, 0.06);
+}
+
+input#id_is_active {
+    appearance: none;
+    -webkit-appearance: none;
+    width: 2rem;
+    height: 2rem;
+    margin: 0;
+    cursor: pointer;
+    mask: url("../img/checkbox.svg") center / 80% 80% no-repeat;
+    -webkit-mask: url("../img/checkbox.svg") center / 80% 80% no-repeat;
+    background-color: var(--Gray-600);
+    transition: all .3s;
+}
+
+input#id_is_active:checked {
+    background-color: var(--Gray-50);
 }
 
 a {
@@ -437,7 +457,7 @@ section {
 section h2.heading {
     color: var(--Natural-white);
     font-family: "Comfortaa";
-    font-size: 2.5rem;
+    font-size: 2rem;
 }
 
 section.top-pickup {
@@ -518,7 +538,7 @@ section.top-apps-section {
 
 .app-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+    grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
     gap: 1rem;
     padding: 1rem 0;
 }

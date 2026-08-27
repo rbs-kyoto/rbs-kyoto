@@ -38,12 +38,12 @@
         </div>
 
         <div class="manual-form__footer">
-            <button class="common-style" type="submit">保存</button>
             {% if manual %}
             <a class="common-style" href="{% url 'manuals:manual_detail' manual.pk %}">キャンセル</a>
             {% else %}
             <a class="common-style" href="{% url 'manuals:manual_list' %}">キャンセル</a>
             {% endif %}
+            <button class="common-style" type="submit">保存</button>
         </div>
     </form>
 </section>

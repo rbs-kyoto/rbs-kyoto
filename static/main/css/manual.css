@@ -127,13 +127,17 @@
 
 .manual-form__footer {
     display: flex;
-    gap: 1rem;
+    justify-content: space-between;
 }
 
 .manual-detail-section {
-    width: min(100%, 800px);
+    width: min(100%, 1000px);
     margin: 0 auto;
     padding: 2rem 1rem;
+}
+
+.manual-detail-section__wrapper {
+    padding: 2rem;
 }
 
 .manual-detail__header {
