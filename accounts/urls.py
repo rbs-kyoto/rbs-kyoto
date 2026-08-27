@@ -9,4 +9,10 @@ urlpatterns = [
     path("mypage/", views.mypage, name="mypage"),
     path("profile/edit/", views.profile_edit, name="profile_edit"),
     path("password/change/", views.password_change, name="password_change"),
+
+    path(
+        "google/link-confirm/",
+        views.google_link_confirm,
+        name="google_link_confirm",
+    ),
 ]

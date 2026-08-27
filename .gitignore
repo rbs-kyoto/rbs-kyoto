@@ -10,3 +10,4 @@ db.sqlite3
 media/
 staticfiles/
 *.sqlite3.backup
+*.json

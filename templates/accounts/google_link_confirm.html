@@ -1,0 +1,44 @@
+{% extends "main/base.html" %}
+{% load static %}
+
+{% block title %}Googleアカウントの紐付け｜rbs京都{% endblock %}
+{% block extra_css %}<link rel="stylesheet" href="{% static 'main/css/login.css' %}">{% endblock %}
+
+{% block content %}
+
+<section class="login-section">
+    <div class="login-container">
+        <div class="login-header">
+            <img class="login-logo" src="{% static 'main/img/rbs.svg' %}" alt="rbs京都">
+            <h2 class="Google-font">Googleアカウントの紐付け</h2>
+            <p>既存のユーザーが見つかりました</p>
+        </div>
+        <div class="login-form">
+            <p class="Google-font">
+                既存ユーザーとGoogleアカウントを
+                紐付けますか？
+            </p>
+            <div class="login-field">
+                <label>ユーザー名</label>
+                <input class="common-style" type="text" value="{{ user.username }}" readonly>
+            </div>
+            <div class="login-field">
+                <label class="Google-font">Googleアカウント</label>
+                <input class="common-style" type="text" value="{{ google_email }}" readonly>
+            </div>
+            <form method="post">
+                {% csrf_token %}
+                <div class="change_control">
+                    <button class="common-style" type="submit" name="action" value="cancel">
+                        キャンセル
+                    </button>
+                    <button class="page-control-style-forward" type="submit" name="action" value="confirm">
+                        紐付ける
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</section>
+
+{% endblock %}
