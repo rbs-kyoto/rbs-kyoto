@@ -170,7 +170,7 @@
 .account-form__footer {
     display: flex;
     align-items: center;
-    gap: 2rem;
+    justify-content: space-between;
     margin-top: .5rem;
 }
 

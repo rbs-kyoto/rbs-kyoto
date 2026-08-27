@@ -45,6 +45,10 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
     "django_ckeditor_5",
+    "allauth",
+    "allauth.account",
+    "allauth.socialaccount",
+    "allauth.socialaccount.providers.google",
     'main',
     'accounts',
     'manuals',
@@ -60,6 +64,7 @@ MIDDLEWARE = [
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
+    "allauth.account.middleware.AccountMiddleware",
 ]
 
 ROOT_URLCONF = 'config.urls'
@@ -113,6 +118,31 @@ AUTH_PASSWORD_VALIDATORS = [
 
 
 AUTH_USER_MODEL = 'accounts.User'
+
+LOGIN_URL = "accounts:login"
+LOGIN_REDIRECT_URL = "accounts:mypage"
+LOGOUT_REDIRECT_URL = "accounts:login"
+
+SOCIALACCOUNT_LOGIN_ON_GET = True
+
+SOCIALACCOUNT_ADAPTER = "accounts.adapters.RakunanSocialAccountAdapter"
+
+SOCIALACCOUNT_PROVIDERS = {
+    "google": {
+        "APP": {
+            "client_id": os.getenv("GOOGLE_CLIENT_ID"),
+            "secret": os.getenv("GOOGLE_CLIENT_SECRET"),
+            "key": "",
+        },
+        "SCOPE": [
+            "profile",
+            "email",
+        ],
+        "AUTH_PARAMS": {
+            "access_type": "online",
+        },
+    },
+}
 
 # Internationalization
 # https://docs.djangoproject.com/en/6.1/topics/i18n/
