@@ -148,6 +148,9 @@ span.low {
     margin: 0;
 }
 
+label {
+  white-space: nowrap;
+}
 
 label.common-style {
     font-size: .9rem;
@@ -177,6 +180,24 @@ input.common-style:focus {
     box-shadow: 0 0 0 3px rgba(0, 0, 0, 0.06);
 }
 
+input#id_is_active,
+input#id_is_internal {
+    appearance: none;
+    -webkit-appearance: none;
+    width: 2rem;
+    height: 2rem;
+    margin: 0;
+    cursor: pointer;
+    mask: url("../img/checkbox.svg") center / 80% 80% no-repeat;
+    -webkit-mask: url("../img/checkbox.svg") center / 80% 80% no-repeat;
+    background-color: var(--Gray-600);
+    transition: all .3s;
+}
+
+input#id_is_active:checked,
+input#id_is_internal:checked {
+    background-color: var(--Gray-50);
+}
 a {
     display: inline-block;
     color: inherit;
@@ -437,7 +458,7 @@ section {
 section h2.heading {
     color: var(--Natural-white);
     font-family: "Comfortaa";
-    font-size: 2.5rem;
+    font-size: 2rem;
 }
 
 section.top-pickup {
@@ -510,6 +531,43 @@ img.thumbnail {
 
 section.top-news-section {
 
+}
+
+section.top-apps-section {
+    padding: 1rem 0;
+}
+
+.app-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+    gap: 1rem;
+    padding: 1rem 0;
+}
+
+.app-tile {
+    display: flex;
+    flex-direction: column;
+    gap: .3rem;
+    padding: 1.25rem 1.5rem;
+    border: .15rem solid var(--Gray-600);
+    border-radius: 1rem;
+    corner-shape: superellipse(1.4);
+    transition: all .3s;
+}
+
+.app-tile:hover {
+    border-color: var(--Gray-300);
+    background-color: var(--Gray-900);
+}
+
+.app-tile__title {
+    font-size: 1.1rem;
+    font-weight: 600;
+}
+
+.app-tile__desc {
+    font-size: .8rem;
+    color: var(--Gray-500);
 }
 
 ul.list {

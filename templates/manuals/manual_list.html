@@ -1,0 +1,66 @@
+{% extends "main/base.html" %}
+{% load static %}
+
+{% block title %}マニュアル｜rbs京都{% endblock %}
+{% block extra_css %}<link rel="stylesheet" href="{% static 'main/css/manual.css' %}">{% endblock %}
+
+{% block content %}
+
+<section class="manual-list-section">
+    <div class="section-heading">
+        <h2 class="heading">Manual</h2>
+        {% if user.is_staff %}
+        <a class="section-heading__link page-control-style-forward" href="{% url 'manuals:manual_create' %}">
+            新規作成
+        </a>
+        {% endif %}
+    </div>
+    <div class="manual-list__sort">
+        <span class="manual-list__sort-label">並び替え：</span>
+        <a class="manual-list__sort-link{% if sort == 'order' %} is-active{% endif %}" href="?sort=order">表示順</a>
+        <a class="manual-list__sort-link{% if sort == 'date' %} is-active{% endif %}" href="?sort=date">日付順</a>
+        <a class="manual-list__sort-link{% if sort == 'title' %} is-active{% endif %}" href="?sort=title">タイトル順</a>
+    </div>
+    <div class="list-table">
+        <ul class="list">
+            {% for manual in manuals %}
+            <li class="list__element">
+                <a class="list__hover-item" href="{% url 'manuals:manual_detail' manual.pk %}">
+                    <div class="list__content">
+                        <span class="list__title">
+                            {{ manual.title }}
+                        </span>
+                        <span class="list__date">
+                            {{ manual.uploaded_at|date:"Y.m.d" }}
+                        </span>
+                    </div>
+                    {% if user.is_staff and not manual.is_active %}
+                    <div class="category">
+                        <span class="category__element manual-list__draft-badge">
+                            非公開
+                        </span>
+                    </div>
+                    {% endif %}
+                </a>
+            </li>
+            {% empty %}
+            <li class="list__element">
+                <div class="list__hover-item">
+                    <div class="list__content">
+                        <span class="list__title">
+                            マニュアルはありません。
+                        </span>
+                    </div>
+                </div>
+            </li>
+            {% endfor %}
+        </ul>
+    </div>
+    <div class="page_control">
+        <a class="page-control-style-back" href="{% url 'main:index' %}">
+            ホームへ
+        </a>
+    </div>
+</section>
+
+{% endblock %}

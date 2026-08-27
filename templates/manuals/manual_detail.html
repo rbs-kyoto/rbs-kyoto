@@ -1,0 +1,40 @@
+{% extends "main/base.html" %}
+{% load static %}
+
+{% block title %}{{ manual.title }}｜rbs京都{% endblock %}
+{% block extra_css %}<link rel="stylesheet" href="{% static 'main/css/manual.css' %}">{% endblock %}
+
+{% block content %}
+
+<section class="manual-detail-section">
+    <div class="manual-detail-section__wrapper">
+        <div class="manual-detail__header">
+            <h1 class="manual-detail__title">
+                {{ manual.title }}
+            </h1>
+            <span class="manual-detail__date">
+                {{ manual.uploaded_at|date:"Y.m.d" }} 更新
+            </span>
+            {% if user.is_staff %}
+            <a class="manual-detail__edit-link" href="{% url 'manuals:manual_edit' manual.pk %}">
+                編集する
+            </a>
+            {% endif %}
+        </div>
+
+        <textarea id="manual-raw-content" hidden>{{ manual.content }}</textarea>
+        <div class="manual-detail__content" id="manual-rendered-content"></div>
+    </div>
+    <div class="page_control">
+        <a class="page-control-style-back" href="{% url 'manuals:manual_list' %}">
+            マニュアル一覧へ
+        </a>
+    </div>
+</section>
+
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+<script src="{% static 'main/js/manual_render.js' %}"></script>
+{% endblock %}

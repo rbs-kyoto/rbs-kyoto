@@ -6,7 +6,14 @@
 {% block content %}
 
 <section class="news-all-section">
-    <h2 class="heading">News</h2>
+    <div class="section-heading">
+        <h2 class="heading">News</h2>
+        {% if user.is_staff %}
+        <a class="section-heading__link page-control-style-forward" href="{% url 'main:news_create' %}">
+            新規作成
+        </a>
+        {% endif %}
+    </div>
     <div class="list-table">
         <ul class="list">
             {% for news in news_list %}
@@ -29,9 +36,16 @@
                         </span>
                     </div>
                     <div class="category">
+                        {% if news.category %}
                         <span class="category__element">
                             {{ news.category }}
                         </span>
+                        {% endif %}
+                        {% if user.is_staff and not news.is_active %}
+                        <span class="category__element news-all__draft-badge">
+                            非公開
+                        </span>
+                        {% endif %}
                     </div>
                 </a>
             </li>

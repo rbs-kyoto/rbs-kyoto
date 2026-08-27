@@ -1,0 +1,222 @@
+.manual-list-section {
+    padding: 1rem;
+}
+
+.manual-list__sort {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    padding: 0 1rem 1rem;
+}
+
+.manual-list__sort-label {
+    color: var(--Gray-500);
+    font-size: .85rem;
+}
+
+.manual-list__sort-link {
+    color: var(--Gray-500);
+    font-size: .85rem;
+    transition: color .3s;
+}
+
+.manual-list__sort-link:hover {
+    color: var(--Gray-100);
+}
+
+.manual-list__sort-link.is-active {
+    color: var(--Textcolor);
+    font-weight: 600;
+    text-decoration: underline;
+}
+
+.manual-list__draft-badge {
+    color: var(--Red-300) !important;
+    border-color: var(--Red-300) !important;
+}
+
+.manual-detail__header {
+    position: relative;
+}
+
+.manual-detail__edit-link {
+    position: absolute;
+    top: 0;
+    right: 0;
+    font-size: .85rem;
+    color: var(--Gray-500);
+    text-decoration: underline;
+    transition: color .3s;
+}
+
+.manual-detail__edit-link:hover {
+    color: var(--Gray-100);
+}
+
+.manual-form-section {
+    width: min(100%, 800px);
+    margin: 0 auto;
+    padding: 2rem 1rem;
+}
+
+.manual-form {
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+    margin-top: 1.5rem;
+}
+
+.manual-form__field {
+    display: flex;
+    flex-direction: column;
+    gap: .5rem;
+}
+
+.manual-form__field label {
+    color: var(--Textcolor);
+    font-size: .85rem;
+    font-weight: 600;
+}
+
+.manual-form__field .manual-form__input {
+    width: 100%;
+    box-sizing: border-box;
+    padding: .8rem 1rem;
+    border: .1rem solid var(--Gray-600);
+    border-radius: .75rem;
+    corner-shape: superellipse(1.4);
+    background: transparent;
+    color: var(--Textcolor);
+    font: inherit;
+    font-size: .9rem;
+    outline: none;
+    transition: all .3s;
+}
+
+.manual-form__field .manual-form__input:focus {
+    border-color: var(--Gray-400);
+}
+
+.manual-form__textarea {
+    font-family: "BIZ UDGothic", monospace;
+    line-height: 1.6;
+    resize: vertical;
+}
+
+.manual-form__row {
+    display: flex;
+    align-items: center;
+    gap: 2rem;
+}
+
+.manual-form__field--inline {
+    flex-direction: row;
+    align-items: center;
+    gap: .75rem;
+}
+
+.manual-form__input--order {
+    width: 6rem;
+}
+
+.manual-form__field--checkbox label {
+    display: flex;
+    align-items: center;
+    gap: .5rem;
+}
+
+.manual-form__footer {
+    display: flex;
+    justify-content: space-between;
+}
+
+.manual-detail-section {
+    width: min(100%, 1000px);
+    margin: 0 auto;
+    padding: 2rem 1rem;
+}
+
+.manual-detail-section__wrapper {
+    padding: 2rem;
+}
+
+.manual-detail__header {
+    margin-bottom: 2rem;
+    padding-bottom: 1.5rem;
+    border-bottom: var(--Gray-800) solid .1rem;
+}
+
+.manual-detail__title {
+    margin: 0 0 .5rem;
+    font-size: 1.8rem;
+    font-weight: 600;
+}
+
+.manual-detail__date {
+    color: var(--Gray-500);
+    font-size: .85rem;
+}
+
+.manual-detail__content {
+    line-height: 1.9;
+}
+
+.manual-detail__content h1,
+.manual-detail__content h2,
+.manual-detail__content h3 {
+    margin-top: 2rem;
+    margin-bottom: 1rem;
+    font-family: "Comfortaa", "Noto Sans JP", sans-serif;
+}
+
+.manual-detail__content p {
+    margin: 0 0 1rem;
+    pointer-events: auto;
+}
+
+.manual-detail__content a {
+    color: var(--Skyblue-400);
+    text-decoration: underline;
+    pointer-events: auto;
+}
+
+.manual-detail__content ul,
+.manual-detail__content ol {
+    margin: 0 0 1rem;
+    padding-left: 1.5rem;
+    list-style: revert;
+}
+
+.manual-detail__content code {
+    padding: .1rem .4rem;
+    background-color: var(--Black-t400);
+    border-radius: .3rem;
+    corner-shape: superellipse(1.4);
+}
+
+.manual-detail__content pre {
+    padding: 1rem;
+    overflow-x: auto;
+    background-color: var(--Black-t400);
+    border-radius: .5rem;
+    corner-shape: superellipse(1.4);
+}
+
+.manual-detail__content pre code {
+    padding: 0;
+    background-color: transparent;
+}
+
+.manual-detail__content blockquote {
+    margin: 0 0 1rem;
+    padding: .5rem 1rem;
+    border-left: .2rem solid var(--Gray-600);
+    color: var(--Gray-400);
+}
+
+.manual-detail__content img {
+    max-width: 100%;
+    height: auto;
+    border-radius: .5rem;
+    corner-shape: superellipse(1.4);
+}
