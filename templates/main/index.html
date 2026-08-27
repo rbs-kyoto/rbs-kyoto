@@ -46,9 +46,11 @@
                         </span>
                     </div>
                     <div class="category">
+                        {% if item.category %}
                         <span class="category__element">
                             {{ item.category }}
                         </span>
+                        {% endif %}
                     </div>
                 </a>
             </li>

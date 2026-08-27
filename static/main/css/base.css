@@ -180,7 +180,8 @@ input.common-style:focus {
     box-shadow: 0 0 0 3px rgba(0, 0, 0, 0.06);
 }
 
-input#id_is_active {
+input#id_is_active,
+input#id_is_internal {
     appearance: none;
     -webkit-appearance: none;
     width: 2rem;
@@ -193,10 +194,10 @@ input#id_is_active {
     transition: all .3s;
 }
 
-input#id_is_active:checked {
+input#id_is_active:checked,
+input#id_is_internal:checked {
     background-color: var(--Gray-50);
 }
-
 a {
     display: inline-block;
     color: inherit;

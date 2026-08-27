@@ -14,14 +14,21 @@
                     {{ news.date|date:"Y.m.d" }}
                 </span>
 
+                {% if news.category %}
                 <span class="category__element">
                     {{ news.category }}
                 </span>
+                {% endif %}
             </div>
             <h1 class="news-detail__title">
                 {{ news.title }}
             </h1>
         </div>
+        {% if user.is_staff %}
+        <a class="news-detail__edit-link" href="{% url 'main:news_edit' news.pk %}">
+            編集する
+        </a>
+        {% endif %}
     </div>
     {% if news.image %}
         <div class="news-detail__image">

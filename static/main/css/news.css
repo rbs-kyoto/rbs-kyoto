@@ -34,3 +34,23 @@
     font-size: 1.2rem;
     line-height: 2.5rem;
 }
+
+.news-detail__edit-link {
+    position: absolute;
+    top: .5rem;
+    right: 1.5rem;
+    z-index: 1;
+    font-size: .85rem;
+    color: var(--Gray-100);
+    text-decoration: underline;
+    transition: opacity .3s;
+}
+
+.news-detail__edit-link:hover {
+    opacity: .7;
+}
+
+.news-all__draft-badge {
+    color: var(--Red-300) !important;
+    border-color: var(--Red-300) !important;
+}
