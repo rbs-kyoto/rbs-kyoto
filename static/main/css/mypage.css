@@ -67,7 +67,13 @@
 }
 
 .mypage-card__footer {
+    display: flex;
+    justify-content: space-around;
     margin-top: 1.5rem;
+}
+
+.mypage-card__footer a {
+    margin: 0;
 }
 
 .mypage-actions {
