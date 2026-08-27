@@ -82,6 +82,50 @@ button.login-submit {
     transform 0.1s ease;
 }
 
+.login-divider {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    margin: 1.5rem 0;
+}
+
+.login-divider::before,
+.login-divider::after {
+    content: "";
+    flex: 1;
+    height: .1rem;
+    background-color: var(--Gray-700);
+}
+
+.login-divider span {
+    color: var(--Gray-500);
+    font-size: .8rem;
+}
+
+.google-login-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: .75rem;
+    width: 100%;
+    padding: .75rem 1rem;
+    background-color: var(--Gray-50);
+    color: var(--Gray-800);
+    font-weight: 600;
+    font-size: .9rem;
+    border: .1rem solid var(--Gray-300);
+    border-radius: .5rem;
+    corner-shape: superellipse(1.4);
+    cursor: not-allowed;
+    opacity: .7;
+    transition: opacity .3s;
+}
+
+.google-login-btn img {
+    width: 18px;
+    height: 18px;
+}
+
 .login-error {
     padding: .6rem 1rem;
     background: var(--Gray-50);
