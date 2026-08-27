@@ -37,7 +37,9 @@
             </div>
             <div class="mypage-card__footer">
                 <a class="page-control-style-forward" href="{% url 'accounts:profile_edit' %}">編集画面へ</a>
+                {% if user.is_superuser %}
                 <a class="page-control-style-forward" target="_blank" rel="noopener noreferrer" href="{% url 'admin:index' %}">管理画面へ</a>
+                {% endif %}
             </div>
         </section>
         <section class="mypage-card">
