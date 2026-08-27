@@ -1,6 +1,15 @@
 from django.shortcuts import render, get_object_or_404, redirect
 from django.core.paginator import Paginator
+from django.urls import reverse
 from .models import Pickup, News
+
+APPS = [
+    {
+        "title": "マニュアル",
+        "description": "部内向けの手順書・資料",
+        "url_name": "manuals:manual_list",
+    },
+]
 
 def index(request):
     pickups = Pickup.objects.filter(is_active=True)
@@ -12,12 +21,17 @@ def index(request):
             is_internal=False
         )
     news = news.order_by("-date")[:5]
+    apps = [
+        {**app, "url": reverse(app["url_name"])}
+        for app in APPS
+    ]
     return render(
         request,
         "main/index.html",
         {
             "pickups": pickups,
             "news": news,
+            "apps": apps,
         },
     )
 

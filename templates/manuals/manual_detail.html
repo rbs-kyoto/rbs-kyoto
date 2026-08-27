@@ -14,9 +14,14 @@
         <span class="manual-detail__date">
             {{ manual.uploaded_at|date:"Y.m.d" }} 更新
         </span>
+        {% if user.is_staff %}
+        <a class="manual-detail__edit-link" href="{% url 'manuals:manual_edit' manual.pk %}">
+            編集する
+        </a>
+        {% endif %}
     </div>
 
-    <textarea id="manual-raw-content" hidden>{{ content }}</textarea>
+    <textarea id="manual-raw-content" hidden>{{ manual.content }}</textarea>
     <div class="manual-detail__content" id="manual-rendered-content"></div>
 
     <div class="page_control">

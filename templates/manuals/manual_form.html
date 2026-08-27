@@ -1,0 +1,51 @@
+{% extends "main/base.html" %}
+{% load static %}
+
+{% block title %}{% if manual %}マニュアルを編集{% else %}マニュアルを作成{% endif %}｜rbs京都{% endblock %}
+{% block extra_css %}<link rel="stylesheet" href="{% static 'main/css/manual.css' %}">{% endblock %}
+
+{% block content %}
+
+<section class="manual-form-section">
+    <h2 class="heading">
+        {% if manual %}マニュアルを編集{% else %}マニュアルを作成{% endif %}
+    </h2>
+
+    <form class="manual-form" method="post">
+        {% csrf_token %}
+        <div class="manual-form__field">
+            <label for="id_title">タイトル</label>
+            <input class="manual-form__input" type="text" id="id_title" name="title" value="{{ manual.title|default:'' }}" required>
+        </div>
+
+        <div class="manual-form__field">
+            <label for="id_content">本文（Markdown）</label>
+            <textarea class="manual-form__input manual-form__textarea" id="id_content" name="content" rows="20">{{ manual.content|default:'' }}</textarea>
+        </div>
+
+        <div class="manual-form__row">
+            <div class="manual-form__field manual-form__field--inline">
+                <label for="id_order">表示順</label>
+                <input class="manual-form__input manual-form__input--order" type="number" id="id_order" name="order" value="{{ manual.order|default:0 }}">
+            </div>
+
+            <div class="manual-form__field manual-form__field--checkbox">
+                <label for="id_is_active">
+                    <input type="checkbox" id="id_is_active" name="is_active" {% if manual.is_active|default:True %}checked{% endif %}>
+                    公開する
+                </label>
+            </div>
+        </div>
+
+        <div class="manual-form__footer">
+            <button class="common-style" type="submit">保存</button>
+            {% if manual %}
+            <a class="common-style" href="{% url 'manuals:manual_detail' manual.pk %}">キャンセル</a>
+            {% else %}
+            <a class="common-style" href="{% url 'manuals:manual_list' %}">キャンセル</a>
+            {% endif %}
+        </div>
+    </form>
+</section>
+
+{% endblock %}

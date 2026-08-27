@@ -6,7 +6,14 @@
 {% block content %}
 
 <section class="manual-list-section">
-    <h2 class="heading">Manual</h2>
+    <div class="section-heading">
+        <h2 class="heading">Manual</h2>
+        {% if user.is_staff %}
+        <a class="section-heading__link page-control-style-forward" href="{% url 'manuals:manual_create' %}">
+            新規作成
+        </a>
+        {% endif %}
+    </div>
     <div class="list-table">
         <ul class="list">
             {% for manual in manuals %}

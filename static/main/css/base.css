@@ -512,6 +512,43 @@ section.top-news-section {
 
 }
 
+section.top-apps-section {
+    padding: 1rem 0;
+}
+
+.app-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+    gap: 1rem;
+    padding: 1rem 0;
+}
+
+.app-tile {
+    display: flex;
+    flex-direction: column;
+    gap: .3rem;
+    padding: 1.25rem 1.5rem;
+    border: .15rem solid var(--Gray-600);
+    border-radius: 1rem;
+    corner-shape: superellipse(1.4);
+    transition: all .3s;
+}
+
+.app-tile:hover {
+    border-color: var(--Gray-300);
+    background-color: var(--Gray-900);
+}
+
+.app-tile__title {
+    font-size: 1.1rem;
+    font-weight: 600;
+}
+
+.app-tile__desc {
+    font-size: .8rem;
+    color: var(--Gray-500);
+}
+
 ul.list {
     padding: 1rem;
 }
