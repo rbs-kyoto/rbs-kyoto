@@ -105,13 +105,16 @@ button.login-submit {
     gap: .5rem;
     width: max-content;
     margin: 0 auto;
-    font-family: "Google Sans", "Noto Sans JP", sans-serif;
-    font-variation-settings: 'opsz' 20;
 }
 
 .login_with_google img {
     width: auto;
     height: 1rem;
+}
+
+.Google-font {
+    font-family: "Google Sans", "Noto Sans JP", sans-serif;
+    font-variation-settings: 'opsz' 20;
 }
 
 .login-error {
@@ -123,4 +126,24 @@ button.login-submit {
     line-height: 1.5;
     border-radius: .5rem;
     corner-shape: superellipse(1.4);
+}
+
+@media (max-width: 768px) {
+
+    .login_without_google {
+        gap: 2rem;
+    }
+
+    .login-form {
+        gap: 2rem;
+    }
+
+    .login_with_google img {
+        height: 1.2rem;
+    }
+
+    .login_with_google {
+        font-size: 1.2rem !important;
+    }
+
 }
