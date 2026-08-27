@@ -24,6 +24,7 @@ class News(models.Model):
     caption = CKEditor5Field("本文", config_name="extends")
     image = models.ImageField(upload_to="news/", blank=True, null=True)
     is_active = models.BooleanField(default=True)
+    is_internal = models.BooleanField(default=False)
 
     class Meta:
         ordering = ["-date"]

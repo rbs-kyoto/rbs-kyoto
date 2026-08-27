@@ -180,10 +180,6 @@
     transition: opacity .3s;
 }
 
-.account-form__footer a:hover {
-    opacity: .6;
-}
-
 .account-error {
     padding: .75rem 1rem;
     border: .1rem solid var(--Red-400);
