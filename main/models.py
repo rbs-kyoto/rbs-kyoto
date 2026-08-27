@@ -4,6 +4,7 @@ from django.utils.html import strip_tags
 
 class Pickup(models.Model):
     title = models.CharField("タイトル", max_length=100)
+    caption = models.CharField("キャッチコピー", max_length=100, blank=True)
     image = models.FileField("画像", upload_to="pickup/")
     url = models.URLField("リンク先", blank=True)
     order = models.PositiveIntegerField("表示順", default=0)
