@@ -1,5 +1,6 @@
 {% extends "main/base.html" %}
 {% load static %}
+{% load socialaccount %}
 
 {% block title %}ログイン｜rbs京都{% endblock %}
 {% block extra_css %}<link rel="stylesheet" href="{% static 'main/css/login.css' %}">{% endblock %}
@@ -20,6 +21,15 @@
                 <div class="login-error">
                     {{ error }}
                 </div>
+            {% endif %}
+            {% if messages %}
+                {% for message in messages %}
+                    {% if "error" in message.tags %}
+                        <div class="login-error">
+                            {{ message }}
+                        </div>
+                    {% endif %}
+                {% endfor %}
             {% endif %}
             <div class="login-field">
                 <label for="username">ユーザー名</label>
@@ -44,6 +54,9 @@
             <button class="page-control-style-forward login-submit" type="submit">
                 ログイン
             </button>
+            <a href="{% provider_login_url 'google' %}">
+                Googleでログイン
+            </a>
         </form>
     </div>
 </section>
