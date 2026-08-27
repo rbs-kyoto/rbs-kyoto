@@ -14,9 +14,11 @@
                     {{ news.date|date:"Y.m.d" }}
                 </span>
 
+                {% if news.category %}
                 <span class="category__element">
                     {{ news.category }}
                 </span>
+                {% endif %}
             </div>
             <h1 class="news-detail__title">
                 {{ news.title }}

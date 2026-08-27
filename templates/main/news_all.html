@@ -36,9 +36,11 @@
                         </span>
                     </div>
                     <div class="category">
+                        {% if news.category %}
                         <span class="category__element">
                             {{ news.category }}
                         </span>
+                        {% endif %}
                         {% if user.is_staff and not news.is_active %}
                         <span class="category__element news-all__draft-badge">
                             非公開

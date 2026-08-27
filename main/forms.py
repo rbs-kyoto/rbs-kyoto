@@ -17,5 +17,5 @@ class NewsForm(forms.ModelForm):
         widgets = {
             "title": forms.TextInput(attrs={"class": "site-form__input"}),
             "date": forms.DateInput(attrs={"type": "date", "class": "site-form__input"}),
-            "category": forms.TextInput(attrs={"class": "site-form__input"}),
+            "category": forms.Select(attrs={"class": "site-form__input"}),
         }
