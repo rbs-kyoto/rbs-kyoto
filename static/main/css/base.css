@@ -529,20 +529,6 @@ img.thumbnail {
     color: var(--Gray-900);
 }
 
-.top-pickup__caption {
-    position: absolute;
-    top: 1.5rem;
-    left: 1.5rem;
-    max-width: calc(100% - 3rem);
-}
-
-.top-pickup__caption span {
-    font-size: 1.5rem;
-    font-weight: 700;
-    color: var(--Natural-white);
-    text-shadow: 0 .1rem .5rem var(--Black-t700);
-}
-
 section.top-news-section {
 
 }
