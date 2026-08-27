@@ -69,12 +69,12 @@
         </div>
 
         <div class="site-form__footer">
-            <button class="common-style" type="submit">保存</button>
             {% if news %}
             <a class="common-style" href="{% url 'main:news_detail' news.pk %}">キャンセル</a>
             {% else %}
             <a class="common-style" href="{% url 'main:news_all' %}">キャンセル</a>
             {% endif %}
+            <button class="common-style" type="submit">保存</button>
         </div>
     </form>
 </section>

@@ -56,7 +56,7 @@
 
 .site-form__footer {
     display: flex;
-    gap: 1rem;
+    justify-content: space-between;
 }
 
 .site-form__errors {
