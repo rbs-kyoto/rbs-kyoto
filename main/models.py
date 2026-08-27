@@ -1,5 +1,6 @@
 from django.db import models
 from django_ckeditor_5.fields import CKEditor5Field
+from django.utils.html import strip_tags
 
 class Pickup(models.Model):
     title = models.CharField("タイトル", max_length=100)
@@ -31,3 +32,13 @@ class News(models.Model):
 
     def __str__(self):
         return self.title
+
+    @property
+    def has_caption(self):
+        if not self.caption:
+            return False
+
+        text = strip_tags(self.caption)
+        text = text.replace("\xa0", "").strip()
+
+        return bool(text)

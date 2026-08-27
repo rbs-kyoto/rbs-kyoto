@@ -25,9 +25,11 @@
 
 .news-detail__content {
     width: 60%;
-    margin: 2rem auto;
+    margin: auto;
+    padding: 2rem 0;
 }
 
+.news-detail__content p,
 .news-detail__content span {
     font-size: 1.2rem;
     line-height: 2.5rem;

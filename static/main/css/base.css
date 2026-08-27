@@ -23,98 +23,98 @@
     --Gray-900: #212121;
     --Gray-950: #0a0a0a;
     --black-50: #0000000d;
-    --black-t100: #0000001a;
-    --black-t200: #00000033;
-    --black-t300: #0000004d;
-    --black-t400: #00000066;
-    --black-t500: #00000080;
-    --black-t600: #00000099;
-    --black-t700: #000000b3;
-    --black-t800: #000000cc;
-    --black-t900: #000000e6;
-    --black-t950: #000000f2;
-    --white-t50: #ffffff0d;
-    --white-t100: #ffffff1a;
-    --white-t200: #ffffff33;
-    --white-t300: #ffffff4d;
-    --white-t400: #ffffff66;
-    --white-t500: #ffffff80;
-    --white-t600: #ffffff99;
-    --white-t700: #ffffffb3;
-    --white-t800: #ffffffcc;
-    --white-t900: #ffffffe6;
-    --white-t950: #fffffff2;
-    --red-50: #fef2f2;
-    --red-100: #fee2e2;
-    --red-200: #fecaca;
-    --red-300: #fca5a5;
-    --red-400: #f87171;
-    --red-500: #ef4444;
-    --red-600: #dc2626;
-    --red-700: #b91c1c;
-    --red-800: #991b1b;
-    --red-900: #7f1d1d;
-    --red-950: #450a0a;
-    --yellow-50: #fefce8;
-    --yellow-100: #fef9c3;
-    --yellow-200: #fef08a;
-    --yellow-300: #fde047;
-    --yellow-400: #facc15;
-    --yellow-500: #eab308;
-    --yellow-600: #ca8a04;
-    --yellow-700: #a16207;
-    --yellow-800: #854d0e;
-    --yellow-900: #713f12;
-    --yellow-950: #422006;
-    --green-50: #f0fdf4;
-    --green-100: #dcfce7;
-    --green-200: #bbf7d0;
-    --green-300: #86efac;
-    --green-400: #4ade80;
-    --green-500: #22c55e;
-    --green-600: #16a34a;
-    --green-700: #15803d;
-    --green-800: #166534;
-    --green-900: #14532d;
-    --green-950: #052e16;
-    --skyblue-50: #f0f9ff;
-    --skyblue-100: #e0f2fe;
-    --skyblue-200: #bae6fd;
-    --skyblue-300: #7dd3fc;
-    --skyblue-400: #38bdf8;
-    --skyblue-500: #0ea5e9;
-    --skyblue-600: #0284c7;
-    --skyblue-700: #0369a1;
-    --skyblue-800: #075985;
-    --skyblue-900: #0c4a6e;
-    --skyblue-950: #082f49;
-    --blue-50: #eff6ff;
-    --blue-100: #dbeafe;
-    --blue-200: #bfdbfe;
-    --blue-300: #93c5fd;
-    --blue-400: #60a5fa;
-    --blue-500: #3b82f6;
-    --blue-600: #2563eb;
-    --blue-700: #1d4ed8;
-    --blue-800: #1e40af;
-    --blue-900: #1e3a8a;
-    --blue-950: #172554;
-    --purple-50: #faf5ff;
-    --purple-100: #f3e8ff;
-    --purple-200: #e9d5ff;
-    --purple-300: #d8b4fe;
-    --purple-400: #c084fc;
-    --purple-500: #a855f7;
-    --purple-600: #9333ea;
-    --purple-700: #7e22ce;
-    --purple-800: #6b21a8;
-    --purple-900: #581c87;
-    --purple-950: #3b0764;
+    --Black-t100: #0000001a;
+    --Black-t200: #00000033;
+    --Black-t300: #0000004d;
+    --Black-t400: #00000066;
+    --Black-t500: #00000080;
+    --Black-t600: #00000099;
+    --Black-t700: #000000b3;
+    --Black-t800: #000000cc;
+    --Black-t900: #000000e6;
+    --Black-t950: #000000f2;
+    --White-t50: #ffffff0d;
+    --White-t100: #ffffff1a;
+    --White-t200: #ffffff33;
+    --White-t300: #ffffff4d;
+    --Wwhite-t400: #ffffff66;
+    --White-t500: #ffffff80;
+    --White-t600: #ffffff99;
+    --White-t700: #ffffffb3;
+    --White-t800: #ffffffcc;
+    --White-t900: #ffffffe6;
+    --White-t950: #fffffff2;
+    --Red-50: #fef2f2;
+    --Red-100: #fee2e2;
+    --Red-200: #fecaca;
+    --Red-300: #fca5a5;
+    --Red-400: #f87171;
+    --Red-500: #ef4444;
+    --Red-600: #dc2626;
+    --Red-700: #b91c1c;
+    --Red-800: #991b1b;
+    --Red-900: #7f1d1d;
+    --Red-950: #450a0a;
+    --Yellow-50: #fefce8;
+    --Yellow-100: #fef9c3;
+    --Yellow-200: #fef08a;
+    --Yellow-300: #fde047;
+    --Yellow-400: #facc15;
+    --Yellow-500: #eab308;
+    --Yyellow-600: #ca8a04;
+    --Yellow-700: #a16207;
+    --Yellow-800: #854d0e;
+    --Yellow-900: #713f12;
+    --Yellow-950: #422006;
+    --Green-50: #f0fdf4;
+    --Green-100: #dcfce7;
+    --Green-200: #bbf7d0;
+    --Green-300: #86efac;
+    --Green-400: #4ade80;
+    --Green-500: #22c55e;
+    --Green-600: #16a34a;
+    --Green-700: #15803d;
+    --Green-800: #166534;
+    --Green-900: #14532d;
+    --Green-950: #052e16;
+    --Skyblue-50: #f0f9ff;
+    --Skyblue-100: #e0f2fe;
+    --Skyblue-200: #bae6fd;
+    --Skyblue-300: #7dd3fc;
+    --Skyblue-400: #38bdf8;
+    --Skyblue-500: #0ea5e9;
+    --Skyblue-600: #0284c7;
+    --Skyblue-700: #0369a1;
+    --Skyblue-800: #075985;
+    --Skyblue-900: #0c4a6e;
+    --Skyblue-950: #082f49;
+    --Blue-50: #eff6ff;
+    --Blue-100: #dbeafe;
+    --Blue-200: #bfdbfe;
+    --Blue-300: #93c5fd;
+    --Blue-400: #60a5fa;
+    --Blue-500: #3b82f6;
+    --Blue-600: #2563eb;
+    --Blue-700: #1d4ed8;
+    --Blue-800: #1e40af;
+    --Blue-900: #1e3a8a;
+    --Blue-950: #172554;
+    --Purple-50: #faf5ff;
+    --Purple-100: #f3e8ff;
+    --Purple-200: #e9d5ff;
+    --Purple-300: #d8b4fe;
+    --Purple-400: #c084fc;
+    --Purple-500: #a855f7;
+    --Purple-600: #9333ea;
+    --Purple-700: #7e22ce;
+    --Purple-800: #6b21a8;
+    --Purple-900: #581c87;
+    --Purple-950: #3b0764;
 
     --Natural-themecolor: #;
     --Natural-accentcolor: #;
-    --backgroundcolor: #232324;
-    --textcolor: #f6f6fa;
+    --Backgroundcolor: #232324;
+    --Textcolor: #f6f6fa;
 }
 
 * {
@@ -127,14 +127,14 @@ html {
 
 body {
     position: relative;
-    background-color: var(--backgroundcolor);
+    background-color: var(--Backgroundcolor);
     width: 100lvw;
     height: 100lvh;
     overflow-y: auto;
     margin: 0;
     display: flex;
     flex-direction: column;
-    color: var(--textcolor);
+    color: var(--Textcolor);
     font-family: "Comfortaa", "Noto Sans JP", sans-serif;
 }
 
@@ -148,10 +148,134 @@ span.low {
     margin: 0;
 }
 
+
+label.common-style {
+    font-size: .9rem;
+    font-weight: 500;
+}
+
+input.common-style {
+    color: var(--Gray-50);
+    width: 100%;
+    box-sizing: border-box;
+    padding: 13px 14px;
+    font-weight: 700;
+    border: .15rem solid var(--Gray-500);
+    border-radius: .5rem;
+    corner-shape: superellipse(1.4);
+    background: transparent;
+    font: inherit;
+    font-size: 15px;
+    outline: none;
+    transition:
+    border-color 0.2s ease,
+    box-shadow 0.2s ease;
+}
+
+input.common-style:focus {
+    border-color: var(--Gray-50);
+    box-shadow: 0 0 0 3px rgba(0, 0, 0, 0.06);
+}
+
 a {
+    display: inline-block;
     color: inherit;
     text-decoration: none;
     cursor: pointer;
+}
+
+button {
+    background-color: transparent;
+    border: none;
+    cursor: pointer;
+    outline: none;
+    padding: 0;
+    appearance: none;
+}
+
+a.common-style,
+button.common-style {
+    color: var(--Textcolor);
+    font-weight: 600;
+    font-size: 0.9rem;
+    padding: .5rem 1rem;
+    border: .15rem solid var(--Gray-500);
+    border-radius: .5rem;
+    corner-shape: superellipse(1.4);
+    transition: all .3s;
+}
+
+a.common-style:hover,
+button.common-style:hover {
+    color: var(--Gray-900);
+    background-color: var(--Gray-300);
+    border-color: var(--Gray-300);
+}
+
+.page-control-style-back {
+    position: relative;
+    color: var(--Textcolor);
+    font-weight: 600;
+    padding-top: .5rem;
+    padding-bottom: .75rem;
+    padding-left: 4.5rem;
+    padding-right: 3.5rem;
+    font-size: 0.9rem;
+    transition: all .3s;
+}
+
+.page-control-style-back::after {
+    content: "";
+    position: absolute;
+    left: 50%;
+    transform: translateX(-50%);
+    bottom: -20%;
+    width: 200px;
+    height: 50px;
+    mask: url("../img/back.svg") no-repeat left top / contain;
+    background-color: var(--Gray-600);
+    transition: all .3s;
+}
+
+.page-control-style-back:hover::after {
+    background-color: var(--Gray-50);
+}
+
+.page-control-style-back:active {
+    transform: scale(0.99);
+}
+
+.page-control-style-forward {
+    position: relative;
+    color: var(--Textcolor);
+    font-weight: 600;
+    padding-top: .5rem;
+    padding-bottom: .75rem;
+    padding-left: 3.5rem;
+    padding-right: 4.5rem;
+    font-size: 0.9rem;
+    transition: all .3s;
+}
+
+.page-control-style-forward::after {
+    content: "";
+    position: absolute;
+    left: 50%;
+    transform: translateX(-50%);
+    bottom: -20%;
+    width: 200px;
+    height: 50px;
+    mask: url("../img/forward.svg") no-repeat left top / contain;
+    background-color: var(--Gray-600);
+    transition: all .3s;
+}
+
+.page-control-style-forward:hover::after {
+    background-color: var(--Gray-50);
+}
+
+.page-control-style-forward:active {
+    transform: scale(0.99);
 }
 
 ul {
@@ -164,6 +288,24 @@ img {
     pointer-events: none;
 }
 
+input[type="text"],
+input[type="password"],
+input[type="email"],
+input[type="number"],
+input[type="search"] {
+  appearance: none;
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  background: none;
+  border: none;
+  border-bottom: .15rem solid var(--Gray-400);
+  border-radius: 0;
+  font-family: inherit;
+  font-size: inherit;
+  outline: none;
+  padding: 0.5em;
+}
+
 header.global-header {
     position: sticky;
     display: flex;
@@ -171,9 +313,9 @@ header.global-header {
     bottom: 0;
     width: 100%;
     height: 6rem;
-    background-color: var(--backgroundcolor);
+    background-color: var(--Backgroundcolor);
     border-bottom: var(--Gray-800) solid .1rem;
-    box-shadow: 0 0 .5rem 0 var(--black-t800);
+    box-shadow: 0 0 .5rem 0 var(--Black-t800);
     z-index: 10;
 }
 
@@ -184,6 +326,10 @@ header.global-header {
     padding-bottom: 1.2rem;
     padding-left: 1.5rem;
     padding-right: 1.5rem;
+}
+
+.global-header__nav__link {
+    height: 100%;
 }
 
 img.global-header-logo {
@@ -209,36 +355,74 @@ img.global-header-logo {
 main {
     flex: 1;
     margin: 1rem 2rem;
-    animation: page-in 0.3s ease-out both;
 }
 
-@keyframes page-in {
+/* ややこしいアニメーションなのでコメントあり by梶原 */
+/* 戻る：新しいページが左から入る */
+@keyframes page-in-back {
     from {
         opacity: 0;
         transform: translateX(-24px);
     }
-
     to {
         opacity: 1;
         transform: translateX(0);
     }
 }
-
-@keyframes page-out {
+/* 戻る：現在のページが右へ出る */
+@keyframes page-out-back {
     from {
         opacity: 1;
         transform: translateX(0);
     }
-
     to {
         opacity: 0;
         transform: translateX(24px);
     }
 }
-
-main.page-leaving {
-    animation: page-out 0.25s ease-in both;
+/* 進む：新しいページが右から入る */
+@keyframes page-in-forward {
+    from {
+        opacity: 0;
+        transform: translateX(24px);
+    }
+    to {
+        opacity: 1;
+        transform: translateX(0);
+    }
 }
+/* 進む：現在のページが左へ出る */
+@keyframes page-out-forward {
+    from {
+        opacity: 1;
+        transform: translateX(0);
+    }
+    to {
+        opacity: 0;
+        transform: translateX(-24px);
+    }
+}
+/* 戻る */
+main.page-back {
+    animation: page-in-back 0.3s ease-out both;
+}
+/* 進む */
+main.page-forward {
+    animation: page-in-forward 0.3s ease-out both;
+}
+/* 戻るときに現在のページを出す */
+main.page-leaving-back {
+    animation: page-out-back 0.25s ease-in both;
+}
+/* 進むときに現在のページを出す */
+main.page-leaving-forward {
+    animation: page-out-forward 0.25s ease-in both;
+}
+/* 通常リンク */
+main.page-leaving {
+    animation: page-out-forward 0.25s ease-in both;
+}
+/* ここまでだよ */
 
 section {
 
@@ -248,22 +432,6 @@ section {
     display: flex;
     align-items: center;
     justify-content: space-between;
-}
-
-.section-heading__link {
-    color: var(--textcolor);
-    font-size: 0.9rem;
-    padding: .5rem 1rem;
-    border: .1rem solid var(--Gray-700);
-    border-radius: .5rem;
-    corner-shape: superellipse(1.4);
-    transition: all .2s;
-}
-
-.section-heading__link:hover {
-    color: var(--Gray-900);
-    background-color: var(--Gray-300);
-    border-color: var(--Gray-300);
 }
 
 section h2.heading {
@@ -289,7 +457,7 @@ section.top-pickup {
     border: .15rem solid var(--Gray-100);
     border-radius: 1.5rem;
     corner-shape: superellipse(1.4);
-    box-shadow: 0 0 1rem 0 var(--black-t950);
+    box-shadow: 0 0 1rem 0 var(--Black-t950);
 }
 
 .top-pickup__images {
@@ -330,7 +498,7 @@ img.thumbnail {
     display: grid;
     padding: .5rem 1rem;
     width: max-content;
-    background-color: var(--white-t900);
+    background-color: var(--White-t900);
     border-radius: .5rem;
     corner-shape: superellipse(1.4);
 }
@@ -364,7 +532,7 @@ a.list__hover-item {
     padding: .5rem 1rem;
     border-radius: .2rem;
     corner-shape: superellipse(1.4);
-    transition: all .2s;
+    transition: all .3s;
 }
 
 a.list__hover-item:hover {
@@ -394,8 +562,8 @@ a.list__hover-item:hover {
 .list__content span.list__date{
     padding: 0 .2rem;
     font-size: .8rem;
-    color: var(--textcolor);
-    transition: all .2s;
+    color: var(--Textcolor);
+    transition: all .3s;
 }
 
 a.list__hover-item:hover .list__content span.list__date {
@@ -404,8 +572,8 @@ a.list__hover-item:hover .list__content span.list__date {
 
 .list__content span.list__title {
     font-size: 1.2rem;
-    color: var(--textcolor);
-    transition: all .2s;
+    color: var(--Textcolor);
+    transition: all .3s;
 }
 
 a.list__hover-item:hover .list__content span.list__title {
@@ -417,7 +585,7 @@ a.list__hover-item:hover .list__content span.list__title {
 }
 
 span.category__element {
-    color: var(--textcolor);
+    color: var(--Textcolor);
     font-size: .8rem;
     font-weight: 600;
     padding: .3rem .8rem;
@@ -426,7 +594,7 @@ span.category__element {
     border: .1rem solid var(--Gray-100);
     border-radius: .5rem;
     corner-shape: superellipse(1.4);
-    transition: all .2s;
+    transition: all .3s;
 }
 
 a.list__hover-item:hover span.category__element {
@@ -434,14 +602,61 @@ a.list__hover-item:hover span.category__element {
     border: .1rem solid var(--Gray-900);
 }
 
+.page_control {
+    position: relative;
+    display: flex;
+    align-items: center;
+    width: 100%;
+    margin: 2rem 0;
+}
+
+.page_control__paginator {
+    position: absolute;
+    left: 50%;
+    transform: translateX(-50%);
+
+    display: flex;
+    align-items: center;
+    gap: .5rem;
+}
+
+.page-control-style-back {
+    margin-right: auto;
+}
+
+.page-control-style-forward {
+    margin-left: auto;
+}
+
+span.active-page {
+    width: 3rem;
+    aspect-ratio: 1 / 1;
+    display: grid;
+    place-items: center;
+    border: .15rem solid var(--Gray-100);
+    color: var(--Gray-100);
+    font-size: 1.2rem;
+    border-radius: 1.5rem;
+}
+
+span.active-page > span {
+    display: inline-block;
+    line-height: 1;
+    transform: translateY(1px);
+}
+
+.page_control__paginator {
+    display: flex;
+    gap: 1.5rem;
+}
 
 
 footer {
     width: 100%;
     padding: 1rem;
-    background-color: var(--backgroundcolor);
+    background-color: var(--Backgroundcolor);
     border-top: var(--Gray-800) solid .1rem;
-    box-shadow: 0 0 1rem 0 var(--black-t400);
+    box-shadow: 0 0 1rem 0 var(--Black-t400);
 }
 
 .footer__logo {

@@ -1,7 +1,7 @@
 {% extends "main/base.html" %}
 {% load static %}
 
-{% block title %}{{ news.title }}｜RBS京都{% endblock %}
+{% block title %}{{ news.title }}｜rbs京都{% endblock %}
 {% block extra_css %}<link rel="stylesheet" href="{% static 'main/css/news.css' %}">{% endblock %}
 {% block content %}
 
@@ -28,15 +28,20 @@
             <img src="{{ news.image.url }}" alt="">
         </div>
     {% endif %}
-    {% if news.caption %}
-    <div class="news-detail__content">
-        <span>{{ news.caption|safe }}</span>
-    </div>
+    {% if news.has_caption %}
+        <div class="news-detail__content">
+            {{ news.caption|safe }}
+        </div>
     {% else %}
-    <div class="news-detail__content">
-        <span>この記事には本文がありません．</span>
-    </div>
+        <div class="news-detail__content">
+            <span>この記事には本文がありません．</span>
+        </div>
     {% endif %}
+    <div class="page_control">
+        <a class="page-control-style-back" href="{% url 'main:news_all' %}">
+            記事一覧へ
+        </a>
+    </div>
 </section>
 
 {% endblock %}
