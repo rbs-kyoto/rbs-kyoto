@@ -1,0 +1,53 @@
+{% extends "main/base.html" %}
+{% load static %}
+
+{% block title %}マイページ｜rbs京都{% endblock %}
+{% block extra_css %}<link rel="stylesheet" href="{% static 'main/css/mypage.css' %}">{% endblock %}
+
+{% block content %}
+
+<section class="mypage-section">
+    <div class="mypage-container">
+        <header class="mypage-header">
+            <h2>マイページ</h2>
+        </header>
+        <section class="mypage-card">
+            <div class="mypage-card__header">
+                <h3>プロフィール</h3>
+            </div>
+            <div class="mypage-info">
+                <div class="mypage-info__item">
+                    <span class="mypage-info__label">表示名</span>
+                    <span class="mypage-info__value">
+                        {{ user.display_name|default:"未設定" }}
+                    </span>
+                </div>
+                <div class="mypage-info__item">
+                    <span class="mypage-info__label">ユーザー名</span>
+                    <span class="mypage-info__value">
+                        {{ user.username }}
+                    </span>
+                </div>
+                <div class="mypage-info__item">
+                    <span class="mypage-info__label">メールアドレス</span>
+                    <span class="mypage-info__value">
+                        {{ user.email|default:"未設定" }}
+                    </span>
+                </div>
+            </div>
+            <div class="mypage-card__footer">
+                <a class="page-control-style-forward" href="{% url 'accounts:profile_edit' %}">編集画面へ</a>
+            </div>
+        </section>
+        <section class="mypage-card">
+            <div class="mypage-card__header">
+                <h3>アカウント</h3>
+            </div>
+            <div class="mypage-actions">
+                <a href="{% url 'accounts:password_change' %}">パスワードを変更</a>
+                <a class="mypage-actions__logout" href="{% url 'accounts:logout' %}">ログアウト</a>
+            </div>
+        </section>
+    </div>
+</section>
+{% endblock %}

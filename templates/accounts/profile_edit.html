@@ -1,0 +1,65 @@
+{% extends "main/base.html" %}
+{% load static %}
+
+{% block title %}プロフィールを編集｜rbs京都{% endblock %}
+{% block extra_css %}<link rel="stylesheet" href="{% static 'main/css/mypage.css' %}">{% endblock %}
+
+{% block content %}
+<section class="mypage-section">
+    <div class="mypage-container">
+
+        <header class="mypage-header">
+            <h2>プロフィールを編集</h2>
+        </header>
+
+        <section class="mypage-card">
+            <form class="account-form" method="post">
+                {% csrf_token %}
+
+                <div class="account-field">
+                    <label for="display_name">表示名</label>
+                    <input
+                        class="common-style"
+                        type="text"
+                        id="display_name"
+                        name="display_name"
+                        value="{{ user.display_name }}"
+                        maxlength="100"
+                    >
+                </div>
+                <div class="account-field">
+                    <label for="username">ユーザー名</label>
+                    <input
+                        class="common-style"
+                        type="text"
+                        id="username"
+                        value="{{ user.username }}"
+                        disabled
+                    >
+                    <span class="account-field__note">
+                        ユーザー名は変更できません。
+                    </span>
+                </div>
+                <div class="account-field">
+                    <label for="email">メールアドレス</label>
+                    <input
+                        class="common-style"
+                        type="email"
+                        id="email"
+                        name="email"
+                        value="{{ user.email }}"
+                    >
+                </div>
+                <div class="account-form__footer">
+                    <a class="page-control-style-back" href="{% url 'accounts:mypage' %}">
+                        マイページへ
+                    </a>
+                    <button class="common-style" type="submit">
+                        保存する
+                    </button>
+                </div>
+            </form>
+        </section>
+    </div>
+</section>
+{% endblock %}

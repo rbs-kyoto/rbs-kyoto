@@ -13,12 +13,20 @@
 <body>
     <header class="global-header">
         <nav class="global-header__nav">
-            <img class="global-header-logo", src="{% static 'main/img/rbs.svg' %}">
+            <a class="global-header__nav__link" href="{% url 'main:index' %}">
+                <img class="global-header-logo", src="{% static 'main/img/rbs.svg' %}">
+            </a>
         </nav>
-        <a class="global-header__login">
+        {% if user.is_authenticated %}
+        <a class="global-header__login" href="{% url 'accounts:mypage' %}">
+            <img src="{% static 'main/img/person.svg' %}">
+            <span>mypage</span> 
+        </a>
+        {% else %}
+        <a class="global-header__login" href="{% url 'accounts:login' %}">
             <img src="{% static 'main/img/login.svg' %}">
             <span>login</span>
-        </a>
+        </a> {% endif %}
     </header>
     <main>
     {% block content %}{% endblock %}

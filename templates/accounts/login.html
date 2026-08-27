@@ -1,0 +1,50 @@
+{% extends "main/base.html" %}
+{% load static %}
+
+{% block title %}ログイン｜rbs京都{% endblock %}
+{% block extra_css %}<link rel="stylesheet" href="{% static 'main/css/login.css' %}">{% endblock %}
+
+{% block content %}
+
+<section class="login-section">
+    <div class="login-container">
+        <div class="login-header">
+            <img class="login-logo" src="{% static 'main/img/rbs.svg' %}" alt="rbs京都">
+            <h2>ログイン</h2>
+            <p>生徒ログインページ</p>
+        </div>
+        <form class="login-form" method="post">
+            {% csrf_token %}
+
+            {% if error %}
+                <div class="login-error">
+                    {{ error }}
+                </div>
+            {% endif %}
+            <div class="login-field">
+                <label for="username">ユーザー名</label>
+                <input
+                    type="text"
+                    id="username"
+                    name="username"
+                    autocomplete="username"
+                    required
+                >
+            </div>
+            <div class="login-field">
+                <label for="password">パスワード</label>
+                <input
+                    type="password"
+                    id="password"
+                    name="password"
+                    autocomplete="current-password"
+                    required
+                >
+            </div>
+            <button class="page-control-style-forward login-submit" type="submit">
+                ログイン
+            </button>
+        </form>
+    </div>
+</section>
+{% endblock %}
