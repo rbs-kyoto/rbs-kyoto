@@ -1,0 +1,82 @@
+{% extends "main/base.html" %}
+{% load static %}
+
+{% block title %}{% if news %}記事を編集{% else %}記事を作成{% endif %}｜rbs京都{% endblock %}
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'main/css/form.css' %}">
+{{ form.media }}
+{% endblock %}
+
+{% block content %}
+
+<section class="site-form-section">
+    <h2 class="heading">
+        {% if news %}記事を編集{% else %}記事を作成{% endif %}
+    </h2>
+
+    <form class="site-form" method="post" enctype="multipart/form-data">
+        {% csrf_token %}
+
+        <div class="site-form__field">
+            <label for="{{ form.title.id_for_label }}">タイトル</label>
+            {{ form.title }}
+            {% if form.title.errors %}<span class="site-form__errors">{{ form.title.errors|join:" " }}</span>{% endif %}
+        </div>
+
+        <div class="site-form__row">
+            <div class="site-form__field">
+                <label for="{{ form.date.id_for_label }}">日付</label>
+                {{ form.date }}
+                {% if form.date.errors %}<span class="site-form__errors">{{ form.date.errors|join:" " }}</span>{% endif %}
+            </div>
+
+            <div class="site-form__field">
+                <label for="{{ form.category.id_for_label }}">カテゴリ</label>
+                {{ form.category }}
+                {% if form.category.errors %}<span class="site-form__errors">{{ form.category.errors|join:" " }}</span>{% endif %}
+            </div>
+        </div>
+
+        <div class="site-form__field">
+            <label for="{{ form.image.id_for_label }}">画像</label>
+            {% if news.image %}
+            <img class="thumbnail" src="{{ news.image.url }}" alt="" style="max-width: 200px;">
+            {% endif %}
+            {{ form.image }}
+            {% if form.image.errors %}<span class="site-form__errors">{{ form.image.errors|join:" " }}</span>{% endif %}
+        </div>
+
+        <div class="site-form__field">
+            <label for="{{ form.caption.id_for_label }}">本文</label>
+            {{ form.caption }}
+            {% if form.caption.errors %}<span class="site-form__errors">{{ form.caption.errors|join:" " }}</span>{% endif %}
+        </div>
+
+        <div class="site-form__row">
+            <div class="site-form__field site-form__field--checkbox">
+                <label for="{{ form.is_active.id_for_label }}">
+                    {{ form.is_active }}
+                    公開する
+                </label>
+            </div>
+
+            <div class="site-form__field site-form__field--checkbox">
+                <label for="{{ form.is_internal.id_for_label }}">
+                    {{ form.is_internal }}
+                    部内限定にする
+                </label>
+            </div>
+        </div>
+
+        <div class="site-form__footer">
+            <button class="common-style" type="submit">保存</button>
+            {% if news %}
+            <a class="common-style" href="{% url 'main:news_detail' news.pk %}">キャンセル</a>
+            {% else %}
+            <a class="common-style" href="{% url 'main:news_all' %}">キャンセル</a>
+            {% endif %}
+        </div>
+    </form>
+</section>
+
+{% endblock %}

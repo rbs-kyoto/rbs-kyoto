@@ -22,6 +22,11 @@
                 {{ news.title }}
             </h1>
         </div>
+        {% if user.is_staff %}
+        <a class="news-detail__edit-link" href="{% url 'main:news_edit' news.pk %}">
+            編集する
+        </a>
+        {% endif %}
     </div>
     {% if news.image %}
         <div class="news-detail__image">
