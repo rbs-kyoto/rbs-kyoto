@@ -864,6 +864,14 @@ footer {
         padding-right: .5rem;
     }
 
+    .page-control-style-back::after {
+        mask: url("../img/back.png") no-repeat left top / contain;
+    }
+
+    .page-control-style-forward::after {
+        mask: url("../img/forward.png") no-repeat left top / contain;
+    }
+
     .page-control-style-forward {
         padding-top: .2rem;
         padding-bottom: .4rem;
