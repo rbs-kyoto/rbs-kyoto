@@ -20,7 +20,7 @@ def sanitize_existing_captions(apps, schema_editor):
 class Migration(migrations.Migration):
 
     dependencies = [
-        ("main", "0010_finalize_news_category"),
+        ("main", "0011_pickup_caption"),
     ]
 
     operations = [
