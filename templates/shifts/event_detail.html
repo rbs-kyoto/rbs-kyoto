@@ -10,9 +10,16 @@
     <div class="shift-detail__header">
         <h1 class="shift-detail__title">{{ event.title }}</h1>
         <span class="shift-detail__date">{{ event.date|date:"Y.m.d" }}</span>
-        <button type="button" class="common-style shift-detail__print-btn" onclick="window.print()">
-            印刷する
-        </button>
+        <div class="shift-detail__actions">
+            {% if user.is_staff %}
+            <a class="common-style" href="{% url 'shifts:event_assign' event.pk %}">
+                割り当てを編集
+            </a>
+            {% endif %}
+            <button type="button" class="common-style" onclick="window.print()">
+                印刷する
+            </button>
+        </div>
     </div>
 
     <div class="shift-table">

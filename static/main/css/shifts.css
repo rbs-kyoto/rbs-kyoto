@@ -32,10 +32,93 @@
     font-size: .85rem;
 }
 
-.shift-detail__print-btn {
+.shift-detail__actions {
     position: absolute;
     top: 0;
     right: 0;
+    display: flex;
+    gap: .75rem;
+}
+
+.shift-assign-section {
+    width: min(100%, 900px);
+    margin: 0 auto;
+    padding: 2rem 1rem;
+}
+
+.shift-assign__programs {
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+    margin-top: 2rem;
+}
+
+.shift-assign__program {
+    border: .1rem solid var(--Gray-800);
+    border-radius: 1rem;
+    corner-shape: superellipse(1.4);
+    padding: 1.25rem 1.5rem;
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+}
+
+.shift-assign__program-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.shift-assign__program-header h3 {
+    margin: 0;
+    font-size: 1.1rem;
+    font-weight: 600;
+}
+
+.shift-assign__assignment-list {
+    display: flex;
+    flex-direction: column;
+    gap: .6rem;
+}
+
+.shift-assign__assignment-list li {
+    display: flex;
+    align-items: center;
+    gap: .75rem;
+}
+
+.shift-assign__remove-link {
+    color: var(--Red-300);
+    font-size: .8rem;
+    text-decoration: underline;
+    transition: opacity .3s;
+}
+
+.shift-assign__remove-link:hover {
+    opacity: .7;
+}
+
+.shift-assign__add-form {
+    display: flex;
+    flex-wrap: wrap;
+    gap: .75rem;
+    padding-top: .75rem;
+    border-top: .1rem solid var(--Gray-800);
+}
+
+.shift-assign__add-form select {
+    flex: 1;
+    min-width: 8rem;
+}
+
+.shift-assign__add-program {
+    display: flex;
+    gap: .75rem;
+    margin-top: 1.5rem;
+}
+
+.shift-assign__add-program input {
+    flex: 1;
 }
 
 .shift-table {
@@ -110,7 +193,7 @@
     header.global-header,
     footer,
     .page_control,
-    .shift-detail__print-btn {
+    .shift-detail__actions {
         display: none !important;
     }
 

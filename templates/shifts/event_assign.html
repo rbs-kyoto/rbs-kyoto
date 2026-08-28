@@ -1,0 +1,84 @@
+{% extends "main/base.html" %}
+{% load static %}
+
+{% block title %}{{ event.title }}の割り当てを編集｜シフト｜rbs京都{% endblock %}
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'main/css/shifts.css' %}">
+<link rel="stylesheet" href="{% static 'main/css/form.css' %}">
+{% endblock %}
+
+{% block content %}
+
+<section class="shift-assign-section">
+    <div class="shift-detail__header">
+        <h1 class="shift-detail__title">{{ event.title }} の割り当てを編集</h1>
+        <span class="shift-detail__date">{{ event.date|date:"Y.m.d" }}</span>
+    </div>
+
+    <div class="shift-assign__programs">
+        {% for program in programs %}
+        <div class="shift-assign__program">
+            <div class="shift-assign__program-header">
+                <h3>{{ program.name }}</h3>
+                <form method="post" action="{% url 'shifts:program_delete' program.pk %}" onsubmit="return confirm('この種目を削除しますか？割り当ても一緒に消えます。');">
+                    {% csrf_token %}
+                    <button type="submit" class="shift-assign__remove-link">種目を削除</button>
+                </form>
+            </div>
+
+            <ul class="shift-assign__assignment-list">
+                {% for assignment in program.assignments.all %}
+                <li>
+                    <span class="shift-table__role">{{ assignment.role.name }}</span>
+                    <span class="shift-table__member">{{ assignment.member.display_name|default:assignment.member.username }}</span>
+                    <form method="post" action="{% url 'shifts:assignment_delete' assignment.pk %}">
+                        {% csrf_token %}
+                        <button type="submit" class="shift-assign__remove-link">外す</button>
+                    </form>
+                </li>
+                {% empty %}
+                <li class="shift-table__empty">未割り当て</li>
+                {% endfor %}
+            </ul>
+
+            <form method="post" class="shift-assign__add-form">
+                {% csrf_token %}
+                <input type="hidden" name="program" value="{{ program.pk }}">
+                <select name="role" class="site-form__input" required>
+                    <option value="">役割を選択</option>
+                    {% for role in roles %}
+                    <option value="{{ role.pk }}">{{ role.name }}</option>
+                    {% endfor %}
+                </select>
+                <select name="member" class="site-form__input" required>
+                    <option value="">担当者を選択</option>
+                    {% for member in members %}
+                    <option value="{{ member.pk }}">{{ member.display_name|default:member.username }}</option>
+                    {% endfor %}
+                </select>
+                <button type="submit" name="add_assignment" value="1" class="common-style">
+                    追加
+                </button>
+            </form>
+        </div>
+        {% empty %}
+        <p class="shift-table__empty">種目はまだありません。下から追加してください。</p>
+        {% endfor %}
+    </div>
+
+    <form method="post" class="shift-assign__add-program">
+        {% csrf_token %}
+        <input type="text" name="name" class="site-form__input" placeholder="新しい種目名（例：閉会式）" required>
+        <button type="submit" name="add_program" value="1" class="common-style">
+            種目を追加
+        </button>
+    </form>
+
+    <div class="page_control">
+        <a class="page-control-style-back" href="{% url 'shifts:event_detail' event.pk %}">
+            全体表へ戻る
+        </a>
+    </div>
+</section>
+
+{% endblock %}
