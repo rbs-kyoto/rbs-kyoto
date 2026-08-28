@@ -54,7 +54,7 @@
     flex-direction: column;
     gap: 1rem;
     padding: 2rem 1rem;
-    border-bottom: .15rem solid var(--Gray-400);
+    border-bottom: .15rem solid var(--Gray-700);
 }
 
 .login-field {
@@ -136,6 +136,12 @@ button.login-submit {
 
     .login-form {
         gap: 2rem;
+    }
+
+    .login-logo {
+        width: 120px;
+        height: auto;
+        transform: translateY(-9px);
     }
 
     .login_with_google img {

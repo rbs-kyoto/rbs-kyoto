@@ -228,6 +228,13 @@ button.common-style {
     transition: all .3s;
 }
 
+a.common-style.reverse,
+button.common-style.reverse {
+    color: var(--Gray-900);
+    background-color: var(--Gray-300);
+    border-color: var(--Gray-300);
+}
+
 a.common-style:hover,
 button.common-style:hover {
     color: var(--Gray-900);
