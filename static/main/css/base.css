@@ -835,6 +835,10 @@ footer {
         margin: .5rem 1rem;
     }
 
+    ul.list {
+        padding: .5rem;
+    }
+
     .top-pickup__slide {
         border-radius: 1rem;
     }
