@@ -129,18 +129,10 @@ SOCIALACCOUNT_ADAPTER = "accounts.adapters.RakunanSocialAccountAdapter"
 
 SOCIALACCOUNT_PROVIDERS = {
     "google": {
-        "APP": {
-            "client_id": os.getenv("GOOGLE_CLIENT_ID"),
-            "secret": os.getenv("GOOGLE_CLIENT_SECRET"),
-            "key": "",
-        },
         "SCOPE": [
             "profile",
             "email",
         ],
-        "AUTH_PARAMS": {
-            "access_type": "online",
-        },
     },
 }
 
@@ -201,3 +193,6 @@ CSRF_TRUSTED_ORIGINS = [
     for origin in os.getenv("CSRF_TRUSTED_ORIGINS", "").split(",")
     if origin.strip()
 ]
+
+SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
+USE_X_FORWARDED_HOST = True
