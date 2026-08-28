@@ -2,6 +2,8 @@ from django.db import models
 from django_ckeditor_5.fields import CKEditor5Field
 from django.utils.html import strip_tags
 
+from .sanitizers import sanitize_richtext
+
 class Pickup(models.Model):
     title = models.CharField("タイトル", max_length=100)
     caption = models.CharField("キャッチコピー", max_length=100, blank=True)
@@ -53,6 +55,13 @@ class News(models.Model):
 
     def __str__(self):
         return self.title
+
+    def save(self, *args, **kwargs):
+        # 本文は news_detail.html で |safe を通すため、保存の時点で許可リストに
+        # 落としておく。管理画面・サイト側フォーム・shell のどれを経由しても
+        # 必ずここを通る。
+        self.caption = sanitize_richtext(self.caption)
+        super().save(*args, **kwargs)
 
     @property
     def has_caption(self):
