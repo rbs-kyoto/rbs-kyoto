@@ -1,0 +1,139 @@
+.shift-list-section {
+    padding: 1rem;
+}
+
+.shift-list__draft-badge {
+    color: var(--Red-300) !important;
+    border-color: var(--Red-300) !important;
+}
+
+.shift-detail-section {
+    width: min(100%, 900px);
+    margin: 0 auto;
+    padding: 2rem 1rem;
+}
+
+.shift-detail__header {
+    position: relative;
+    margin-bottom: 2rem;
+    padding-bottom: 1.5rem;
+    padding-right: 8rem;
+    border-bottom: var(--Gray-800) solid .1rem;
+}
+
+.shift-detail__title {
+    margin: 0 0 .5rem;
+    font-size: 1.8rem;
+    font-weight: 600;
+}
+
+.shift-detail__date {
+    color: var(--Gray-500);
+    font-size: .85rem;
+}
+
+.shift-detail__print-btn {
+    position: absolute;
+    top: 0;
+    right: 0;
+}
+
+.shift-table {
+    overflow-x: auto;
+    border: .1rem solid var(--Gray-800);
+    border-radius: 1rem;
+    corner-shape: superellipse(1.4);
+}
+
+.shift-table table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+.shift-table th,
+.shift-table td {
+    padding: 1rem 1.25rem;
+    text-align: left;
+    border-bottom: .1rem solid var(--Gray-800);
+    vertical-align: top;
+}
+
+.shift-table tr:last-child td {
+    border-bottom: none;
+}
+
+.shift-table th {
+    color: var(--Gray-500);
+    font-size: .8rem;
+    font-weight: 600;
+}
+
+.shift-table__program-col {
+    width: 12rem;
+    font-weight: 600;
+}
+
+.shift-table__assignments {
+    display: flex;
+    flex-direction: column;
+    gap: .4rem;
+}
+
+.shift-table__assignments li {
+    display: flex;
+    align-items: center;
+    gap: .6rem;
+}
+
+.shift-table__role {
+    display: inline-block;
+    padding: .15rem .6rem;
+    font-size: .78rem;
+    font-weight: 600;
+    color: var(--Gray-100);
+    border: .1rem solid var(--Gray-600);
+    border-radius: .4rem;
+    corner-shape: superellipse(1.4);
+    white-space: nowrap;
+}
+
+.shift-table__member {
+    font-size: .95rem;
+}
+
+.shift-table__empty {
+    color: var(--Gray-600);
+    font-size: .9rem;
+}
+
+@media print {
+    header.global-header,
+    footer,
+    .page_control,
+    .shift-detail__print-btn {
+        display: none !important;
+    }
+
+    body {
+        background: #fff;
+        color: #111;
+    }
+
+    .shift-table {
+        border-color: #ccc;
+    }
+
+    .shift-table th,
+    .shift-table td {
+        border-color: #ccc;
+    }
+
+    .shift-detail__header {
+        border-color: #ccc;
+    }
+
+    .shift-table__role {
+        border-color: #999;
+        color: #111;
+    }
+}
