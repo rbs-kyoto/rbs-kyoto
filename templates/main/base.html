@@ -5,6 +5,10 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{% block title %}{% endblock %}</title>
+    <meta
+        name="description"
+        content="{% block description %}{% endblock %}"
+    >
     <link rel="stylesheet" href="{% static 'main/css/base.css' %}">
     {% block extra_css %}{% endblock %}
     <script src="{% static 'main/js/base.js' %}"></script>
