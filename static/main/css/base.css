@@ -311,6 +311,9 @@ ul {
 
 img {
     pointer-events: none;
+    transform: translateZ(0);
+    will-change: transform;
+    image-rendering: -webkit-optimize-contrast;
 }
 
 input[type="text"],
@@ -815,8 +818,10 @@ footer {
     }
 
     span.category__element {
-        padding-left: .5rem;
-        padding-right: .5rem;
+        padding-top: .2rem;
+        padding-bottom: .2rem;
+        padding-left: .8rem;
+        padding-right: .8rem;
     }
 }
 
@@ -836,7 +841,7 @@ footer {
     }
 
     ul.list {
-        padding: .5rem;
+        padding: .2rem;
     }
 
     .top-pickup__slide {
@@ -896,8 +901,10 @@ footer {
     }
 
     span.category__element {
-        padding-left: .5rem;
-        padding-right: .5rem;
+        padding-top: .2rem;
+        padding-bottom: .2rem;
+        padding-left: .7rem;
+        padding-right: .7rem;
     }
 
     .list__content span.list__title {
