@@ -18,6 +18,27 @@ def event_list(request):
 
 
 @login_required
+@staff_required
+def event_create(request):
+    if request.method == "POST":
+        title = request.POST.get("title", "").strip()
+        date = request.POST.get("date", "").strip()
+        is_active = bool(request.POST.get("is_active"))
+
+        if title and date:
+            event = Event.objects.create(title=title, date=date, is_active=is_active)
+            return redirect("shifts:event_assign", pk=event.pk)
+
+        return render(
+            request,
+            "shifts/event_form.html",
+            {"error": "イベント名と日付を入力してください。", "title": title, "date": date, "is_active": is_active},
+        )
+
+    return render(request, "shifts/event_form.html", {"is_active": True})
+
+
+@login_required
 def event_detail(request, pk):
     event = get_object_or_404(Event, pk=pk)
     if not event.is_active and not request.user.is_staff:
