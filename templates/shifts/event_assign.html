@@ -81,6 +81,9 @@
             部員を名簿に追加
         </button>
     </form>
+    <p class="shift-assign__roster-link">
+        まとめて登録したい場合は<a href="{% url 'shifts:roster_import' %}">名簿をCSVで一括登録</a>できます。
+    </p>
 
     <div class="page_control">
         <a class="page-control-style-back" href="{% url 'shifts:event_detail' event.pk %}">

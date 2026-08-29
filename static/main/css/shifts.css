@@ -2,6 +2,44 @@
     padding: 1rem;
 }
 
+.shift-assign__roster-link {
+    margin-top: .75rem;
+    font-size: .8rem;
+    color: var(--Gray-500);
+}
+
+.shift-assign__roster-link a {
+    text-decoration: underline;
+}
+
+.roster-import__note {
+    color: var(--Gray-500);
+    font-size: .85rem;
+    line-height: 1.8;
+    margin: 1rem 0;
+}
+
+.roster-import__sample {
+    margin: 0 0 1.5rem;
+    padding: 1rem 1.25rem;
+    background-color: var(--Black-t400);
+    border-radius: .5rem;
+    corner-shape: superellipse(1.4);
+    font-family: monospace;
+    font-size: .85rem;
+    color: var(--Gray-100);
+    overflow-x: auto;
+}
+
+.roster-import__result {
+    margin-bottom: 1.5rem;
+    padding: .85rem 1.1rem;
+    border: .1rem solid var(--Gray-600);
+    border-radius: .6rem;
+    corner-shape: superellipse(1.4);
+    font-size: .9rem;
+}
+
 .shift-list__heading-links {
     display: flex;
     gap: .75rem;

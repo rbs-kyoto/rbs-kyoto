@@ -1,8 +1,70 @@
+import csv
+import io
+
+from django.contrib.auth import get_user_model
 from django.contrib.auth.decorators import login_required
 from django.http import Http404
 from django.shortcuts import get_object_or_404, redirect, render
 from accounts.decorators import staff_required
 from .models import Event, Program, Role, Member, Assignment
+
+User = get_user_model()
+
+# Excelで保存したCSVはShift-JIS(cp932)になりがちなので、UTF-8を試してから
+# フォールバックする。
+CSV_ENCODINGS = ("utf-8-sig", "cp932")
+
+# ヘッダーの表記ゆれを吸収するための別名。
+NAME_HEADER_ALIASES = {"氏名", "name", "名前"}
+USERNAME_HEADER_ALIASES = {"ユーザー名", "username", "アカウント"}
+
+
+def _decode_csv(uploaded_file):
+    raw = uploaded_file.read()
+    for encoding in CSV_ENCODINGS:
+        try:
+            return raw.decode(encoding)
+        except UnicodeDecodeError:
+            continue
+    return None
+
+
+def _parse_roster_rows(text):
+    """(name, username_or_None) のリストを返す。
+
+    ヘッダー行の有無・列名の表記ゆれ・ヘッダー無し(1列目=氏名)のどちらにも対応する。
+    """
+    reader = list(csv.reader(io.StringIO(text)))
+    rows = [row for row in reader if any(cell.strip() for cell in row)]
+    if not rows:
+        return []
+
+    header = [cell.strip() for cell in rows[0]]
+    name_col = next((i for i, h in enumerate(header) if h in NAME_HEADER_ALIASES), None)
+
+    if name_col is not None:
+        username_col = next(
+            (i for i, h in enumerate(header) if h in USERNAME_HEADER_ALIASES), None
+        )
+        data_rows = rows[1:]
+    else:
+        # ヘッダー行が無い＝1列目がそのまま氏名。
+        name_col, username_col = 0, None
+        data_rows = rows
+
+    parsed = []
+    for row in data_rows:
+        if name_col >= len(row):
+            continue
+        name = row[name_col].strip()
+        if not name:
+            continue
+        username = None
+        if username_col is not None and username_col < len(row):
+            username = row[username_col].strip() or None
+        parsed.append((name, username))
+
+    return parsed
 
 
 @login_required
@@ -106,6 +168,56 @@ def program_delete(request, pk):
         program.delete()
 
     return redirect("shifts:event_assign", pk=event_pk)
+
+
+@login_required
+@staff_required
+def roster(request):
+    if request.method == "POST":
+        name = request.POST.get("name", "").strip()
+        if name:
+            Member.objects.create(name=name)
+        return redirect("shifts:roster")
+
+    members = Member.objects.select_related("user").order_by("name")
+    return render(request, "shifts/roster.html", {"members": members})
+
+
+@login_required
+@staff_required
+def roster_import(request):
+    result = None
+
+    if request.method == "POST":
+        csv_file = request.FILES.get("csv_file")
+
+        if not csv_file:
+            result = {"error": "CSVファイルを選択してください。"}
+        else:
+            text = _decode_csv(csv_file)
+            if text is None:
+                result = {"error": "文字コードを判別できませんでした。UTF-8またはShift-JISで保存し直してください。"}
+            else:
+                rows = _parse_roster_rows(text)
+                if not rows:
+                    result = {"error": "読み込める行がありませんでした。1列目に氏名を入れてください。"}
+                else:
+                    created = linked = skipped = 0
+                    for name, username in rows:
+                        member, was_created = Member.objects.get_or_create(name=name)
+                        created += int(was_created)
+                        skipped += int(not was_created)
+
+                        if username and not member.user_id:
+                            user = User.objects.filter(username=username).first()
+                            if user and not Member.objects.filter(user=user).exclude(pk=member.pk).exists():
+                                member.user = user
+                                member.save(update_fields=["user"])
+                                linked += 1
+
+                    result = {"created": created, "skipped": skipped, "linked": linked, "total": len(rows)}
+
+    return render(request, "shifts/roster_import.html", {"result": result})
 
 
 @login_required
