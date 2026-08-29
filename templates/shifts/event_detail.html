@@ -40,7 +40,7 @@
                             {% for assignment in program.assignments.all %}
                             <li>
                                 <span class="shift-table__role">{{ assignment.role.name }}</span>
-                                <span class="shift-table__member">{{ assignment.member.display_name|default:assignment.member.username }}</span>
+                                <span class="shift-table__member">{{ assignment.member.name }}</span>
                             </li>
                             {% endfor %}
                         </ul>

@@ -1,5 +1,5 @@
 from django.contrib import admin
-from .models import Role, Event, Program, Assignment
+from .models import Role, Member, Event, Program, Assignment
 
 
 @admin.register(Role)
@@ -7,6 +7,14 @@ class RoleAdmin(admin.ModelAdmin):
     list_display = ("name", "order")
     list_editable = ("order",)
     ordering = ("order", "name")
+
+
+@admin.register(Member)
+class MemberAdmin(admin.ModelAdmin):
+    list_display = ("name", "user")
+    search_fields = ("name",)
+    autocomplete_fields = ["user"]
+    ordering = ("name",)
 
 
 class ProgramInline(admin.TabularInline):

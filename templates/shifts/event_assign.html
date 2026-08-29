@@ -30,7 +30,7 @@
                 {% for assignment in program.assignments.all %}
                 <li>
                     <span class="shift-table__role">{{ assignment.role.name }}</span>
-                    <span class="shift-table__member">{{ assignment.member.display_name|default:assignment.member.username }}</span>
+                    <span class="shift-table__member">{{ assignment.member.name }}</span>
                     <form method="post" action="{% url 'shifts:assignment_delete' assignment.pk %}">
                         {% csrf_token %}
                         <button type="submit" class="shift-assign__remove-link">外す</button>
@@ -53,7 +53,7 @@
                 <select name="member" class="site-form__input" required>
                     <option value="">担当者を選択</option>
                     {% for member in members %}
-                    <option value="{{ member.pk }}">{{ member.display_name|default:member.username }}</option>
+                    <option value="{{ member.pk }}">{{ member.name }}{% if not member.user %}（未登録）{% endif %}</option>
                     {% endfor %}
                 </select>
                 <button type="submit" name="add_assignment" value="1" class="common-style">
@@ -71,6 +71,14 @@
         <input type="text" name="name" class="site-form__input" placeholder="新しい種目名（例：閉会式）" required>
         <button type="submit" name="add_program" value="1" class="common-style">
             種目を追加
+        </button>
+    </form>
+
+    <form method="post" class="shift-assign__add-program">
+        {% csrf_token %}
+        <input type="text" name="member_name" class="site-form__input" placeholder="新しい部員名（ログインアカウント未登録でもOK）" required>
+        <button type="submit" name="add_member" value="1" class="common-style">
+            部員を名簿に追加
         </button>
     </form>
 

@@ -15,6 +15,33 @@ class Role(models.Model):
         return self.name
 
 
+class Member(models.Model):
+    """割り当て先の部員名簿。
+
+    ログインアカウント（accounts.User）の登録が間に合わない場合でも、
+    名前だけで割り当てを進められるようにするための存在。アカウントが
+    できたら`user`を紐付ければ「自分の担当」ページが使えるようになる。
+    """
+
+    name = models.CharField("氏名", max_length=50)
+    user = models.OneToOneField(
+        settings.AUTH_USER_MODEL,
+        verbose_name="ログインアカウント",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="shift_member",
+    )
+
+    class Meta:
+        ordering = ["name"]
+        verbose_name = "部員"
+        verbose_name_plural = "部員名簿"
+
+    def __str__(self):
+        return self.name
+
+
 class Event(models.Model):
     title = models.CharField("イベント名", max_length=100)
     date = models.DateField("日付")
@@ -53,10 +80,10 @@ class Assignment(models.Model):
         Role, verbose_name="役割", on_delete=models.PROTECT, related_name="assignments"
     )
     member = models.ForeignKey(
-        settings.AUTH_USER_MODEL,
+        Member,
         verbose_name="担当者",
-        on_delete=models.CASCADE,
-        related_name="shift_assignments",
+        on_delete=models.PROTECT,
+        related_name="assignments",
     )
 
     class Meta:
