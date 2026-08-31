@@ -67,6 +67,14 @@
 
 @media (max-width: 480px) {
 
+    .body {
+        font-weight: 500;
+    }
+
+    p {
+        font-weight: 500;
+    }
+
     .news-detail__header__info {
         margin-top: 1rem;
         width: 100%;
