@@ -9,10 +9,13 @@
     <div class="top-pickup__slide">
         <div class="top-pickup__images">
             {% for pickup in pickups %}
-            <a class="top-pickup__image" href="{{ pickup.url }}" data-text="{{ pickup.title }}">
+            <a class="top-pickup__image" href="{{ pickup.url }}" data-text="{{ pickup.title }}" data-caption="{{ pickup.caption }}">
                 <img class="thumbnail" src="{{ pickup.image.url }}" alt="{{ pickup.title }}">
             </a>
             {% endfor %}
+        </div>
+        <div class="top-pickup__caption">
+            <span></span>
         </div>
         <div class="top-pickup__bnr">
             <span class="low"></span>

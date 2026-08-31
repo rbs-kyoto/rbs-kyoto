@@ -17,6 +17,7 @@ hyperlink==21.0.0
 idna==3.19
 Incremental==24.11.0
 msgpack==1.2.1
+nh3==0.3.7
 packaging==26.3
 pillow==12.3.0
 pycparser==3.0
