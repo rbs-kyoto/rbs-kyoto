@@ -1,0 +1,68 @@
+{% extends "main/base.html" %}
+{% load static %}
+
+{% block title %}{{ event.title }}｜シフト｜rbs京都{% endblock %}
+{% block extra_css %}<link rel="stylesheet" href="{% static 'main/css/shifts.css' %}">{% endblock %}
+
+{% block content %}
+
+<section class="shift-detail-section no-print-hide">
+    <div class="shift-detail__header">
+        <h1 class="shift-detail__title">{{ event.title }}</h1>
+        <span class="shift-detail__date">{{ event.date|date:"Y.m.d" }}</span>
+        <div class="shift-detail__actions">
+            <a class="common-style" href="{% url 'shifts:event_detail' event.pk %}">
+                リスト表示
+            </a>
+            {% if user.is_staff %}
+            <a class="common-style" href="{% url 'shifts:event_assign_grid' event.pk %}">
+                グリッドで編集
+            </a>
+            {% endif %}
+            <button type="button" class="common-style" onclick="window.print()">
+                印刷する
+            </button>
+        </div>
+    </div>
+
+    <div class="shift-table shift-grid">
+        <table>
+            <thead>
+                <tr>
+                    <th class="shift-table__program-col">種目</th>
+                    {% for role in roles %}
+                    <th>{{ role.name }}</th>
+                    {% endfor %}
+                </tr>
+            </thead>
+            <tbody>
+                {% for row in grid_rows %}
+                <tr>
+                    <td class="shift-table__program-col">{{ row.program.name }}</td>
+                    {% for assignment in row.cells %}
+                    <td>
+                        {% if assignment %}
+                            {{ assignment.member.name }}
+                        {% else %}
+                            <span class="shift-table__empty">―</span>
+                        {% endif %}
+                    </td>
+                    {% endfor %}
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="{{ roles|length|add:1 }}" class="shift-table__empty">種目はまだ登録されていません。</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    <div class="page_control">
+        <a class="page-control-style-back" href="{% url 'shifts:event_list' %}">
+            イベント一覧へ
+        </a>
+    </div>
+</section>
+
+{% endblock %}

@@ -11,6 +11,9 @@
         <h1 class="shift-detail__title">{{ event.title }}</h1>
         <span class="shift-detail__date">{{ event.date|date:"Y.m.d" }}</span>
         <div class="shift-detail__actions">
+            <a class="common-style" href="{% url 'shifts:event_detail_grid' event.pk %}">
+                グリッド表示
+            </a>
             {% if user.is_staff %}
             <a class="common-style" href="{% url 'shifts:event_assign' event.pk %}">
                 割り当てを編集

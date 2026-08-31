@@ -13,6 +13,11 @@
     <div class="shift-detail__header">
         <h1 class="shift-detail__title">{{ event.title }} の割り当てを編集</h1>
         <span class="shift-detail__date">{{ event.date|date:"Y.m.d" }}</span>
+        <div class="shift-detail__actions">
+            <a class="common-style" href="{% url 'shifts:event_assign_grid' event.pk %}">
+                グリッドで編集
+            </a>
+        </div>
     </div>
 
     <div class="shift-assign__programs">
