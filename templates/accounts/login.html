@@ -6,6 +6,7 @@
 {% block extra_css %}<link rel="stylesheet" href="{% static 'main/css/login.css' %}">{% endblock %}
 
 {% block content %}
+{% get_providers as socialaccount_providers %}
 
 <section class="login-section">
     <div class="login-container">
@@ -57,10 +58,14 @@
                     ログイン
                 </button>
             </div>
+            {% for provider in socialaccount_providers %}
+            {% if provider.id == "google" %}
             <a class="common-style login_with_google Google-font" href="{% provider_login_url 'google' %}">
                 <img class="login_with_google-logo" src="{% static 'main/img/Google.svg' %}" alt="Google">
                 Googleでログイン
             </a>
+            {% endif %}
+            {% endfor %}
         </form>
     </div>
 </section>
