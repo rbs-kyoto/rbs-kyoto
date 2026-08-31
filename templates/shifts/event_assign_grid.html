@@ -1,0 +1,82 @@
+{% extends "main/base.html" %}
+{% load static %}
+
+{% block title %}{{ event.title }}の割り当てを編集（グリッド）｜シフト｜rbs京都{% endblock %}
+{% block extra_css %}<link rel="stylesheet" href="{% static 'main/css/shifts.css' %}">{% endblock %}
+
+{% block content %}
+
+<section class="shift-detail-section">
+    <div class="shift-detail__header">
+        <h1 class="shift-detail__title">{{ event.title }} の割り当てを編集</h1>
+        <span class="shift-detail__date">{{ event.date|date:"Y.m.d" }}</span>
+        <div class="shift-detail__actions">
+            <a class="common-style" href="{% url 'shifts:event_assign' event.pk %}">
+                リストで編集
+            </a>
+        </div>
+    </div>
+
+    <p class="shift-grid__note">
+        1つの種目・役割につき1人までです。複数人を割り当てたい場合は「リストで編集」から追加してください
+        （このグリッドでは1人目しか表示・編集できません）。
+    </p>
+
+    {% if roles and grid_rows %}
+    <form method="post">
+        {% csrf_token %}
+        <div class="shift-table shift-grid">
+            <table>
+                <thead>
+                    <tr>
+                        <th class="shift-table__program-col">種目</th>
+                        {% for role in roles %}
+                        <th>{{ role.name }}</th>
+                        {% endfor %}
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for row in grid_rows %}
+                    <tr>
+                        <td class="shift-table__program-col">{{ row.program.name }}</td>
+                        {% for cell in row.cells %}
+                        <td>
+                            {% if cell.is_multi %}
+                            <span class="shift-table__empty">複数人（リストで編集）</span>
+                            {% else %}
+                            <select name="cell_{{ row.program.pk }}_{{ cell.role.pk }}" class="shift-grid__select">
+                                <option value="">―</option>
+                                {% for member in members %}
+                                <option value="{{ member.pk }}" {% if cell.assignment.member_id == member.pk %}selected{% endif %}>
+                                    {{ member.display_name|default:member.username }}
+                                </option>
+                                {% endfor %}
+                            </select>
+                            {% endif %}
+                        </td>
+                        {% endfor %}
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+
+        <div class="site-form__footer shift-grid__footer">
+            <a class="common-style" href="{% url 'shifts:event_assign' event.pk %}">キャンセル</a>
+            <button class="common-style" type="submit">保存</button>
+        </div>
+    </form>
+    {% else %}
+    <p class="shift-table__empty">
+        グリッドで編集するには、先に種目と役割を登録してください（「リストで編集」から追加できます）。
+    </p>
+    {% endif %}
+
+    <div class="page_control">
+        <a class="page-control-style-back" href="{% url 'shifts:event_detail_grid' event.pk %}">
+            グリッド表示へ戻る
+        </a>
+    </div>
+</section>
+
+{% endblock %}
