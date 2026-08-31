@@ -54,6 +54,29 @@ def event_detail(request, pk):
 
 
 @login_required
+def event_detail_grid(request, pk):
+    event = get_object_or_404(Event, pk=pk)
+    if not event.is_active and not request.user.is_staff:
+        raise Http404
+
+    programs = list(event.programs.all())
+    roles = list(Role.objects.all())
+    assignments = Assignment.objects.filter(program__event=event).select_related("role", "program", "member")
+    lookup = {(a.program_id, a.role_id): a for a in assignments}
+
+    grid_rows = [
+        {"program": program, "cells": [lookup.get((program.pk, role.pk)) for role in roles]}
+        for program in programs
+    ]
+
+    return render(
+        request,
+        "shifts/event_detail_grid.html",
+        {"event": event, "roles": roles, "grid_rows": grid_rows},
+    )
+
+
+@login_required
 @staff_required
 def event_assign(request, pk):
     event = get_object_or_404(Event, pk=pk)
@@ -80,6 +103,70 @@ def event_assign(request, pk):
         request,
         "shifts/event_assign.html",
         {"event": event, "programs": programs, "roles": roles, "members": members},
+    )
+
+
+@login_required
+@staff_required
+def event_assign_grid(request, pk):
+    event = get_object_or_404(Event, pk=pk)
+    programs = list(event.programs.all())
+    roles = list(Role.objects.all())
+
+    if request.method == "POST":
+        # グリッドは「1種目×1役割につき1人」という前提でしか編集できない。
+        # 同じ組み合わせに複数人いる場合はここでは触らず、リスト編集に任せる。
+        for program in programs:
+            for role in roles:
+                existing_qs = Assignment.objects.filter(program=program, role=role)
+                if existing_qs.count() > 1:
+                    continue
+
+                member_id = request.POST.get(f"cell_{program.pk}_{role.pk}", "")
+                existing = existing_qs.first()
+
+                if member_id:
+                    if existing is None:
+                        member = get_object_or_404(User, pk=member_id)
+                        Assignment.objects.create(program=program, role=role, member=member)
+                    elif str(existing.member_id) != member_id:
+                        existing.member_id = member_id
+                        existing.save(update_fields=["member"])
+                elif existing is not None:
+                    existing.delete()
+
+        return redirect("shifts:event_assign_grid", pk=event.pk)
+
+    assignments = Assignment.objects.filter(program__event=event).select_related("role", "program", "member")
+    lookup = {}
+    multi_cells = set()
+    for a in assignments:
+        key = (a.program_id, a.role_id)
+        if key in lookup:
+            multi_cells.add(key)
+        else:
+            lookup[key] = a
+
+    grid_rows = [
+        {
+            "program": program,
+            "cells": [
+                {
+                    "role": role,
+                    "assignment": lookup.get((program.pk, role.pk)),
+                    "is_multi": (program.pk, role.pk) in multi_cells,
+                }
+                for role in roles
+            ],
+        }
+        for program in programs
+    ]
+    members = User.objects.order_by("username")
+
+    return render(
+        request,
+        "shifts/event_assign_grid.html",
+        {"event": event, "roles": roles, "grid_rows": grid_rows, "members": members},
     )
 
 

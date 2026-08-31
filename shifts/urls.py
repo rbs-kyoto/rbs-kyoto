@@ -8,7 +8,9 @@ urlpatterns = [
     path("create/", views.event_create, name="event_create"),
     path("mine/", views.my_assignments, name="my_assignments"),
     path("<int:pk>/", views.event_detail, name="event_detail"),
+    path("<int:pk>/grid/", views.event_detail_grid, name="event_detail_grid"),
     path("<int:pk>/assign/", views.event_assign, name="event_assign"),
+    path("<int:pk>/assign/grid/", views.event_assign_grid, name="event_assign_grid"),
     path("programs/<int:pk>/delete/", views.program_delete, name="program_delete"),
     path("assignments/<int:pk>/delete/", views.assignment_delete, name="assignment_delete"),
 ]
