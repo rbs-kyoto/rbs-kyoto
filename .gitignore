@@ -11,3 +11,4 @@ media/
 staticfiles/
 *.sqlite3.backup
 *.json
+*.code-workspace
