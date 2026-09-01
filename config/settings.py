@@ -52,6 +52,7 @@ INSTALLED_APPS = [
     'main',
     'accounts',
     'manuals',
+    'shifts',
 ]
 
 ASGI_APPLICATION = 'config.asgi.application'

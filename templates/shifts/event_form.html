@@ -1,0 +1,43 @@
+{% extends "main/base.html" %}
+{% load static %}
+
+{% block title %}イベントを作成｜シフト｜rbs京都{% endblock %}
+{% block extra_css %}<link rel="stylesheet" href="{% static 'main/css/form.css' %}">{% endblock %}
+
+{% block content %}
+
+<section class="site-form-section">
+    <h2 class="heading">イベントを作成</h2>
+
+    <form class="site-form" method="post">
+        {% csrf_token %}
+
+        {% if error %}
+        <span class="site-form__errors">{{ error }}</span>
+        {% endif %}
+
+        <div class="site-form__field">
+            <label for="id_title">イベント名</label>
+            <input class="site-form__input" type="text" id="id_title" name="title" value="{{ title|default:'' }}" required>
+        </div>
+
+        <div class="site-form__field">
+            <label for="id_date">日付</label>
+            <input class="site-form__input" type="date" id="id_date" name="date" value="{{ date|default:'' }}" required>
+        </div>
+
+        <div class="site-form__field site-form__field--checkbox">
+            <label for="id_is_active">
+                <input type="checkbox" id="id_is_active" name="is_active" {% if is_active %}checked{% endif %}>
+                公開する
+            </label>
+        </div>
+
+        <div class="site-form__footer">
+            <a class="common-style" href="{% url 'shifts:event_list' %}">キャンセル</a>
+            <button class="common-style" type="submit">作成</button>
+        </div>
+    </form>
+</section>
+
+{% endblock %}

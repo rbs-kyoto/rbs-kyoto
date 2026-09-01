@@ -13,6 +13,11 @@ APPS = [
         "description": "部内向けの手順書・資料",
         "url_name": "manuals:manual_list",
     },
+    {
+        "title": "シフト",
+        "description": "イベントの担当割り当て",
+        "url_name": "shifts:event_list",
+    },
 ]
 
 def index(request):
