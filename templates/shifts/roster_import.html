@@ -1,0 +1,44 @@
+{% extends "main/base.html" %}
+{% load static %}
+
+{% block title %}名簿をCSVで一括登録｜シフト｜rbs京都{% endblock %}
+{% block extra_css %}<link rel="stylesheet" href="{% static 'main/css/form.css' %}">{% endblock %}
+
+{% block content %}
+
+<section class="site-form-section">
+    <h2 class="heading">名簿をCSVで一括登録</h2>
+
+    <p class="roster-import__note">
+        1列目に氏名を入れてください。ヘッダー行（1行目に「氏名」など）はあってもなくても構いません。<br>
+        2列目に既存のログインアカウントの<strong>ユーザー名</strong>を入れておくと、一致したものは自動で紐付けます（任意）。<br>
+        文字コードはUTF-8・Shift-JISのどちらでも読み込めます。
+    </p>
+
+    <pre class="roster-import__sample">氏名,ユーザー名
+山田太郎,yamada
+佐藤花子,</pre>
+
+    {% if result.error %}
+    <span class="site-form__errors">{{ result.error }}</span>
+    {% elif result %}
+    <div class="roster-import__result">
+        <p>{{ result.total }}件のうち、新規登録 {{ result.created }}件・既存のためスキップ {{ result.skipped }}件・アカウント紐付け {{ result.linked }}件でした。</p>
+    </div>
+    {% endif %}
+
+    <form method="post" class="site-form" enctype="multipart/form-data">
+        {% csrf_token %}
+        <div class="site-form__field">
+            <label for="id_csv_file">CSVファイル</label>
+            <input type="file" id="id_csv_file" name="csv_file" accept=".csv,text/csv" required>
+        </div>
+
+        <div class="site-form__footer">
+            <a class="common-style" href="{% url 'shifts:roster' %}">名簿一覧へ戻る</a>
+            <button class="common-style" type="submit">読み込む</button>
+        </div>
+    </form>
+</section>
+
+{% endblock %}

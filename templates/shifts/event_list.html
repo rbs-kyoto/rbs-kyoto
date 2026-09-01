@@ -1,0 +1,68 @@
+{% extends "main/base.html" %}
+{% load static %}
+
+{% block title %}シフト｜rbs京都{% endblock %}
+{% block extra_css %}<link rel="stylesheet" href="{% static 'main/css/shifts.css' %}">{% endblock %}
+
+{% block content %}
+
+<section class="shift-list-section">
+    <div class="section-heading">
+        <h2 class="heading">Shifts</h2>
+        <div class="shift-list__heading-links">
+            <a class="section-heading__link page-control-style-forward" href="{% url 'shifts:my_assignments' %}">
+                自分の担当を見る
+            </a>
+            {% if user.is_staff %}
+            <a class="section-heading__link page-control-style-forward" href="{% url 'shifts:roster' %}">
+                部員名簿
+            </a>
+            <a class="section-heading__link page-control-style-forward" href="{% url 'shifts:event_create' %}">
+                新規作成
+            </a>
+            {% endif %}
+        </div>
+    </div>
+    <div class="list-table">
+        <ul class="list">
+            {% for event in events %}
+            <li class="list__element">
+                <a class="list__hover-item" href="{% url 'shifts:event_detail' event.pk %}">
+                    <div class="list__content">
+                        <span class="list__title">
+                            {{ event.title }}
+                        </span>
+                        <span class="list__date">
+                            {{ event.date|date:"Y.m.d" }}
+                        </span>
+                    </div>
+                    {% if user.is_staff and not event.is_active %}
+                    <div class="category">
+                        <span class="category__element shift-list__draft-badge">
+                            非公開
+                        </span>
+                    </div>
+                    {% endif %}
+                </a>
+            </li>
+            {% empty %}
+            <li class="list__element">
+                <div class="list__hover-item">
+                    <div class="list__content">
+                        <span class="list__title">
+                            イベントはありません。
+                        </span>
+                    </div>
+                </div>
+            </li>
+            {% endfor %}
+        </ul>
+    </div>
+    <div class="page_control">
+        <a class="page-control-style-back" href="{% url 'main:index' %}">
+            ホームへ
+        </a>
+    </div>
+</section>
+
+{% endblock %}
