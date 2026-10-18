@@ -4,6 +4,61 @@
 
 document.addEventListener("DOMContentLoaded", () => {
     const main = document.querySelector("main");
+    const themeToggle = document.querySelector(".theme-toggle");
+    const themeImages = document.querySelectorAll("[data-theme-light-src][data-theme-dark-src]");
+    let savedTheme = null;
+    try {
+        savedTheme = localStorage.getItem("rbs-theme");
+    } catch (error) {
+        console.warn("Theme preference could not be read from local storage.", error);
+    }
+    let hasManualTheme = Boolean(savedTheme);
+
+    const updateThemeControls = () => {
+        const isDark = document.body.classList.contains("dark-mode");
+        themeImages.forEach((image) => {
+            image.src = isDark ? image.dataset.themeDarkSrc : image.dataset.themeLightSrc;
+        });
+        if (themeToggle) {
+            const icon = themeToggle.querySelector(".theme-toggle__icon");
+            const label = themeToggle.querySelector(".theme-toggle__label");
+            if (icon) {
+                icon.textContent = isDark ? "dark_mode" : "light_mode";
+            }
+            themeToggle.setAttribute("aria-pressed", String(isDark));
+            themeToggle.setAttribute(
+                "aria-label",
+                isDark ? "ライトモードに切り替え" : "ダークモードに切り替え"
+            );
+            if (label) {
+                label.textContent = isDark ? "ライト" : "ダーク";
+            }
+        }
+    };
+
+    updateThemeControls();
+
+    if (themeToggle) {
+        themeToggle.addEventListener("click", () => {
+            const isDark = document.body.classList.toggle("dark-mode");
+            hasManualTheme = true;
+            try {
+                localStorage.setItem("rbs-theme", isDark ? "dark" : "light");
+            } catch (error) {
+                console.warn("Theme preference could not be saved to local storage.", error);
+            }
+            updateThemeControls();
+        });
+    }
+
+    if (!hasManualTheme) {
+        window.matchMedia("(prefers-color-scheme: dark)").addEventListener("change", (event) => {
+            if (!hasManualTheme) {
+                document.body.classList.toggle("dark-mode", event.matches);
+                updateThemeControls();
+            }
+        });
+    }
 
     if (!main) {
         return;

@@ -27,10 +27,10 @@
     width: 100%;
     box-sizing: border-box;
     padding: .8rem 1rem;
-    border: .1rem solid var(--Gray-600);
+    border: .1rem solid var(--Controlborder);
     border-radius: .75rem;
     corner-shape: superellipse(1.4);
-    background: transparent;
+    background: var(--Controlbackground);
     color: var(--Textcolor);
     font: inherit;
     font-size: .9rem;
@@ -39,7 +39,7 @@
 }
 
 .site-form__field .site-form__input:focus {
-    border-color: var(--Gray-400);
+    border-color: var(--Controlfocus);
 }
 
 .site-form__row {

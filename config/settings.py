@@ -52,6 +52,7 @@ INSTALLED_APPS = [
     'main',
     'accounts',
     'manuals',
+    'video_archive',
 ]
 
 ASGI_APPLICATION = 'config.asgi.application'

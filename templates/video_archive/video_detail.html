@@ -1,0 +1,77 @@
+{% extends "main/base.html" %}
+{% load static %}
+
+{% block title %}{{ video.title }}｜Video Archive{% endblock %}
+{% block extra_css %}<link rel="stylesheet" href="{% static 'main/css/video_archive.css' %}">{% endblock %}
+
+{% block content %}
+<section class="video-archive-section">
+    <article class="video-detail">
+        <div class="video-detail__header">
+            <h2 class="video-archive__title">{{ video.title }}</h2>
+            {% if video.group %}
+            <span class="video-detail__group">{{ video.group.name }}</span>
+            {% endif %}
+            <div class="video-detail__dates">
+                {% if video.event_date %}
+                <span>開催日：{{ video.event_date|date:"Y.m.d" }}</span>
+                {% endif %}
+                {% if video.production_date %}
+                <span>制作日：{{ video.production_date|date:"Y.m.d" }}</span>
+                {% endif %}
+            </div>
+        </div>
+        {% if video.youtube_embed_url %}
+        <div class="video-detail__player">
+            <iframe
+                data-embed-url="{{ video.youtube_embed_url }}"
+                title="{{ video.title }}"
+                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                referrerpolicy="strict-origin-when-cross-origin"
+                allowfullscreen
+            ></iframe>
+            <noscript>
+                <p>動画を再生するにはJavaScriptを有効にしてください。</p>
+            </noscript>
+        </div>
+        <dialog class="video-playback-dialog" aria-labelledby="video-playback-dialog-title">
+            <h2 class="video-playback-dialog__title" id="video-playback-dialog-title">
+                音声を再生しますか？
+            </h2>
+            <p class="video-playback-dialog__message">
+                「音声あり」を選ぶと音声をオンにして再生します。「音声なし」を選ぶとミュートで再生します。
+            </p>
+            <div class="video-playback-dialog__actions">
+                <button class="common-style" type="button" data-playback-muted="true">
+                    音声なし
+                </button>
+                <button class="common-style reverse" type="button" data-playback-muted="false">
+                    音声あり
+                </button>
+            </div>
+        </dialog>
+        {% else %}
+        <p class="video-detail__unavailable">
+            この動画の埋め込み再生は利用できません。
+            <a href="{{ video.url }}" target="_blank" rel="noopener noreferrer">YouTubeで見る</a>
+        </p>
+        {% endif %}
+        {% if video.description %}
+        <p class="video-detail__description">{{ video.description|linebreaksbr }}</p>
+        {% endif %}
+    </article>
+    <div class="page_control">
+        {% if return_year %}
+        <a class="page-control-style-back" href="{% url 'video_archive:video_year_list' return_year %}">
+            一覧へ
+        </a>
+        {% else %}
+        <a class="page-control-style-back" href="{% url 'video_archive:video_list' %}">
+            年度一覧へ
+        </a>
+        {% endif %}
+    </div>
+</section>
+{% endblock %}
+
+{% block extra_js %}<script src="{% static 'main/js/video_detail.js' %}"></script>{% endblock %}

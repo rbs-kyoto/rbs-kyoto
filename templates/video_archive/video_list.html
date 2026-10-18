@@ -1,0 +1,54 @@
+{% extends "main/base.html" %}
+{% load static %}
+
+{% block title %}Video Archive｜rbs京都{% endblock %}
+{% block extra_css %}<link rel="stylesheet" href="{% static 'main/css/video_archive.css' %}">{% endblock %}
+
+{% block content %}
+<section class="video-archive-section">
+    <div class="section-heading">
+        <h2 class="heading">Video Archive</h2>
+    </div>
+    <div class="video-archive__list">
+        {% for fiscal_year in fiscal_years %}
+        <a class="video-archive__item" href="{% url 'video_archive:video_year_list' fiscal_year.year %}">
+            <div class="video-archive__content">
+                <h3 class="video-archive__title">{{ fiscal_year.label }}</h3>
+                <span class="video-archive__date">
+                    {{ fiscal_year.year }}.04 — {{ fiscal_year.year|add:1 }}.03
+                </span>
+            </div>
+            <span class="video-archive__link">{{ fiscal_year.count }}件を見る</span>
+        </a>
+        {% endfor %}
+
+        {% if undated_videos %}
+        <section class="video-archive__group">
+            <h3 class="video-archive__group-title">開催日未設定</h3>
+            {% for video in undated_videos %}
+            <a class="video-archive__item" href="{% url 'video_archive:video_detail' video.pk %}">
+                <div class="video-archive__content">
+                    <h3 class="video-archive__title">{{ video.title }}</h3>
+                    {% if video.description %}
+                    <p class="video-archive__description">{{ video.description|linebreaksbr }}</p>
+                    {% endif %}
+                    <span class="video-archive__date">
+                        {% if video.production_date %}制作日 {{ video.production_date|date:"Y.m.d" }}{% endif %}
+                    </span>
+                </div>
+                <span class="video-archive__link">詳細を見る</span>
+            </a>
+            {% endfor %}
+        </section>
+        {% endif %}
+        {% if not fiscal_years and not undated_videos %}
+        <p class="video-archive__empty">動画はまだ登録されていません。</p>
+        {% endif %}
+    </div>
+    <div class="page_control">
+        <a class="page-control-style-back" href="{% url 'main:index' %}">
+            ホームへ
+        </a>
+    </div>
+</section>
+{% endblock %}

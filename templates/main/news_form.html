@@ -17,6 +17,20 @@
     <form class="site-form" method="post" enctype="multipart/form-data">
         {% csrf_token %}
 
+        {% if form.errors %}
+        <div class="site-form__errors" role="alert">
+            入力内容を確認してください。
+            {{ form.non_field_errors }}
+            <ul>
+                {% for field in form %}
+                    {% for error in field.errors %}
+                    <li>{{ field.label }}：{{ error }}</li>
+                    {% endfor %}
+                {% endfor %}
+            </ul>
+        </div>
+        {% endif %}
+
         <div class="site-form__field">
             <label for="{{ form.title.id_for_label }}">タイトル</label>
             {{ form.title }}

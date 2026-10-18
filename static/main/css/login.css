@@ -69,15 +69,15 @@
 }
 
 .login-field input {
-    color: var(--Gray-50);
+    color: var(--Textcolor);
     width: 100%;
     box-sizing: border-box;
     padding: 13px 14px;
     font-weight: 700;
-    border: .15rem solid var(--Gray-500);
+    border: .15rem solid var(--Controlborder);
     border-radius: .5rem;
     corner-shape: superellipse(1.4);
-    background: transparent;
+    background: var(--Controlbackground);
     font: inherit;
     font-size: 15px;
     outline: none;
@@ -87,8 +87,8 @@
 }
 
 .login-field input:focus {
-    border-color: var(--Gray-50);
-    box-shadow: 0 0 0 3px rgba(0, 0, 0, 0.06);
+    border-color: var(--Controlfocus);
+    box-shadow: 0 0 0 3px var(--Black-t100);
 }
 
 button.login-submit {
@@ -119,13 +119,18 @@ button.login-submit {
 
 .login-error {
     padding: .6rem 1rem;
-    background: var(--Gray-50);
-    color: var(--Red-700);
+    background: var(--Red-100);
+    color: var(--Red-800);
     font-size: 14px;
     font-weight: 700;
     line-height: 1.5;
     border-radius: .5rem;
     corner-shape: superellipse(1.4);
+}
+
+body.dark-mode .login-error {
+    background: var(--Red-950);
+    color: var(--Red-300);
 }
 
 @media (max-width: 768px) {
