@@ -17,7 +17,9 @@ document.addEventListener("DOMContentLoaded", () => {
         const playerUrl = new URL(embedUrl);
         playerUrl.searchParams.set("autoplay", "1");
         playerUrl.searchParams.set("mute", muted ? "1" : "0");
-        playerUrl.searchParams.set("controls", "0");
+        playerUrl.searchParams.set("controls", "1");
+        playerUrl.searchParams.set("cc_load_policy", "0");
+        playerUrl.searchParams.set("rel", "0");
         iframe.src = playerUrl.toString();
         iframe.hidden = false;
         poster.hidden = true;
