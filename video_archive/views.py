@@ -35,7 +35,9 @@ def video_list(request):
                 {
                     "year": year,
                     "label": format_fiscal_year(year),
-                    "count": fiscal_year_counts[year],
+                    "count": str(fiscal_year_counts[year]).translate(
+                        str.maketrans("0123456789", "０１２３４５６７８９")
+                    ),
                 }
                 for year in sorted(fiscal_year_counts, reverse=True)
             ],

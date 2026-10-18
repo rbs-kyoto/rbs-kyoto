@@ -57,6 +57,7 @@ class VideoListTests(TestCase):
         self.assertContains(response, reverse("video_archive:video_year_list", args=[2026]))
         self.assertContains(response, reverse("video_archive:video_year_list", args=[2025]))
         self.assertNotContains(response, reverse("video_archive:video_year_list", args=[2024]))
+        self.assertContains(response, "１件を見る")
 
     def test_year_list_uses_april_to_march_fiscal_year(self):
         self.client.force_login(self.user)

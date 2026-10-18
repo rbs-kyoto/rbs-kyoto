@@ -434,6 +434,7 @@ header.global-header {
     padding: .2rem;
     border: .1rem solid var(--Framebordercolor);
     border-radius: .5rem;
+    corner-shape: superellipse(1.4);
     background: var(--Backgroundcolor);
 }
 
@@ -443,6 +444,7 @@ header.global-header {
     gap: .3rem;
     padding: .3rem .6rem;
     border-radius: .35rem;
+    corner-shape: superellipse(1.4);
     color: var(--Subtlecolor);
     font: inherit;
     font-size: .7rem;

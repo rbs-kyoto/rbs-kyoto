@@ -27,6 +27,7 @@ class NewsListTests(TestCase):
         self.assertContains(response, 'data-theme-mode="light"')
         self.assertContains(response, 'data-theme-mode="dark"')
         self.assertContains(response, "rbs-dark.svg")
+        self.assertContains(response, "login-dark.svg")
 
 
 class NewsCreateTests(TestCase):
