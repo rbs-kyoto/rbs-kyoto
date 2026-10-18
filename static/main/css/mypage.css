@@ -102,8 +102,12 @@
     opacity: .6;
 }
 
-.mypage-actions__logout {
-    color: var(--Red-300) !important;
+.mypage-actions a.mypage-actions__logout {
+    color: var(--Natural-red);
+}
+
+body.dark-mode .mypage-actions a.mypage-actions__logout {
+    color: var(--Red-300);
 }
 
 @media (max-width: 600px) {

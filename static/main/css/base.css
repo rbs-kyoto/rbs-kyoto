@@ -112,23 +112,36 @@
     --Purple-900: #581c87;
     --Purple-950: #3b0764;
 
-    --Natural-themecolor: #;
+    --Natural-themecolor: #620610;
+    --themecolor-50: #f8f3f3;
+    --themecolor-100: #efe6e7;
+    --themecolor-200: #e2cdcf;
+    --themecolor-300: #d2b4b7;
+    --themecolor-400: #c29ba0;
+    --themecolor-500: #b18388;
+    --themecolor-600: #a16a72;
+    --themecolor-700: #91515c;
+    --themecolor-800: #803845;
+    --themecolor-900: #701f2f;
+    --themecolor-950: #691220;
     --Natural-accentcolor: #;
     --Backgroundcolor-light: #f3f5f7;
     --Backgroundcolor: var(--Backgroundcolor-light);
-    --Textcolor: var(--Gray-900);
+    --Textcolor: var(--Natural-themecolor);
     --Surfacecolor: var(--Backgroundcolor);
-    --Bordercolor: var(--Gray-300);
-    --Subtlecolor: var(--Gray-600);
-    --Badgebordercolor: var(--Gray-300);
-    --Hoverbackground: var(--Blue-200);
+    --Bordercolor: var(--themecolor-200);
+    --Framebordercolor: var(--Gray-300);
+    --Subtlecolor: var(--themecolor-700);
+    --Arrowcolor: var(--themecolor-400);
+    --Badgebordercolor: var(--themecolor-300);
+    --Hoverbackground: var(--themecolor-200);
     --Hovertextcolor: var(--Gray-900);
     --Controlbackground: var(--Natural-white);
-    --Controlborder: var(--Gray-400);
+    --Controlborder: var(--themecolor-300);
     --Controlfocus: var(--Skyblue-500);
     --Shadowcolor: var(--Black-t200);
     --Overlaycolor: var(--Black-t700);
-    --Codebackground: var(--Gray-100);
+    --Codebackground: var(--themecolor-50);
 }
 
 body.dark-mode {
@@ -136,9 +149,11 @@ body.dark-mode {
     --Textcolor: var(--Gray-50);
     --Surfacecolor: var(--Backgroundcolor);
     --Bordercolor: var(--Gray-800);
+    --Framebordercolor: var(--Gray-800);
     --Subtlecolor: var(--Gray-500);
+    --Arrowcolor: var(--Subtlecolor);
     --Badgebordercolor: var(--Gray-100);
-    --Hoverbackground: var(--Gray-300);
+    --Hoverbackground: var(--themecolor-200);
     --Hovertextcolor: var(--Gray-900);
     --Controlbackground: var(--Gray-900);
     --Controlborder: var(--Gray-600);
@@ -301,7 +316,7 @@ button.common-style:hover {
     width: 200px;
     height: 50px;
     mask: url("../img/back.svg") no-repeat left top / contain;
-    background-color: var(--Subtlecolor);
+    background-color: var(--Arrowcolor);
     transition: all .3s;
 }
 
@@ -335,7 +350,7 @@ button.common-style:hover {
     width: 200px;
     height: 50px;
     mask: url("../img/forward.svg") no-repeat left top / contain;
-    background-color: var(--Subtlecolor);
+    background-color: var(--Arrowcolor);
     transition: all .3s;
 }
 
@@ -370,7 +385,7 @@ input[type="search"] {
     -moz-appearance: none;
     background: none;
     border: none;
-    border-bottom: .15rem solid var(--Gray-400);
+    border-bottom: .15rem solid var(--Controlborder);
     border-radius: 0;
     font-family: inherit;
     font-size: inherit;
@@ -386,7 +401,7 @@ header.global-header {
     width: 100%;
     height: 6rem;
     background-color: var(--Surfacecolor);
-    border-bottom: var(--Bordercolor) solid .1rem;
+    border-bottom: var(--Framebordercolor) solid .1rem;
     box-shadow: 0 0 .5rem 0 var(--Shadowcolor);
     z-index: 10;
 }
@@ -417,7 +432,7 @@ img.global-header-logo {
     text-decoration: none;
     height: 100%;
     aspect-ratio: 1 / 1;
-    border-left: var(--Bordercolor) solid .1rem;
+    border-left: var(--Framebordercolor) solid .1rem;
 }
 
 .global-header__login img {
@@ -432,7 +447,7 @@ img.global-header-logo {
     gap: .25rem;
     min-width: 4.5rem;
     padding: 0 .75rem;
-    border-left: .1rem solid var(--Bordercolor);
+    border-left: .1rem solid var(--Framebordercolor);
     color: var(--Textcolor);
     font: inherit;
     font-size: .7rem;
@@ -449,14 +464,6 @@ img.global-header-logo {
     font-size: 1.75rem;
     font-variation-settings: "FILL" 0, "wght" 400, "GRAD" 0, "opsz" 32;
     line-height: 1;
-}
-
-.theme-image--invert {
-    filter: invert(1);
-}
-
-body.dark-mode .theme-image--invert {
-    filter: none;
 }
 
 main {
@@ -560,7 +567,7 @@ section h2.heading {
 
 section.top-pickup {
     padding: 1rem 0;
-    border-bottom: var(--Bordercolor) solid .1rem;
+    border-bottom: var(--Framebordercolor) solid .1rem;
 }
 
 .top-pickup__slide {
@@ -572,7 +579,7 @@ section.top-pickup {
     width: 100%;
     height: auto;
     overflow: hidden;
-    border: .15rem solid var(--Bordercolor);
+    border: .15rem solid var(--Framebordercolor);
     border-radius: 1.5rem;
     corner-shape: superellipse(1.4);
     box-shadow: 0 0 1rem 0 var(--Shadowcolor);
@@ -672,6 +679,10 @@ section.top-apps-section {
 
 body.dark-mode .app-tile:hover {
     background-color: var(--Gray-900);
+}
+
+body.dark-mode .app-tile:hover .app-tile__title {
+    color: var(--Gray-50);
 }
 
 .app-tile__title {
@@ -858,7 +869,7 @@ footer {
     width: 100%;
     padding: 1rem;
     background-color: var(--Surfacecolor);
-    border-top: var(--Bordercolor) solid .1rem;
+    border-top: var(--Framebordercolor) solid .1rem;
     box-shadow: 0 0 1rem 0 var(--Shadowcolor);
 }
 
@@ -875,14 +886,14 @@ footer {
 .footer__copyright {
     margin: 1rem -1rem -1rem;
     padding: .75rem 1rem;
-    background-color: var(--Blue-50);
+    background-color: var(--themecolor-50);
     color: var(--Gray-900);
     font-size: .8rem;
     text-align: center;
 }
 
 body.dark-mode .footer__copyright {
-    background-color: var(--Gray-800);
+    background-color: var(--themecolor-900);
     color: var(--Gray-50);
 }
 

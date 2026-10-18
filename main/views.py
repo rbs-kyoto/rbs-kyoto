@@ -15,7 +15,7 @@ APPS = [
     },
     {
         "title": "Video Archive",
-        "description": "部活動の動画アーカイブ",
+        "description": "過去の動画アーカイブ",
         "url_name": "video_archive:video_list",
     },
 ]
