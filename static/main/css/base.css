@@ -886,8 +886,8 @@ footer {
 .footer__copyright {
     margin: 1rem -1rem -1rem;
     padding: .75rem 1rem;
-    background-color: var(--themecolor-50);
-    color: var(--Gray-900);
+    background-color: var(--themecolor-100);
+    color: var(--textcolor);
     font-size: .8rem;
     text-align: center;
 }
