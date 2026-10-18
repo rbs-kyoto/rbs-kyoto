@@ -28,7 +28,12 @@
             {% for video in undated_videos %}
             <a class="video-archive__item" href="{% url 'video_archive:video_detail' video.pk %}">
                 <div class="video-archive__content">
-                    <h3 class="video-archive__title">{{ video.title }}</h3>
+                    <div class="video-archive__title-row">
+                        <h3 class="video-archive__title">{{ video.title }}</h3>
+                        {% if video.has_subtitles %}
+                        <span class="video-archive__badge">字幕</span>
+                        {% endif %}
+                    </div>
                     {% if video.description %}
                     <p class="video-archive__description">{{ video.description|linebreaksbr }}</p>
                     {% endif %}

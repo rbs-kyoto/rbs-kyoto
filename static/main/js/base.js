@@ -4,7 +4,7 @@
 
 document.addEventListener("DOMContentLoaded", () => {
     const main = document.querySelector("main");
-    const themeToggle = document.querySelector(".theme-toggle");
+    const themeOptions = document.querySelectorAll("[data-theme-mode]");
     const themeImages = document.querySelectorAll("[data-theme-light-src][data-theme-dark-src]");
     let savedTheme = null;
     try {
@@ -19,28 +19,20 @@ document.addEventListener("DOMContentLoaded", () => {
         themeImages.forEach((image) => {
             image.src = isDark ? image.dataset.themeDarkSrc : image.dataset.themeLightSrc;
         });
-        if (themeToggle) {
-            const icon = themeToggle.querySelector(".theme-toggle__icon");
-            const label = themeToggle.querySelector(".theme-toggle__label");
-            if (icon) {
-                icon.textContent = isDark ? "dark_mode" : "light_mode";
-            }
-            themeToggle.setAttribute("aria-pressed", String(isDark));
-            themeToggle.setAttribute(
-                "aria-label",
-                isDark ? "ライトモードに切り替え" : "ダークモードに切り替え"
+        themeOptions.forEach((option) => {
+            option.setAttribute(
+                "aria-pressed",
+                String(option.dataset.themeMode === (isDark ? "dark" : "light"))
             );
-            if (label) {
-                label.textContent = isDark ? "ライト" : "ダーク";
-            }
-        }
+        });
     };
 
     updateThemeControls();
 
-    if (themeToggle) {
-        themeToggle.addEventListener("click", () => {
-            const isDark = document.body.classList.toggle("dark-mode");
+    themeOptions.forEach((option) => {
+        option.addEventListener("click", () => {
+            const isDark = option.dataset.themeMode === "dark";
+            document.body.classList.toggle("dark-mode", isDark);
             hasManualTheme = true;
             try {
                 localStorage.setItem("rbs-theme", isDark ? "dark" : "light");
@@ -49,7 +41,7 @@ document.addEventListener("DOMContentLoaded", () => {
             }
             updateThemeControls();
         });
-    }
+    });
 
     if (!hasManualTheme) {
         window.matchMedia("(prefers-color-scheme: dark)").addEventListener("change", (event) => {

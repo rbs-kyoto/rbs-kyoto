@@ -1,9 +1,13 @@
 from datetime import date
+from io import BytesIO
+from tempfile import TemporaryDirectory
 
 from django.core.exceptions import ValidationError
+from django.core.files.uploadedfile import SimpleUploadedFile
 from django.contrib.auth import get_user_model
-from django.test import TestCase
+from django.test import TestCase, override_settings
 from django.urls import reverse
+from PIL import Image
 
 from .models import Video, VideoGroup
 from .utils import format_fiscal_year
@@ -89,6 +93,7 @@ class VideoListTests(TestCase):
     def test_videos_are_grouped_in_the_list(self):
         group = VideoGroup.objects.create(name="大会")
         self.active_video.group = group
+        self.active_video.has_subtitles = True
         self.active_video.save()
         self.client.force_login(self.user)
 
@@ -97,6 +102,7 @@ class VideoListTests(TestCase):
         )
 
         self.assertContains(response, "大会")
+        self.assertContains(response, 'class="video-archive__badge">字幕</span>')
         self.assertContains(response, "開催日 2026.05.01")
         self.assertContains(response, "制作日 2026.05.10")
 
@@ -112,7 +118,14 @@ class VideoListTests(TestCase):
             response,
             'data-embed-url="https://www.youtube-nocookie.com/embed/abcdefghijk"',
         )
+        self.assertContains(
+            response,
+            'src="https://i.ytimg.com/vi/abcdefghijk/hqdefault.jpg"',
+        )
+        self.assertContains(response, 'class="video-detail__poster"')
         self.assertContains(response, "<iframe")
+        self.assertNotContains(response, "clipboard-write")
+        self.assertNotContains(response, "web-share")
         self.assertContains(response, "<dialog")
         self.assertContains(response, "音声なし")
         self.assertContains(response, "音声あり")
@@ -120,6 +133,49 @@ class VideoListTests(TestCase):
             response,
             reverse("video_archive:video_year_list", args=[2026]),
         )
+
+    def test_detail_shows_subtitle_metadata(self):
+        self.active_video.has_subtitles = True
+        self.active_video.subtitle_language = "日本語"
+        self.active_video.subtitle_notes = "自動生成字幕"
+        self.active_video.save()
+        self.client.force_login(self.user)
+
+        response = self.client.get(
+            reverse("video_archive:video_detail", args=[self.active_video.pk])
+        )
+
+        self.assertContains(response, "字幕あり")
+        self.assertContains(response, "字幕言語：日本語")
+        self.assertContains(response, "自動生成字幕")
+
+    def test_uploaded_thumbnail_is_converted_to_webp_and_resized(self):
+        image_buffer = BytesIO()
+        Image.new("RGB", (1600, 900), color="red").save(image_buffer, format="PNG")
+        upload = SimpleUploadedFile(
+            "custom-thumbnail.png",
+            image_buffer.getvalue(),
+            content_type="image/png",
+        )
+
+        with TemporaryDirectory() as media_root, override_settings(MEDIA_ROOT=media_root):
+            video = Video.objects.create(
+                title="サムネイル動画",
+                url="https://youtu.be/abcdefghijk",
+                thumbnail=upload,
+            )
+
+            self.assertTrue(video.thumbnail.name.endswith(".webp"))
+            with Image.open(video.thumbnail.path) as saved_image:
+                self.assertEqual(saved_image.format, "WEBP")
+                self.assertEqual(saved_image.size, (1280, 720))
+
+            self.client.force_login(self.user)
+            response = self.client.get(
+                reverse("video_archive:video_detail", args=[video.pk])
+            )
+            self.assertContains(response, f'src="{video.thumbnail.url}"')
+            self.assertNotContains(response, "i.ytimg.com")
 
     def test_detail_without_fiscal_year_returns_to_year_selection(self):
         self.client.force_login(self.user)

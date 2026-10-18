@@ -14,6 +14,7 @@ class VideoAdmin(admin.ModelAdmin):
     list_display = (
         "title",
         "group",
+        "has_subtitles",
         "event_date",
         "production_date",
         "order",

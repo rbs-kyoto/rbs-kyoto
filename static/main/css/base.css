@@ -419,6 +419,80 @@ header.global-header {
     height: 100%;
 }
 
+.global-header__controls {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    justify-content: space-between;
+    padding-right: 1.5rem;
+}
+
+.theme-toggle {
+    display: flex;
+    gap: .2rem;
+    margin-top: .55rem;
+    padding: .2rem;
+    border: .1rem solid var(--Framebordercolor);
+    border-radius: .5rem;
+    background: var(--Backgroundcolor);
+}
+
+.theme-toggle__option {
+    display: flex;
+    align-items: center;
+    gap: .3rem;
+    padding: .3rem .6rem;
+    border-radius: .35rem;
+    color: var(--Subtlecolor);
+    font: inherit;
+    font-size: .7rem;
+    transition: color .2s, background-color .2s;
+}
+
+.theme-toggle__option[aria-pressed="true"] {
+    background: var(--themecolor-200);
+    color: var(--Natural-themecolor);
+}
+
+body.dark-mode .theme-toggle__option[aria-pressed="true"] {
+    background: var(--themecolor-900);
+    color: var(--Gray-50);
+}
+
+.theme-toggle__icon {
+    font-family: "Material Symbols Rounded";
+    font-size: 1rem;
+    font-variation-settings: "FILL" 0, "wght" 400, "GRAD" 0, "opsz" 20;
+    line-height: 1;
+}
+
+.global-header__menu {
+    display: flex;
+    align-items: flex-end;
+    gap: 1.25rem;
+    padding-bottom: .85rem;
+}
+
+.global-header__menu a {
+    padding: .35rem .15rem;
+    color: var(--Subtlecolor);
+    font-size: .9rem;
+    font-weight: 600;
+    white-space: nowrap;
+    transition: color .3s, border-color .3s;
+    border-bottom: .15rem solid transparent;
+}
+
+.global-header__menu a:hover {
+    color: var(--Natural-themecolor);
+    border-bottom-color: var(--Natural-themecolor);
+}
+
+body.dark-mode .global-header__menu a:hover {
+    color: var(--themecolor-300);
+    border-bottom-color: var(--themecolor-300);
+}
+
 img.global-header-logo {
     height: 100%;
 }
@@ -437,33 +511,6 @@ img.global-header-logo {
 
 .global-header__login img {
     height: 50%;
-}
-
-.theme-toggle {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    gap: .25rem;
-    min-width: 4.5rem;
-    padding: 0 .75rem;
-    border-left: .1rem solid var(--Framebordercolor);
-    color: var(--Textcolor);
-    font: inherit;
-    font-size: .7rem;
-    transition: background-color .3s;
-}
-
-.theme-toggle:hover {
-    background-color: var(--Hoverbackground);
-    color: var(--Hovertextcolor);
-}
-
-.theme-toggle__icon {
-    font-family: "Material Symbols Rounded";
-    font-size: 1.75rem;
-    font-variation-settings: "FILL" 0, "wght" 400, "GRAD" 0, "opsz" 32;
-    line-height: 1;
 }
 
 main {
@@ -928,6 +975,15 @@ body.dark-mode .footer__copyright {
         height: 5rem;
     }
 
+    .global-header__controls {
+        gap: .75rem;
+        padding-right: .75rem;
+    }
+
+    .global-header__menu a {
+        font-size: .85rem;
+    }
+
     .footer__logo {
         width: 45%;
     }
@@ -953,6 +1009,28 @@ body.dark-mode .footer__copyright {
 
     header.global-header {
         height: 5rem;
+    }
+
+    .global-header__nav {
+        padding-left: .75rem;
+        padding-right: .5rem;
+    }
+
+    .global-header__controls {
+        padding-right: .5rem;
+    }
+
+    .global-header__menu {
+        gap: .5rem;
+        padding-bottom: .75rem;
+    }
+
+    .global-header__menu a {
+        font-size: .8rem;
+    }
+
+    .theme-toggle__option {
+        padding: .25rem .4rem;
     }
 
     main {

@@ -19,7 +19,12 @@
             {% for video in video_group.list %}
             <a class="video-archive__item" href="{% url 'video_archive:video_detail' video.pk %}?year={{ year }}">
                 <div class="video-archive__content">
-                    <h4 class="video-archive__title">{{ video.title }}</h4>
+                    <div class="video-archive__title-row">
+                        <h4 class="video-archive__title">{{ video.title }}</h4>
+                        {% if video.has_subtitles %}
+                        <span class="video-archive__badge">字幕</span>
+                        {% endif %}
+                    </div>
                     {% if video.description %}
                     <p class="video-archive__description">{{ video.description|linebreaksbr }}</p>
                     {% endif %}

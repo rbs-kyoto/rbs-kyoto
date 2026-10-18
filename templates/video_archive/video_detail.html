@@ -20,16 +20,36 @@
                 <span>制作日：{{ video.production_date|date:"Y.m.d" }}</span>
                 {% endif %}
             </div>
+            {% if video.has_subtitles %}
+            <div class="video-detail__subtitles">
+                <span>字幕あり</span>
+                {% if video.subtitle_language %}
+                <span>字幕言語：{{ video.subtitle_language }}</span>
+                {% endif %}
+                {% if video.subtitle_notes %}
+                <span>{{ video.subtitle_notes|linebreaksbr }}</span>
+                {% endif %}
+            </div>
+            {% endif %}
         </div>
         {% if video.youtube_embed_url %}
         <div class="video-detail__player">
             <iframe
                 data-embed-url="{{ video.youtube_embed_url }}"
                 title="{{ video.title }}"
-                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                allow="accelerometer; autoplay; encrypted-media; gyroscope; picture-in-picture"
                 referrerpolicy="strict-origin-when-cross-origin"
+                hidden
                 allowfullscreen
             ></iframe>
+            <button class="video-detail__poster" type="button" aria-label="動画を再生">
+                {% if video.thumbnail %}
+                <img src="{{ video.thumbnail.url }}" alt="">
+                {% else %}
+                <img src="{{ video.youtube_thumbnail_url }}" alt="">
+                {% endif %}
+                <span class="video-detail__play-icon" aria-hidden="true">play_arrow</span>
+            </button>
             <noscript>
                 <p>動画を再生するにはJavaScriptを有効にしてください。</p>
             </noscript>

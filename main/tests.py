@@ -24,7 +24,8 @@ class NewsListTests(TestCase):
     def test_page_has_theme_switch_and_dark_logo_variant(self):
         response = self.client.get(reverse("main:index"))
 
-        self.assertContains(response, 'class="theme-toggle"')
+        self.assertContains(response, 'data-theme-mode="light"')
+        self.assertContains(response, 'data-theme-mode="dark"')
         self.assertContains(response, "rbs-dark.svg")
 
 
