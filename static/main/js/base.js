@@ -4,6 +4,53 @@
 
 document.addEventListener("DOMContentLoaded", () => {
     const main = document.querySelector("main");
+    const themeOptions = document.querySelectorAll("[data-theme-mode]");
+    const themeImages = document.querySelectorAll("[data-theme-light-src][data-theme-dark-src]");
+    let savedTheme = null;
+    try {
+        savedTheme = localStorage.getItem("rbs-theme");
+    } catch (error) {
+        console.warn("Theme preference could not be read from local storage.", error);
+    }
+    let hasManualTheme = Boolean(savedTheme);
+
+    const updateThemeControls = () => {
+        const isDark = document.body.classList.contains("dark-mode");
+        themeImages.forEach((image) => {
+            image.src = isDark ? image.dataset.themeDarkSrc : image.dataset.themeLightSrc;
+        });
+        themeOptions.forEach((option) => {
+            option.setAttribute(
+                "aria-pressed",
+                String(option.dataset.themeMode === (isDark ? "dark" : "light"))
+            );
+        });
+    };
+
+    updateThemeControls();
+
+    themeOptions.forEach((option) => {
+        option.addEventListener("click", () => {
+            const isDark = option.dataset.themeMode === "dark";
+            document.body.classList.toggle("dark-mode", isDark);
+            hasManualTheme = true;
+            try {
+                localStorage.setItem("rbs-theme", isDark ? "dark" : "light");
+            } catch (error) {
+                console.warn("Theme preference could not be saved to local storage.", error);
+            }
+            updateThemeControls();
+        });
+    });
+
+    if (!hasManualTheme) {
+        window.matchMedia("(prefers-color-scheme: dark)").addEventListener("change", (event) => {
+            if (!hasManualTheme) {
+                document.body.classList.toggle("dark-mode", event.matches);
+                updateThemeControls();
+            }
+        });
+    }
 
     if (!main) {
         return;

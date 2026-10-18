@@ -3,6 +3,7 @@
 
 {% block title %}記事一覧｜rbs京都{% endblock %}
 {% block description %}rbs京都の最新ニュースを一覧で閲覧できます．{% endblock %}
+{% block extra_css %}<link rel="stylesheet" href="{% static 'main/css/news.css' %}">{% endblock %}
 
 {% block content %}
 
@@ -15,53 +16,33 @@
         </a>
         {% endif %}
     </div>
-    <div class="list-table">
-        <ul class="list">
-            {% for news in news_list %}
-            <li class="list__element">
-                <a class="list__hover-item" href="{% url 'main:news_detail' news.pk %}">
-                    <div class="list__image">
-                        {% if news.image %}
-                            <img class="thumbnail" src="{{ news.image.url }}" alt="">
-                        {% else %}
-                            <img class="thumbnail" src="{% static 'main/img/rbs_standard.svg' %}" alt="">
-                        {% endif %}
-                    </div>
-                    <div class="list__content">
-                        <span class="list__date">
-                            {{ news.date|date:"Y.m.d" }}
-                        </span>
-
-                        <span class="list__title">
-                            {{ news.title }}
-                        </span>
-                    </div>
-                    <div class="category">
-                        {% if news.category %}
-                        <span class="category__element">
-                            {{ news.category }}
-                        </span>
-                        {% endif %}
-                        {% if user.is_staff and not news.is_active %}
-                        <span class="category__element news-all__draft-badge">
-                            非公開
-                        </span>
-                        {% endif %}
-                    </div>
-                </a>
-            </li>
-            {% empty %}
-            <li class="list__element">
-                <div class="list__hover-item">
-                    <div class="list__content">
-                        <span class="list__title">
-                            Newsはありません。
-                        </span>
-                    </div>
-                </div>
-            </li>
-            {% endfor %}
-        </ul>
+    <div class="news-all__list">
+        {% for news in news_list %}
+        <a class="news-all__item" href="{% url 'main:news_detail' news.pk %}">
+            <div class="news-all__image">
+                {% if news.image %}
+                    <img class="thumbnail" src="{{ news.image.url }}" alt="">
+                {% else %}
+                    <img class="thumbnail" src="{% static 'main/img/rbs_standard.svg' %}" alt="">
+                {% endif %}
+            </div>
+            <div class="news-all__content">
+                <span class="news-all__date">{{ news.date|date:"Y.m.d" }}</span>
+                <h3 class="news-all__title">{{ news.title }}</h3>
+            </div>
+            <div class="news-all__categories">
+                {% if news.category %}
+                <span class="news-all__badge">{{ news.category }}</span>
+                {% endif %}
+                {% if user.is_staff and not news.is_active %}
+                <span class="news-all__badge news-all__draft-badge">非公開</span>
+                {% endif %}
+            </div>
+            <span class="news-all__link">詳細を見る</span>
+        </a>
+        {% empty %}
+        <p class="news-all__empty">Newsはありません。</p>
+        {% endfor %}
     </div>
     <div class="page_control">
         <a class="page-control-style-back" href="{% url 'main:index' %}">

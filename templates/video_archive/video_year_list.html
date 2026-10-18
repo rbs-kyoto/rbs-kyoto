@@ -1,0 +1,52 @@
+{% extends "main/base.html" %}
+{% load static %}
+
+{% block title %}{{ year_label }}｜Video Archive{% endblock %}
+{% block extra_css %}<link rel="stylesheet" href="{% static 'main/css/video_archive.css' %}">{% endblock %}
+
+{% block content %}
+<section class="video-archive-section">
+    <div class="section-heading">
+        <h2 class="heading">{{ year_label }}</h2>
+    </div>
+    <div class="video-archive__list">
+        {% regroup videos by group as video_groups %}
+        {% for video_group in video_groups %}
+        <section class="video-archive__group">
+            <h3 class="video-archive__group-title">
+                {{ video_group.grouper.name|default:"その他" }}
+            </h3>
+            {% for video in video_group.list %}
+            <a class="video-archive__item" href="{% url 'video_archive:video_detail' video.pk %}?year={{ year }}">
+                <div class="video-archive__content">
+                    <div class="video-archive__title-row">
+                        <h4 class="video-archive__title">{{ video.title }}</h4>
+                        {% if video.has_subtitles %}
+                        <span class="video-archive__badge">字幕</span>
+                        {% endif %}
+                    </div>
+                    {% if video.description %}
+                    <p class="video-archive__description">{{ video.description|linebreaksbr }}</p>
+                    {% endif %}
+                    <span class="video-archive__date">
+                        {% if video.event_date %}開催日 {{ video.event_date|date:"Y.m.d" }}{% endif %}
+                        {% if video.production_date %}制作日 {{ video.production_date|date:"Y.m.d" }}{% endif %}
+                    </span>
+                </div>
+                <span class="video-archive__link">詳細を見る</span>
+            </a>
+            {% empty %}
+            <p class="video-archive__empty">この年度の動画はありません。</p>
+            {% endfor %}
+        </section>
+        {% empty %}
+        <p class="video-archive__empty">この年度の動画はありません。</p>
+        {% endfor %}
+    </div>
+    <div class="page_control">
+        <a class="page-control-style-back" href="{% url 'video_archive:video_list' %}">
+            年度一覧へ
+        </a>
+    </div>
+</section>
+{% endblock %}

@@ -1,4 +1,10 @@
 .manual-list-section {
+    width: min(100%, 1000px);
+    margin: 0 auto;
+    padding: 1rem;
+}
+
+.manual-list__items {
     padding: 1rem;
 }
 
@@ -10,18 +16,18 @@
 }
 
 .manual-list__sort-label {
-    color: var(--Gray-500);
+    color: var(--Subtlecolor);
     font-size: .85rem;
 }
 
 .manual-list__sort-link {
-    color: var(--Gray-500);
+    color: var(--Subtlecolor);
     font-size: .85rem;
     transition: color .3s;
 }
 
 .manual-list__sort-link:hover {
-    color: var(--Gray-100);
+    color: var(--Textcolor);
 }
 
 .manual-list__sort-link.is-active {
@@ -30,9 +36,61 @@
     text-decoration: underline;
 }
 
-.manual-list__draft-badge {
-    color: var(--Red-300) !important;
-    border-color: var(--Red-300) !important;
+.manual-list__item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1.5rem;
+    padding: 1.25rem 1rem;
+    border-radius: .2rem;
+    border-bottom: var(--Bordercolor) solid .1rem;
+    transition: all .3s;
+}
+
+a.manual-list__item:hover {
+    background-color: var(--Hoverbackground);
+}
+
+a.manual-list__item:hover .manual-list__title,
+a.manual-list__item:hover .manual-list__date,
+a.manual-list__item:hover .manual-list__link,
+a.manual-list__item:hover .manual-list__badge {
+    color: var(--Hovertextcolor);
+}
+
+.manual-list__content {
+    min-width: 0;
+}
+
+.manual-list__title {
+    margin: 0 0 .5rem;
+    font-size: 1.1rem;
+    transition: color .3s;
+}
+
+.manual-list__date {
+    color: var(--Subtlecolor);
+    font-size: .85rem;
+    transition: color .3s;
+}
+
+.manual-list__link {
+    flex: 0 0 auto;
+    color: var(--Textcolor);
+    text-decoration: underline;
+    transition: color .3s;
+}
+
+.manual-list__badge {
+    flex: 0 0 auto;
+    color: var(--Red-300);
+    font-size: .85rem;
+    transition: color .3s;
+}
+
+.manual-list__empty {
+    padding: 1rem;
+    color: var(--Subtlecolor);
 }
 
 .manual-detail__header {
@@ -44,13 +102,13 @@
     top: 0;
     right: 0;
     font-size: .85rem;
-    color: var(--Gray-500);
+    color: var(--Subtlecolor);
     text-decoration: underline;
     transition: color .3s;
 }
 
 .manual-detail__edit-link:hover {
-    color: var(--Gray-100);
+    color: var(--Textcolor);
 }
 
 .manual-form-section {
@@ -82,7 +140,7 @@
     width: 100%;
     box-sizing: border-box;
     padding: .8rem 1rem;
-    border: .1rem solid var(--Gray-600);
+    border: .1rem solid var(--Controlborder);
     border-radius: .75rem;
     corner-shape: superellipse(1.4);
     background: transparent;
@@ -94,7 +152,7 @@
 }
 
 .manual-form__field .manual-form__input:focus {
-    border-color: var(--Gray-400);
+    border-color: var(--Controlfocus);
 }
 
 .manual-form__textarea {
@@ -143,7 +201,7 @@
 .manual-detail__header {
     margin-bottom: 2rem;
     padding-bottom: 1.5rem;
-    border-bottom: var(--Gray-800) solid .1rem;
+    border-bottom: var(--Bordercolor) solid .1rem;
 }
 
 .manual-detail__title {
@@ -153,7 +211,7 @@
 }
 
 .manual-detail__date {
-    color: var(--Gray-500);
+    color: var(--Subtlecolor);
     font-size: .85rem;
 }
 
@@ -189,7 +247,7 @@
 
 .manual-detail__content code {
     padding: .1rem .4rem;
-    background-color: var(--Black-t400);
+    background-color: var(--Codebackground);
     border-radius: .3rem;
     corner-shape: superellipse(1.4);
 }
@@ -197,7 +255,7 @@
 .manual-detail__content pre {
     padding: 1rem;
     overflow-x: auto;
-    background-color: var(--Black-t400);
+    background-color: var(--Codebackground);
     border-radius: .5rem;
     corner-shape: superellipse(1.4);
 }
@@ -210,8 +268,8 @@
 .manual-detail__content blockquote {
     margin: 0 0 1rem;
     padding: .5rem 1rem;
-    border-left: .2rem solid var(--Gray-600);
-    color: var(--Gray-400);
+    border-left: .2rem solid var(--Bordercolor);
+    color: var(--Subtlecolor);
 }
 
 .manual-detail__content img {
@@ -219,4 +277,12 @@
     height: auto;
     border-radius: .5rem;
     corner-shape: superellipse(1.4);
+}
+
+@media (max-width: 600px) {
+    .manual-list__item {
+        align-items: flex-start;
+        flex-direction: column;
+        gap: .75rem;
+    }
 }

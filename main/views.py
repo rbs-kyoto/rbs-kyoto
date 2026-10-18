@@ -9,9 +9,14 @@ from .models import Pickup, News
 
 APPS = [
     {
-        "title": "マニュアル",
+        "title": "Manual",
         "description": "部内向けの手順書・資料",
         "url_name": "manuals:manual_list",
+    },
+    {
+        "title": "Video Archive",
+        "description": "過去の動画アーカイブ",
+        "url_name": "video_archive:video_list",
     },
 ]
 
