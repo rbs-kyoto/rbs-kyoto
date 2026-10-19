@@ -32,10 +32,10 @@ class NewsListTests(TestCase):
 
 
 class CanonicalHostTests(TestCase):
-    def test_google_login_on_www_redirects_to_apex_and_preserves_query(self):
+    def test_apex_google_login_redirects_to_www_and_preserves_query(self):
         response = self.client.get(
             "/accounts/google/login/?next=%2Fvideos%2F",
-            HTTP_HOST=f"www.{settings.CANONICAL_HOST}",
+            HTTP_HOST=settings.CANONICAL_DOMAIN,
             HTTP_X_FORWARDED_PROTO="https",
         )
 
@@ -44,6 +44,11 @@ class CanonicalHostTests(TestCase):
             response["Location"],
             f"https://{settings.CANONICAL_HOST}/accounts/google/login/?next=%2Fvideos%2F",
         )
+
+    def test_canonical_www_host_is_not_redirected(self):
+        response = self.client.get("/", HTTP_HOST=settings.CANONICAL_HOST)
+
+        self.assertEqual(response.status_code, 200)
 
 
 class NewsCreateTests(TestCase):

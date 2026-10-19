@@ -33,14 +33,17 @@ ALLOWED_HOSTS = [
     if host.strip()
 ]
 CANONICAL_HOST = (
-    os.getenv("CANONICAL_HOST", "rbs-kyoto.org")
+    os.getenv("CANONICAL_HOST", "www.rbs-kyoto.org")
     .strip()
     .lower()
-    .removeprefix("www.")
-    or "rbs-kyoto.org"
+    .rstrip("/")
+    or "www.rbs-kyoto.org"
 )
+CANONICAL_DOMAIN = CANONICAL_HOST.removeprefix("www.")
 ALLOWED_HOSTS = list(
-    dict.fromkeys([*ALLOWED_HOSTS, CANONICAL_HOST, f"www.{CANONICAL_HOST}"])
+    dict.fromkeys(
+        [*ALLOWED_HOSTS, CANONICAL_HOST, CANONICAL_DOMAIN, f"www.{CANONICAL_DOMAIN}"]
+    )
 )
 
 # Application definition

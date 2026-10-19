@@ -12,7 +12,11 @@ class CanonicalHostMiddleware:
         host = request.get_host().split(":", 1)[0].lower()
         if (
             request.method in {"GET", "HEAD"}
-            and host == f"www.{settings.CANONICAL_HOST}"
+            and host in {
+                settings.CANONICAL_DOMAIN,
+                f"www.{settings.CANONICAL_DOMAIN}",
+            }
+            and host != settings.CANONICAL_HOST
         ):
             canonical_url = urlunsplit(
                 (
