@@ -117,7 +117,7 @@ class VideoListTests(TestCase):
 
         self.assertContains(
             response,
-            'data-embed-url="https://www.youtube-nocookie.com/embed/abcdefghijk"',
+            'data-embed-url="https://www.youtube-nocookie.com/embed/abcdefghijk?playsinline=1"',
         )
         self.assertContains(
             response,

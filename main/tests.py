@@ -1,5 +1,6 @@
 from datetime import date
 
+from django.conf import settings
 from django.contrib.auth import get_user_model
 from django.test import TestCase
 from django.urls import reverse
@@ -28,6 +29,21 @@ class NewsListTests(TestCase):
         self.assertContains(response, 'data-theme-mode="dark"')
         self.assertContains(response, "rbs-dark.svg")
         self.assertContains(response, "login-dark.svg")
+
+
+class CanonicalHostTests(TestCase):
+    def test_google_login_on_www_redirects_to_apex_and_preserves_query(self):
+        response = self.client.get(
+            "/accounts/google/login/?next=%2Fvideos%2F",
+            HTTP_HOST=f"www.{settings.CANONICAL_HOST}",
+            HTTP_X_FORWARDED_PROTO="https",
+        )
+
+        self.assertEqual(response.status_code, 301)
+        self.assertEqual(
+            response["Location"],
+            f"https://{settings.CANONICAL_HOST}/accounts/google/login/?next=%2Fvideos%2F",
+        )
 
 
 class NewsCreateTests(TestCase):

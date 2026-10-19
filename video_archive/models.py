@@ -122,7 +122,7 @@ class Video(models.Model):
         video_id = self.youtube_video_id
         if video_id is None:
             return ""
-        return f"https://www.youtube-nocookie.com/embed/{video_id}"
+        return f"https://www.youtube-nocookie.com/embed/{video_id}?playsinline=1"
 
     @property
     def youtube_thumbnail_url(self):

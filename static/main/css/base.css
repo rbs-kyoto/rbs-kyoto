@@ -958,10 +958,6 @@ body.dark-mode .footer__copyright {
         font-size: 14px;
     }
 
-    header.global-header {
-        height: 5rem;
-    }
-
     .footer__logo {
         width: 40%;
     }
@@ -974,7 +970,7 @@ body.dark-mode .footer__copyright {
     }
 
     header.global-header {
-        height: 5rem;
+        height: 6.25rem;
     }
 
     .global-header__controls {
@@ -1010,7 +1006,7 @@ body.dark-mode .footer__copyright {
     }
 
     header.global-header {
-        height: 5rem;
+        height: 6rem;
     }
 
     .global-header__nav {

@@ -32,6 +32,16 @@ ALLOWED_HOSTS = [
     for host in os.getenv("ALLOWED_HOSTS", "").split(",")
     if host.strip()
 ]
+CANONICAL_HOST = (
+    os.getenv("CANONICAL_HOST", "rbs-kyoto.org")
+    .strip()
+    .lower()
+    .removeprefix("www.")
+    or "rbs-kyoto.org"
+)
+ALLOWED_HOSTS = list(
+    dict.fromkeys([*ALLOWED_HOSTS, CANONICAL_HOST, f"www.{CANONICAL_HOST}"])
+)
 
 # Application definition
 
@@ -59,6 +69,7 @@ ASGI_APPLICATION = 'config.asgi.application'
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
+    'config.middleware.CanonicalHostMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
