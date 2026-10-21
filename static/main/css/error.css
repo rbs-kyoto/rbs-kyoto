@@ -1,0 +1,240 @@
+:root {
+    color-scheme: light;
+    font-family: "Comfortaa", "Noto Sans JP", sans-serif;
+    font-size: 100%;
+    color: var(--Natural-themecolor, #620610);
+    background: var(--Backgroundcolor-light, #f3f5f7);
+    --Natural-themecolor: #620610;
+    --Theme-light: #f8f3f3;
+    --Theme-border: #e2cdcf;
+    --Theme-subtle: #91515c;
+}
+
+* {
+    box-sizing: border-box;
+}
+
+body {
+    display: grid;
+    min-height: 100vh;
+    min-height: 100svh;
+    margin: 0;
+    padding: 2rem;
+    place-items: center;
+    background: var(--Backgroundcolor-light, #f3f5f7);
+}
+
+main {
+    width: min(50rem, 100%);
+    margin: auto;
+    text-align: center;
+}
+
+.error-heading {
+    position: relative;
+    padding: 0 3rem 1rem;
+    text-align: center;
+}
+
+.error-heading::after {
+    position: absolute;
+    right: 0;
+    bottom: 0;
+    left: 0;
+    height: .1rem;
+    transform: scaleX(0);
+    transform-origin: left center;
+    background: var(--Natural-themecolor);
+    animation: error-heading-underline 0.8s ease-in-out .4s forwards;
+    content: "";
+}
+
+@keyframes error-heading-underline {
+    to {
+        transform: scaleX(1);
+    }
+}
+
+.error-heading__icon {
+    position: absolute;
+    top: calc((100% - 1rem) / 2);
+    left: 0;
+    transform: translateY(-50%);
+    color: var(--Natural-themecolor);
+    font-size: 2rem;
+    font-weight: 400;
+    line-height: 1;
+}
+
+.material-symbols-rounded {
+    font-family: "Material Symbols Rounded";
+    font-style: normal;
+    font-weight: 400;
+    font-feature-settings: "liga";
+    -webkit-font-smoothing: antialiased;
+}
+
+h1 {
+    margin: 0;
+    font-size: 1.75rem;
+    font-weight: 600;
+    line-height: 1.5;
+}
+
+.error-code {
+    margin: .5rem 0 0;
+    font-size: 1.5rem;
+    font-weight: 600;
+    line-height: 1.3;
+}
+
+.error-code span {
+    display: block;
+    color: var(--Theme-subtle);
+    font-size: .9rem;
+    font-weight: 400;
+}
+
+.reasons {
+    width: min(33rem, 100%);
+    margin: 4.5rem auto 0;
+}
+
+.reasons h2 {
+    margin: 0 0 1.75rem;
+    font-size: 1.2rem;
+    font-weight: 500;
+}
+
+.reasons ul {
+    display: grid;
+    gap: .75rem;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+}
+
+.reasons li {
+    display: flex;
+    align-items: center;
+    gap: .75rem;
+    min-height: 2.75rem;
+    padding: .65rem .9rem;
+    border: .1rem solid #e8ecee;
+    border-radius: .7rem;
+    corner-shape: superellipse(1.4);
+    background: rgb(255 255 255 / 65%);
+    box-shadow: 0 .15rem .65rem rgb(0 0 0 / 5%);
+    color: var(--Theme-subtle);
+    font-size: .95rem;
+    text-align: left;
+}
+
+.reasons li .material-symbols-rounded {
+    flex: 0 0 1.25rem;
+    color: var(--Natural-themecolor);
+    font-size: 1.25rem;
+    line-height: 1;
+}
+
+.guidance {
+    margin: 2.75rem 0 0;
+    font-size: 1.05rem;
+    line-height: 1.8;
+}
+
+.navigation {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: .75rem;
+    margin: 1.25rem 0 0;
+}
+
+.navigation a {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 2.75rem;
+    padding: .65rem 1.1rem;
+    border: .1rem solid var(--Natural-themecolor);
+    border-radius: .6rem;
+    corner-shape: superellipse(1.4);
+    color: var(--Natural-themecolor);
+    font-size: .9rem;
+    font-weight: 600;
+    text-decoration: none;
+    transition: background-color .2s, color .2s;
+}
+
+.navigation a:first-child {
+    background: var(--Natural-themecolor);
+    color: #fff;
+}
+
+.navigation a:hover {
+    background: var(--Theme-light);
+}
+
+.navigation a:first-child:hover {
+    background: #803845;
+    color: #fff;
+}
+
+.logo {
+    display: block;
+    width: 5.5rem;
+    max-width: 35%;
+    height: auto;
+    margin: 2.5rem auto 0;
+}
+
+@media (max-width: 1024px) {
+    :root {
+        font-size: 90%;
+    }
+}
+
+@media (max-width: 600px) {
+    :root {
+        font-size: 87.5%;
+    }
+
+    body {
+        padding: 1.25rem;
+    }
+
+    .error-heading {
+        padding-right: 2.5rem;
+        padding-left: 2.5rem;
+    }
+
+    .error-heading__icon {
+        font-size: 1.75rem;
+    }
+
+    h1 {
+        font-size: 1.4rem;
+    }
+
+    .reasons {
+        margin-top: 3rem;
+    }
+
+    .reasons h2 {
+        margin-bottom: 1.25rem;
+        font-size: 1.1rem;
+    }
+
+    .guidance {
+        margin-top: 2rem;
+        font-size: 1rem;
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .error-heading::after {
+        transform: scaleX(1);
+        animation: none;
+    }
+}

@@ -1,0 +1,13 @@
+{% extends "errors/base.html" %}
+
+{% block page_title %}アクセスできません{% endblock %}
+{% block heading_icon %}<span class="error-heading__icon material-symbols-rounded" aria-hidden="true">gpp_bad</span>{% endblock %}
+{% block heading %}このページにはアクセスできません。{% endblock %}
+{% block error_code %}403{% endblock %}
+{% block error_name %}Forbidden{% endblock %}
+{% block reasons %}
+<li><span class="material-symbols-rounded" aria-hidden="true">lock</span>このページを表示する権限がない</li>
+<li><span class="material-symbols-rounded" aria-hidden="true">login</span>ログインが必要なページである</li>
+<li><span class="material-symbols-rounded" aria-hidden="true">block</span>アクセスが制限されている</li>
+{% endblock %}
+{% block guidance %}アカウントをご確認いただくか、管理者にお問い合わせください。{% endblock %}

@@ -1,0 +1,197 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="theme-color" content="#f6f7f9">
+    <title>{% if maintenance_status == "recovery" %}復旧作業中{% else %}メンテナンス中{% endif %}｜rbs京都</title>
+    <style>
+        html {
+            font-size: 15px;
+        }
+
+        :root {
+            color-scheme: light;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+            color: #302b2c;
+            background: #f3f5f7;
+            font-synthesis: none;
+            -webkit-font-smoothing: antialiased;
+        }
+
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            display: grid;
+            min-height: 100vh;
+            min-height: 100svh;
+            margin: 0;
+            padding: 2rem;
+            place-items: center;
+            background: #f3f5f7;
+        }
+
+        main {
+            width: min(800px, 100vw);
+            padding: 3.5rem;
+            border: .1rem solid #e2cdcf;
+            border-radius: 1.5rem;
+            corner-shape: superellipse(1.4);
+            background: #fff;
+            box-shadow: 0 0 1.5rem rgb(0 0 0 / 8%);
+            text-align: left;
+        }
+
+        .status {
+            margin: 0 0 1rem;
+            color: #91515c;
+            font-size: .9rem;
+            font-weight: 700;
+        }
+
+        h1 {
+            margin: 0;
+            color: #620610;
+            font-size: 2.1rem;
+            letter-spacing: .01rem;
+            line-height: 1.4;
+        }
+
+        .message {
+            max-width: 42rem;
+            margin: 1rem 0 0;
+            color: #5b5658;
+            font-size: 1rem;
+            line-height: 1.9;
+        }
+
+        .schedule {
+            display: grid;
+            grid-template-columns: minmax(10rem, .7fr) 1.3fr;
+            align-items: center;
+            gap: 1rem 2rem;
+            margin: 2rem 0 0;
+            padding: 1.25rem 1.5rem;
+            border: .1rem solid #e2cdcf;
+            border-radius: .8rem;
+            corner-shape: superellipse(1.4);
+            background: #f8f3f3;
+        }
+
+        .schedule-label {
+            display: block;
+            color: #5b5658;
+            font-size: .9rem;
+            font-weight: 600;
+        }
+
+        .schedule time {
+            display: block;
+            color: #620610;
+            font-size: 1.5rem;
+            font-weight: 700;
+            font-variant-numeric: tabular-nums;
+            line-height: 1.5;
+        }
+
+        .announcement {
+            margin: 1.5rem 0 0;
+            color: #5b5658;
+            font-size: .95rem;
+            line-height: 1.8;
+            white-space: pre-line;
+        }
+
+        .logo {
+            display: block;
+            width: 5.5rem;
+            max-width: 35%;
+            height: auto;
+            margin: 2rem auto 0;
+        }
+
+        @media (max-width: 1024px) {
+            html {
+                font-size: 13px;
+            }
+
+            main {
+                padding: 2rem;
+            }
+
+            h1 {
+                font-size: 2rem;
+            }
+        }
+
+        @media (max-width: 600px) {
+            html {
+                font-size: 87.5%;
+            }
+
+            body {
+                padding: 1rem;
+            }
+
+            main {
+                padding: 1.5rem;
+                border-radius: 1rem;
+                corner-shape: superellipse(1.3);
+            }
+
+            h1 {
+                font-size: 1.8rem;
+            }
+
+            .schedule {
+                grid-template-columns: 1fr;
+                gap: .4rem;
+                padding: 1rem 1.1rem;
+            }
+
+            .schedule time {
+                font-size: 1.3rem;
+            }
+
+            .logo {
+                width: 4.75rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <main>
+        <p class="status">
+            {% if maintenance_status == "recovery" %}復旧作業中{% else %}メンテナンス中{% endif %}
+        </p>
+        {% if maintenance_status == "recovery" %}
+        <h1>復旧作業を継続しています</h1>
+        <p class="message">
+            予定時刻を過ぎておりますが、復旧作業を続けています。<br>
+            ご不便をおかけしますが、今しばらくお待ちください。
+        </p>
+        {% else %}
+        <h1>ただいまメンテナンス中です</h1>
+        <p class="message">
+            サービス向上のため、システムメンテナンスを実施しています。<br>
+            ご不便をおかけしますが、終了までお待ちください。
+        </p>
+        {% endif %}
+        {% if maintenance.resume_at %}
+        <section class="schedule" aria-label="再開予定">
+            <span class="schedule-label">サービス再開予定</span>
+            <time datetime="{{ maintenance.resume_at|date:'c' }}">
+                {{ maintenance.resume_at|date:"Y年n月j日（D）G:i" }}
+            </time>
+        </section>
+        {% endif %}
+        {% if maintenance.announcement %}
+        <p class="announcement">補足：{{ maintenance.announcement }}</p>
+        {% endif %}
+        <img class="logo" src="{% static 'main/img/rbs.svg' %}" alt="rbs京都">
+    </main>
+</body>
+</html>

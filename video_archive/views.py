@@ -81,8 +81,10 @@ def video_detail(request, pk):
     if return_year is not None and not 1 <= return_year <= 9998:
         return_year = None
 
-    return render(
+    response = render(
         request,
         "video_archive/video_detail.html",
         {"video": video, "return_year": return_year},
     )
+    response["Referrer-Policy"] = "strict-origin-when-cross-origin"
+    return response

@@ -1,0 +1,12 @@
+{% extends "errors/base.html" %}
+
+{% block page_title %}システムエラー{% endblock %}
+{% block heading_icon %}<span class="error-heading__icon material-symbols-rounded" aria-hidden="true">error</span>{% endblock %}
+{% block heading %}ページを表示できませんでした。{% endblock %}
+{% block error_code %}500{% endblock %}
+{% block error_name %}Internal Server Error{% endblock %}
+{% block reasons %}
+<li><span class="material-symbols-rounded" aria-hidden="true">cloud_off</span>サーバーで一時的な問題が発生している</li>
+<li><span class="material-symbols-rounded" aria-hidden="true">build</span>メンテナンスまたは復旧作業を行っている</li>
+{% endblock %}
+{% block guidance %}ご不便をおかけします。時間をおいてから、もう一度お試しください。{% endblock %}

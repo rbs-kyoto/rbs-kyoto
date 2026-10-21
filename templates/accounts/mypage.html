@@ -59,6 +59,72 @@
                 <a class="mypage-actions__logout" href="{% url 'accounts:logout' %}">ログアウト</a>
             </div>
         </section>
+        {% if user.is_superuser %}
+        <section class="mypage-card">
+            <div class="mypage-card__header">
+                <h3>エラーページ</h3>
+            </div>
+            <div class="mypage-actions">
+                <button class="error-preview-trigger" type="button" data-error-preview-open>
+                    エラーページをプレビュー
+                </button>
+            </div>
+        </section>
+        <dialog class="error-preview-dialog" aria-labelledby="error-preview-title">
+            <div class="error-preview-dialog__header">
+                <div>
+                    <h2 id="error-preview-title">エラーページプレビュー</h2>
+                    <p>表示するエラーの種類を選択してください。</p>
+                </div>
+                <button
+                    class="error-preview-dialog__close"
+                    type="button"
+                    aria-label="閉じる"
+                    data-error-preview-close
+                >×</button>
+            </div>
+            <nav class="error-preview-options" aria-label="エラーの種類">
+                <a href="{% url 'preview_400' %}">
+                    <span>400 · Bad Request</span>
+                    <img
+                        class="error-preview-options__icon"
+                        src="{% static 'main/img/icons/sentiment_dissatisfied.svg' %}"
+                        alt=""
+                    >
+                </a>
+                <a href="{% url 'preview_403' %}">
+                    <span>403 · Forbidden</span>
+                    <img
+                        class="error-preview-options__icon"
+                        src="{% static 'main/img/icons/gpp_bad.svg' %}"
+                        alt=""
+                    >
+                </a>
+                <a href="{% url 'preview_404' %}">
+                    <span>404 · Not Found</span>
+                    <img
+                        class="error-preview-options__icon"
+                        src="{% static 'main/img/icons/search_off.svg' %}"
+                        alt=""
+                    >
+                </a>
+                <a href="{% url 'preview_500' %}">
+                    <span>500 · Internal Server Error</span>
+                    <img
+                        class="error-preview-options__icon"
+                        src="{% static 'main/img/icons/error.svg' %}"
+                        alt=""
+                    >
+                </a>
+            </nav>
+        </dialog>
+        {% endif %}
     </div>
 </section>
+{% endblock %}
+
+{% block extra_js %}
+{% if user.is_superuser %}
+<script src="{% static 'main/js/error_preview.js' %}"></script>
+{% endif %}
 {% endblock %}

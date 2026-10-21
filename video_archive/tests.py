@@ -115,6 +115,10 @@ class VideoListTests(TestCase):
             {"year": 2026},
         )
 
+        self.assertEqual(
+            response["Referrer-Policy"],
+            "strict-origin-when-cross-origin",
+        )
         self.assertContains(
             response,
             'data-embed-url="https://www.youtube-nocookie.com/embed/abcdefghijk?playsinline=1"',

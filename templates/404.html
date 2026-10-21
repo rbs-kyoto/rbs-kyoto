@@ -1,0 +1,13 @@
+{% extends "errors/base.html" %}
+
+{% block page_title %}ページが見つかりません{% endblock %}
+{% block heading_icon %}<span class="error-heading__icon material-symbols-rounded" aria-hidden="true">search_off</span>{% endblock %}
+{% block heading %}お探しのページが見つかりませんでした。{% endblock %}
+{% block error_code %}404{% endblock %}
+{% block error_name %}Not Found{% endblock %}
+{% block reasons %}
+<li><span class="material-symbols-rounded" aria-hidden="true">link_off</span>URLが間違っている</li>
+<li><span class="material-symbols-rounded" aria-hidden="true">drive_file_move</span>ページが移動または削除された</li>
+<li><span class="material-symbols-rounded" aria-hidden="true">event_busy</span>公開期間が終了している</li>
+{% endblock %}
+{% block guidance %}URLをご確認いただくか、下のリンクから目的のページをお探しください。{% endblock %}

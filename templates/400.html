@@ -1,0 +1,13 @@
+{% extends "errors/base.html" %}
+
+{% block page_title %}リクエストを処理できません{% endblock %}
+{% block heading_icon %}<span class="error-heading__icon material-symbols-rounded" aria-hidden="true">sentiment_dissatisfied</span>{% endblock %}
+{% block heading %}リクエストを処理できませんでした。{% endblock %}
+{% block error_code %}400{% endblock %}
+{% block error_name %}Bad Request{% endblock %}
+{% block reasons %}
+<li><span class="material-symbols-rounded" aria-hidden="true">edit_note</span>入力された情報に誤りがある</li>
+<li><span class="material-symbols-rounded" aria-hidden="true">rule</span>リクエストの形式が正しくない</li>
+<li><span class="material-symbols-rounded" aria-hidden="true">event_busy</span>ページの有効期限が切れている</li>
+{% endblock %}
+{% block guidance %}入力内容をご確認のうえ、もう一度お試しください。{% endblock %}
