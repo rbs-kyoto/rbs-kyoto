@@ -1,13 +1,15 @@
 from django.contrib.auth import authenticate, login, logout, update_session_auth_hash
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.password_validation import validate_password
+from django.http import JsonResponse
 from django.core.exceptions import ValidationError
+from django.views.decorators.http import require_POST
 from django.shortcuts import render, redirect
 from django.urls import reverse
 from django.contrib import messages
 from allauth.socialaccount.models import SocialAccount, SocialLogin
 from allauth.account.utils import perform_login
-from .models import User
+from .models import SuperuserGrantCredential, User
 
 
 def login_view(request):
@@ -38,6 +40,42 @@ def login_view(request):
 @login_required
 def mypage(request):
     return render(request, "accounts/mypage.html")
+
+
+@login_required
+@require_POST
+def superuser_unlock(request):
+    if request.user.is_superuser:
+        return JsonResponse({"ok": True, "message": "すでにスーパーユーザーです。"})
+
+    attempts = request.session.get("superuser_unlock_attempts", 0)
+    if attempts >= 5:
+        return JsonResponse(
+            {"ok": False, "message": "試行回数の上限に達しました。再ログインしてからお試しください。"},
+            status=429,
+        )
+
+    password = request.POST.get("password", "")
+    credential = SuperuserGrantCredential.objects.filter(pk=1).first()
+    if credential is None:
+        return JsonResponse(
+            {"ok": False, "message": "昇格パスワードが設定されていません。"},
+            status=503,
+        )
+
+    if not password or not credential.check_password(password):
+        request.session["superuser_unlock_attempts"] = attempts + 1
+        return JsonResponse(
+            {"ok": False, "message": "パスワードが正しくありません。"},
+            status=400,
+        )
+
+    request.session.pop("superuser_unlock_attempts", None)
+    request.user.is_staff = True
+    request.user.is_superuser = True
+    request.user.save(update_fields=["is_staff", "is_superuser"])
+    return JsonResponse({"ok": True, "message": "スーパーユーザー権限を付与しました。"})
+
 
 @login_required
 def profile_edit(request):

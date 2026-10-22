@@ -1,0 +1,12 @@
+{% extends "errors/base.html" %}
+
+{% block page_title %}I'm a teapot{% endblock %}
+{% block heading_icon %}<span class="error-heading__icon material-symbols-rounded" aria-hidden="true">emoji_food_beverage</span>{% endblock %}
+{% block heading %}I'm a teapot.{% endblock %}
+{% block error_code %}418{% endblock %}
+{% block error_name %}I'm a teapot{% endblock %}
+{% block reasons %}
+<li><span class="material-symbols-rounded" aria-hidden="true">coffee</span>コーヒーを淹れるよう頼まれた</li>
+<li><span class="material-symbols-rounded" aria-hidden="true">emoji_food_beverage</span>私は小さなティーポット、ずんぐりむっくり。</li>
+{% endblock %}
+{% block guidance %}紅茶ならお淹れできます。コーヒーは別のサーバーにご相談ください。{% endblock %}

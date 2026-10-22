@@ -116,6 +116,22 @@
                         alt=""
                     >
                 </a>
+                <a href="{% url 'preview_513' %}">
+                    <span>513 · Service Unavailable</span>
+                    <img
+                        class="error-preview-options__icon"
+                        src="{% static 'main/img/icons/error.svg' %}"
+                        alt=""
+                    >
+                </a>
+                <a href="{% url 'preview_418' %}">
+                    <span>418 · I'm a teapot</span>
+                    <img
+                        class="error-preview-options__icon"
+                        src="{% static 'main/img/icons/teapot.svg' %}"
+                        alt=""
+                    >
+                </a>
             </nav>
         </dialog>
         {% endif %}

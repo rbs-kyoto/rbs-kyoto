@@ -1,0 +1,12 @@
+{% extends "errors/base.html" %}
+
+{% block page_title %}サービスを一時的に利用できません{% endblock %}
+{% block heading_icon %}<span class="error-heading__icon material-symbols-rounded" aria-hidden="true">cloud_off</span>{% endblock %}
+{% block heading %}サービスを一時的に利用できません。{% endblock %}
+{% block error_code %}513{% endblock %}
+{% block error_name %}Service Unavailable{% endblock %}
+{% block reasons %}
+<li><span class="material-symbols-rounded" aria-hidden="true">cloud_off</span>サーバーが一時的に応答できない</li>
+<li><span class="material-symbols-rounded" aria-hidden="true">build</span>メンテナンスまたは復旧作業を行っている</li>
+{% endblock %}
+{% block guidance %}ご不便をおかけします。時間をおいてから、もう一度お試しください。{% endblock %}

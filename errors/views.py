@@ -27,6 +27,10 @@ def server_error(request):
     return _render_error(request, 500)
 
 
+def teapot(request):
+    return _render_error(request, 418)
+
+
 def _preview_error(request, status_code):
     if not request.user.is_superuser:
         raise PermissionDenied
@@ -51,3 +55,13 @@ def preview_404(request):
 @login_required
 def preview_500(request):
     return _preview_error(request, 500)
+
+
+@login_required
+def preview_513(request):
+    return _preview_error(request, 513)
+
+
+@login_required
+def preview_418(request):
+    return _preview_error(request, 418)

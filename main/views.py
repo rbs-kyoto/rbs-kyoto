@@ -44,6 +44,11 @@ def index(request):
         },
     )
 
+
+def about(request):
+    return render(request, "main/about.html")
+
+
 def news_all(request):
     news_list = News.objects.all()
     if not request.user.is_staff:

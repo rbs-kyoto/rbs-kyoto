@@ -1,0 +1,90 @@
+{% extends "main/base.html" %}
+{% load static %}
+
+{% block title %}About｜rbs京都{% endblock %}
+{% block description %}洛南高等学校・洛南高等学校附属中学校の放送部と、rbs京都のWebサイトをご紹介します。{% endblock %}
+{% block extra_css %}<link rel="stylesheet" href="{% static 'main/css/about.css' %}">{% endblock %}
+
+{% block content %}
+<div class="about-page">
+    <section class="about-screen about-logo-screen" id="about-screen-logo" aria-label="rbsロゴ" data-about-screen>
+        <div
+            class="about-logo-stage"
+            data-logo-stage
+            tabindex="-1"
+            role="group"
+            aria-label="rbsロゴ。マウスの動きに合わせて傾きます"
+        >
+            <img src="{% static 'main/img/rbs.svg' %}" alt="rbs">
+        </div>
+        {% if user.is_authenticated %}
+        <form
+            class="about-unlock-form"
+            data-superuser-unlock-form
+            action="{% url 'accounts:superuser_unlock' %}"
+            method="post"
+            hidden
+        >
+            {% csrf_token %}
+        </form>
+        {% endif %}
+    </section>
+
+    <section class="about-screen about-intro" id="about-screen-intro" aria-labelledby="about-intro-title" data-about-screen>
+        <div class="about-section-label">
+            <span>ABOUT rbs-kyoto</span>
+        </div>
+        <div class="about-intro__content">
+            <h1 id="about-intro-title">声と映像を「とどける」</h1>
+            <p>
+                rbs京都は、洛南高等学校・洛南高等学校附属中学校の放送部のWebサイトです。
+                お知らせや活動の記録を掲載し、放送部の「今」も「過去」もそのままお届けします。
+            </p>
+            <a class="about-intro__link" href="{% url 'main:news_all' %}">
+                最新のお知らせを見る <span aria-hidden="true">↗</span>
+            </a>
+        </div>
+    </section>
+
+    <section class="about-screen about-links" id="about-screen-links" aria-labelledby="about-links-title" data-about-screen>
+        <div class="about-section-label">
+            <span>01</span>
+            <span>EXPLORE</span>
+        </div>
+        <div class="about-links__heading">
+            <h2 id="about-links-title">サイトをめぐる</h2>
+            <p>気になる入り口から、rbs京都をご覧ください。</p>
+        </div>
+        <div class="about-links__grid">
+            <a class="about-link-card about-link-card--news" href="{% url 'main:news_all' %}">
+                <span class="about-link-card__number">01 / NEWS</span>
+                <span class="about-link-card__title">お知らせ</span>
+                <span class="about-link-card__description">放送部からのニュースや更新情報。</span>
+                <span class="about-link-card__arrow" aria-hidden="true">↗</span>
+            </a>
+            <a class="about-link-card about-link-card--manual" href="{% url 'manuals:manual_list' %}">
+                <span class="about-link-card__number">02 / MANUAL</span>
+                <span class="about-link-card__title">マニュアル</span>
+                <span class="about-link-card__description">部内向けの手順書・資料。</span>
+                <span class="about-link-card__arrow" aria-hidden="true">↗</span>
+            </a>
+            <a class="about-link-card about-link-card--video" href="{% url 'video_archive:video_list' %}">
+                <span class="about-link-card__number">03 / VIDEO ARCHIVE</span>
+                <span class="about-link-card__title">動画アーカイブ</span>
+                <span class="about-link-card__description">過去の動画を振り返るアーカイブ。</span>
+                <span class="about-link-card__arrow" aria-hidden="true">↗</span>
+            </a>
+        </div>
+    </section>
+
+    <nav class="about-pagination" aria-label="紹介ページ">
+        <button type="button" data-screen-target="about-screen-logo" aria-label="ロゴ" aria-current="step"></button>
+        <button type="button" data-screen-target="about-screen-intro" aria-label="放送部について"></button>
+        <button type="button" data-screen-target="about-screen-links" aria-label="サイト内コンテンツ"></button>
+    </nav>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{% static 'main/js/about.js' %}" defer></script>
+{% endblock %}

@@ -21,14 +21,17 @@ class ErrorPreviewTests(TestCase):
             403: reverse("preview_403"),
             404: reverse("preview_404"),
             500: reverse("preview_500"),
+            513: reverse("preview_513"),
+            418: reverse("preview_418"),
         }
         self.preview_icons = {
             400: "sentiment_dissatisfied",
             403: "gpp_bad",
             404: "search_off",
             500: "error",
+            513: "error",
+            418: "emoji_food_beverage",
         }
-
     def test_preview_pages_are_available_to_superusers(self):
         self.client.force_login(self.superuser)
 
@@ -87,10 +90,10 @@ class ErrorPreviewTests(TestCase):
         self.assertContains(response, "エラーページをプレビュー")
         for code, url in self.preview_urls.items():
             self.assertContains(response, f'href="{url}"')
-            self.assertContains(
-                response,
-                f"main/img/icons/{self.preview_icons[code]}.svg",
-            )
+            if code == 418:
+                self.assertContains(response, self.preview_icons[code])
+            else:
+                self.assertContains(response, f"main/img/icons/{self.preview_icons[code]}.svg")
 
     def test_django_error_handlers_render_matching_pages_and_status_codes(self):
         request = RequestFactory().get("/")
@@ -110,6 +113,17 @@ class ErrorPreviewTests(TestCase):
                 self.assertEqual(response.status_code, code)
                 self.assertIn(str(code), response.content.decode())
 
+    def test_hidden_teapot_page_returns_http_418_with_error_page_style(self):
+        response = self.client.get(reverse("teapot"))
+
+        self.assertEqual(response.status_code, 418)
+        self.assertContains(response, "418", status_code=418)
+        self.assertContains(response, "I'm a teapot", status_code=418)
+        self.assertContains(response, "main/css/error.css", status_code=418)
+
+        homepage = self.client.get(reverse("main:index"))
+        self.assertNotContains(homepage, reverse("teapot"))
+
     def test_service_worker_is_available_for_site_scope(self):
         response = self.client.get(reverse("service_worker"))
 
@@ -117,6 +131,7 @@ class ErrorPreviewTests(TestCase):
         self.assertEqual(response["Service-Worker-Allowed"], "/")
         self.assertEqual(response["Cache-Control"], "no-cache")
         worker_source = b"".join(response.streaming_content).decode()
+        self.assertIn('const CACHE_NAME = "rbs-offline-v2"', worker_source)
         self.assertIn("caches.open(CACHE_NAME)", worker_source)
 
         homepage = self.client.get(reverse("main:index"))
@@ -129,6 +144,9 @@ class ErrorPreviewTests(TestCase):
 
         self.assertIn("<svg", offline_page)
         self.assertIn("<path", offline_page)
+        self.assertIn('viewBox="0 0 48 48"', offline_page)
+        self.assertIn("stroke-linecap", offline_page)
         self.assertNotIn("fonts.googleapis.com", offline_page)
         self.assertNotIn("<link", offline_page)
+        self.assertNotIn("<img", offline_page)
         self.assertIn("再読み込み", offline_page)

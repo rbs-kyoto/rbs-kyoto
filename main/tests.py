@@ -4,10 +4,64 @@ from pathlib import Path
 
 from django.conf import settings
 from django.contrib.auth import get_user_model
+from django.core.files.uploadedfile import SimpleUploadedFile
 from django.test import TestCase
 from django.urls import reverse
 
-from .models import News
+from .admin import PickupAdminForm
+from .models import News, Pickup
+
+
+class PickupLinkTests(TestCase):
+    def _form(self, url):
+        return PickupAdminForm(
+            data={
+                "title": "サイト紹介",
+                "url": url,
+                "order": "0",
+                "is_active": "on",
+            },
+            files={
+                "image": SimpleUploadedFile(
+                    "pickup.png",
+                    b"pickup image",
+                    content_type="image/png",
+                ),
+            },
+        )
+
+    def test_home_relative_pickup_url_is_resolved_from_site_root(self):
+        form = self._form("about/")
+
+        self.assertTrue(form.is_valid(), form.errors)
+        self.assertEqual(form.cleaned_data["url"], "/about/")
+
+    def test_absolute_pickup_url_is_preserved(self):
+        form = self._form("https://example.com/events/")
+
+        self.assertTrue(form.is_valid(), form.errors)
+        self.assertEqual(form.cleaned_data["url"], "https://example.com/events/")
+
+    def test_protocol_relative_pickup_url_is_rejected(self):
+        form = self._form("//example.com/events/")
+
+        self.assertFalse(form.is_valid())
+        self.assertIn("url", form.errors)
+
+    def test_home_pickup_renders_internal_path(self):
+        pickup = Pickup.objects.create(
+            title="サイト紹介",
+            image=SimpleUploadedFile(
+                "pickup.png",
+                b"pickup image",
+                content_type="image/png",
+            ),
+            url="/about/",
+        )
+
+        response = self.client.get(reverse("main:index"))
+
+        self.assertContains(response, f'href="{pickup.url}"')
 
 
 class NewsListTests(TestCase):
@@ -31,6 +85,28 @@ class NewsListTests(TestCase):
         self.assertContains(response, 'data-theme-mode="dark"')
         self.assertContains(response, "rbs-dark.svg")
         self.assertContains(response, "login-dark.svg")
+
+
+class AboutPageTests(TestCase):
+    def test_about_page_explains_the_site_and_links_to_sections(self):
+        response = self.client.get(reverse("main:about"))
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "洛南高等学校・洛南高等学校附属中学校の放送部")
+        self.assertContains(response, "rbs.svg")
+        self.assertContains(response, reverse("main:news_all"))
+        self.assertContains(response, reverse("manuals:manual_list"))
+        self.assertContains(response, reverse("video_archive:video_list"))
+        self.assertContains(response, 'data-logo-stage')
+        self.assertContains(response, 'aria-label="rbsロゴ。マウスの動きに合わせて傾きます"')
+        self.assertNotContains(response, 'type="range"')
+        self.assertContains(response, 'aria-label="紹介ページ"')
+        self.assertContains(response, 'data-about-screen', count=3)
+        self.assertContains(response, 'data-screen-target', count=3)
+        self.assertLess(
+            response.content.index(b"data-logo-stage"),
+            response.content.index(b"about-intro-title"),
+        )
 
 
 class CanonicalHostTests(TestCase):

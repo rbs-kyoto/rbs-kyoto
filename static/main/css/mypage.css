@@ -228,6 +228,11 @@
     height: 1.75rem;
 }
 
+.error-preview-options a .error-preview-options__icon {
+    color: var(--Textcolor);
+    font-size: 1.75rem;
+}
+
 .error-preview-options a:focus-visible,
 .error-preview-dialog__close:focus-visible {
     outline: .15rem solid var(--Controlfocus);

@@ -8,7 +8,7 @@
     <style>
         :root {
             color-scheme: light;
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+            font-family: "Noto Sans JP", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
             font-size: 100%;
             color: #620610;
             background: #f3f5f7;
@@ -29,50 +29,88 @@
         }
 
         main {
-            width: min(40rem, 100%);
-            padding: 3rem;
-            border: .1rem solid #e2cdcf;
-            border-radius: 1.5rem;
-            corner-shape: superellipse(1.4);
-            background: #fff;
-            box-shadow: 0 0 1.5rem rgb(0 0 0 / 8%);
+            width: min(50rem, 100%);
+            margin: auto;
             text-align: center;
+        }
+
+        .error-heading {
+            position: relative;
+            padding: 0 3rem 1rem;
+        }
+
+        .error-heading::after {
+            position: absolute;
+            right: 0;
+            bottom: 0;
+            left: 0;
+            height: .1rem;
+            transform-origin: left center;
+            background: #620610;
+            animation: underline .8s ease-in-out .3s both;
+            content: "";
+        }
+
+        @keyframes underline {
+            from { transform: scaleX(0); }
+            to { transform: scaleX(1); }
         }
 
         .offline-icon {
             display: block;
-            width: 3rem;
-            height: 3rem;
+            width: 2.5rem;
+            height: 2.5rem;
             margin: 0 auto 1rem;
-            fill: #620610;
+            fill: none;
+            stroke: currentColor;
+            stroke-linecap: round;
+            stroke-linejoin: round;
+            stroke-width: 2.5;
         }
 
         h1 {
             margin: 0;
-            color: #620610;
-            font-size: 1.8rem;
-            line-height: 1.4;
+            font-size: 1.5rem;
+            font-weight: 600;
+            line-height: 1.5;
         }
 
-        p {
-            margin: 1rem 0 0;
-            color: #5b5658;
+        .error-code {
+            margin: .75rem 0 0;
+            font-size: 1.35rem;
+            font-weight: 600;
+            line-height: 1.3;
+        }
+
+        .error-code span {
+            display: block;
+            color: #91515c;
+            font-size: .9rem;
+            font-weight: 400;
+        }
+
+        .guidance {
+            margin: 2.25rem 0 0;
             font-size: 1rem;
             line-height: 1.8;
         }
 
         button {
             min-height: 2.75rem;
-            margin-top: 1.5rem;
-            padding: .65rem 1.25rem;
+            margin-top: 1.25rem;
+            padding: .65rem 1.1rem;
             border: .1rem solid #620610;
             border-radius: .6rem;
-            corner-shape: superellipse(1.4);
             background: #620610;
             color: #fff;
             font: inherit;
-            font-size: .95rem;
+            font-size: .9rem;
+            font-weight: 600;
             cursor: pointer;
+        }
+
+        button:hover {
+            background: #803845;
         }
 
         button:focus-visible {
@@ -80,36 +118,56 @@
             outline-offset: .15rem;
         }
 
-        @media (max-width: 1024px) {
-            :root {
-                font-size: 90%;
-            }
+        .logo {
+            display: block;
+            width: 5.5rem;
+            max-width: 35%;
+            height: auto;
+            margin: 2.5rem auto 0;
         }
 
         @media (max-width: 600px) {
-            :root {
-                font-size: 87.5%;
-            }
-
             body {
-                padding: 1rem;
+                padding: 1.25rem;
             }
 
-            main {
-                padding: 1.75rem 1.25rem;
-                border-radius: 1rem;
-                corner-shape: superellipse(1.3);
+            .error-heading {
+                padding-right: 1rem;
+                padding-left: 1rem;
+            }
+
+            h1 {
+                font-size: 1.3rem;
+            }
+
+            .guidance {
+                margin-top: 1.75rem;
+                font-size: .95rem;
+            }
+        }
+
+        @media (prefers-reduced-motion: reduce) {
+            .error-heading::after {
+                transform: scaleX(1);
+                animation: none;
             }
         }
     </style>
 </head>
 <body>
     <main>
-        <svg class="offline-icon" viewBox="0 -960 960 960" aria-hidden="true">
-            <path d="m112-112-56-56 720-720 56 56-119 119q54 41 88.5 101T847-480h-80q-8-48-38-87t-74-63L508-483q38 11 65 37t38 64h-80q-11-27-37-39t-54-2L112-112Zm368-48q-66 0-122.5-25T260-254l56-56q31 31 73 48.5t91 17.5q59 0 105-28.5t73-77.5l59 59q-40 64-99.5 97.5T480-160ZM200-400q-8 20-12 41t-4 43h-80q0-36 7-70t22-65l67 51Zm-80-80q8-80 48-145t103-104l57 57q-53 30-87.5 81T201-480h-81Zm192-178-58-58q42-35 95-54.5T460-790v80q-42 0-79 12t-69 40Zm228-38 58-58q30 21 55 48.5t43 60.5l-58 58q-18-35-43-63t-55-46Z"/>
-        </svg>
-        <h1>インターネットに接続できません</h1>
-        <p>
+        <header class="error-heading">
+            <svg class="offline-icon" viewBox="0 0 48 48" aria-hidden="true">
+                <path d="M5 17.5a30 30 0 0 1 38 0"></path>
+                <path d="M11 24a20 20 0 0 1 11.5-5.8M25.5 18.2A20 20 0 0 1 37 24"></path>
+                <path d="M17 30a11 11 0 0 1 6-3.2M25 26.8a11 11 0 0 1 6 3.2"></path>
+                <path d="M23.5 37h1"></path>
+                <path d="M7 7l34 34"></path>
+            </svg>
+            <h1>インターネットに接続できません</h1>
+        </header>
+        <p class="error-code">OFFLINE<span>接続エラー</span></p>
+        <p class="guidance">
             ネットワークの接続を確認してから、もう一度お試しください。
         </p>
         <button type="button" onclick="location.reload()">再読み込み</button>

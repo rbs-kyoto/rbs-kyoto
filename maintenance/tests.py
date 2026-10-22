@@ -91,6 +91,8 @@ class MaintenanceSettingTests(TestCase):
         self.assertIn("サービス再開予定", content)
         self.assertIn("2026年10月20日", content)
         self.assertIn('class="logo"', content)
+        self.assertIn("main/css/error.css", content)
+        self.assertIn('class="error-heading"', content)
 
     def test_admin_url_bypasses_maintenance_but_requires_django_admin_auth(self):
         self.setting.mode = MaintenanceSetting.Mode.EMERGENCY

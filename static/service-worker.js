@@ -1,4 +1,4 @@
-const CACHE_NAME = "rbs-offline-v1";
+const CACHE_NAME = "rbs-offline-v2";
 const OFFLINE_URL = "/static/offline.html";
 
 self.addEventListener("install", (event) => {
