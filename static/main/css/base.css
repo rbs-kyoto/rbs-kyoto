@@ -696,6 +696,103 @@ img.thumbnail {
     text-shadow: 0 .1rem .5rem var(--Black-t700);
 }
 
+.top-pickup__arrow {
+    position: absolute;
+    top: 50%;
+    z-index: 1;
+    display: grid;
+    place-items: center;
+    width: 2.75rem;
+    height: 2.75rem;
+    padding: 0;
+    border: 0;
+    border-radius: 50%;
+    background-color: var(--Black-t400);
+    color: var(--Natural-white);
+    font-family: "Material Symbols Rounded";
+    font-size: 1.75rem;
+    line-height: 1;
+    cursor: pointer;
+    transform: translateY(-50%);
+    transition: background-color .2s ease;
+}
+
+.top-pickup__arrow:hover,
+.top-pickup__arrow:focus-visible {
+    background-color: var(--Black-t700);
+}
+
+.top-pickup__arrow--previous {
+    left: .75rem;
+}
+
+.top-pickup__arrow--next {
+    right: .75rem;
+}
+
+.top-pickup__dots {
+    position: absolute;
+    right: 1rem;
+    bottom: 1rem;
+    z-index: 1;
+    display: flex;
+    gap: .25rem;
+    padding: .25rem .5rem;
+    border-radius: 999px;
+    background-color: var(--Black-t400);
+}
+
+/* 見た目は小さい点のまま、押せる範囲だけ広げる */
+.top-pickup__dot {
+    position: relative;
+    width: .625rem;
+    height: .625rem;
+    padding: 0;
+    border: 0;
+    border-radius: 50%;
+    background-color: var(--White-t500);
+    cursor: pointer;
+    transition: background-color .2s ease, transform .2s ease;
+}
+
+.top-pickup__dot::before {
+    position: absolute;
+    inset: -.5rem -.15rem;
+    content: "";
+}
+
+.top-pickup__dot[aria-current="true"] {
+    background-color: var(--Natural-white);
+    transform: scale(1.2);
+}
+
+.top-pickup__arrow:focus-visible,
+.top-pickup__dot:focus-visible {
+    outline: .15rem solid var(--Natural-white);
+    outline-offset: .15rem;
+}
+
+@media (max-width: 768px) {
+    .top-pickup__arrow {
+        width: 2rem;
+        height: 2rem;
+        font-size: 1.25rem;
+    }
+
+    .top-pickup__arrow--previous {
+        left: .5rem;
+    }
+
+    .top-pickup__arrow--next {
+        right: .5rem;
+    }
+
+    .top-pickup__dots {
+        right: .5rem;
+        bottom: .5rem;
+    }
+}
+
 section.top-news-section {}
 
 section.top-apps-section {
