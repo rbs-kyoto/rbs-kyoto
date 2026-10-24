@@ -1,0 +1,14 @@
+[Unit]
+Description=rbs-kyoto admin (Django)
+After=network.target
+
+[Service]
+User=rbs
+Group=rbs
+WorkingDirectory=/srv/rbs-kyoto
+Environment=ENV_FILE=/srv/rbs-kyoto/.env
+ExecStart=/srv/rbs-kyoto/.venv/bin/daphne -b 127.0.0.1 -p 8000 config.asgi:application
+Restart=on-failure
+
+[Install]
+WantedBy=multi-user.target

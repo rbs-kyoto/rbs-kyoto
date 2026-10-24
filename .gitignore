@@ -13,3 +13,5 @@ staticfiles/
 *.sqlite3.backup
 *.json
 *.code-workspace
+site_build/
+gate/config.php

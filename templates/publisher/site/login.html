@@ -1,0 +1,34 @@
+{% extends "main/base.html" %}
+{% load static %}
+
+{% block title %}ログイン｜rbs京都{% endblock %}
+{% block description %}rbs京都のログインページです．{% endblock %}
+{% block extra_css %}<link rel="stylesheet" href="{% static 'main/css/login.css' %}">{% endblock %}
+
+{% block content %}
+<section class="login-section">
+    <div class="login-container">
+        <div class="login-header">
+            <div class="login-header__title">
+                <img
+                    class="login-logo"
+                    src="{% static 'main/img/rbs.svg' %}"
+                    data-theme-light-src="{% static 'main/img/rbs.svg' %}"
+                    data-theme-dark-src="{% static 'main/img/rbs-dark.svg' %}"
+                    alt="rbs京都"
+                >
+                <h2>へログイン</h2>
+            </div>
+            <p>生徒ログインページ</p>
+        </div>
+        <div class="login-form">
+            {{ message_placeholder|safe }}
+            {# gate/ のGoogleログイン開始URL。戻り先は gate/ がセッションに覚えている #}
+            <a class="common-style login_with_google Google-font" href="/accounts/google/login/">
+                <img class="login_with_google-logo" src="{% static 'main/img/Google.svg' %}" alt="Google">
+                Googleでログイン
+            </a>
+        </div>
+    </div>
+</section>
+{% endblock %}

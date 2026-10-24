@@ -68,6 +68,7 @@ INSTALLED_APPS = [
     'video_archive',
     'maintenance',
     'errors',
+    'publisher',
 ]
 
 ASGI_APPLICATION = 'config.asgi.application'
@@ -85,7 +86,12 @@ MIDDLEWARE = [
     "allauth.account.middleware.AccountMiddleware",
 ]
 
-ROOT_URLCONF = 'config.urls'
+# "site" は従来どおりDjangoが公開サイトを配信する。
+# "admin" は管理専用（admin.rbs-kyoto.org 想定）で、公開サイトは静的書き出しを
+# Apache + gate/ が配信する。
+SITE_ROLE = os.getenv("SITE_ROLE", "site").strip().lower()
+
+ROOT_URLCONF = 'config.urls_admin' if SITE_ROLE == "admin" else 'config.urls'
 
 TEMPLATES = [
     {
@@ -177,6 +183,10 @@ STATIC_ROOT = BASE_DIR / "staticfiles"
 
 MEDIA_URL = "/media/"
 MEDIA_ROOT = BASE_DIR / "media"
+
+# 静的書き出しの出力先。releases/vN/ に各バージョン、current がその公開中への
+# シンボリックリンクになる。Apache と gate/ はここを読む。
+SITE_BUILD_ROOT = Path(os.getenv("SITE_BUILD_ROOT", BASE_DIR / "site_build"))
 
 
 # Email

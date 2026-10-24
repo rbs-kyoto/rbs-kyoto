@@ -1,0 +1,106 @@
+{% extends "admin/base_site.html" %}
+
+{% block extrastyle %}
+{{ block.super }}
+<style>
+    .publisher-section { margin-bottom: 2rem; }
+    .publisher-section h2 { margin-bottom: .75rem; }
+    .publisher-actions { display: flex; flex-wrap: wrap; gap: .5rem; align-items: center; }
+    .publisher-badge { display: inline-block; padding: .1rem .5rem; border-radius: 999px; font-size: .8rem; }
+    .publisher-badge--active { background: var(--message-success-bg); color: var(--body-fg); }
+    .publisher-badge--warning { background: var(--message-warning-bg); color: var(--body-fg); }
+    .publisher-badge--failed { background: var(--message-error-bg); color: var(--body-fg); }
+    .publisher-deploy-form input[type="text"] { width: min(30rem, 100%); }
+    .publisher-table { width: 100%; }
+    .publisher-table pre { max-height: 15rem; overflow: auto; white-space: pre-wrap; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div id="content-main">
+    <section class="publisher-section">
+        <h2>公開状態</h2>
+        <p class="publisher-actions">
+            {% if active_version %}
+                <span class="publisher-badge publisher-badge--active">バージョン {{ active_version }} を公開中</span>
+            {% else %}
+                <span class="publisher-badge publisher-badge--warning">まだ公開されていません</span>
+            {% endif %}
+            {% if has_unpublished_changes %}
+                <span class="publisher-badge publisher-badge--warning">未公開の変更あり</span>
+            {% endif %}
+        </p>
+    </section>
+
+    <section class="publisher-section">
+        <h2>テストデプロイ（プレビュー）</h2>
+        <p>DBの最新の内容をそのまま表示します。公開サイトには反映されません。</p>
+        <p class="publisher-actions">
+            <a class="button" href="{% url 'publisher:preview' 'public' %}" target="_blank" rel="noopener">公開用で見る</a>
+            <a class="button" href="{% url 'publisher:preview' 'members' %}" target="_blank" rel="noopener">部員用で見る</a>
+        </p>
+    </section>
+
+    <section class="publisher-section">
+        <h2>新しいデプロイ</h2>
+        <form class="publisher-deploy-form publisher-actions" method="post" action="{% url 'publisher:deploy' %}">
+            {% csrf_token %}
+            <input type="text" name="description" maxlength="200" placeholder="説明（例：10月のニュースを追加）">
+            <input type="submit" class="default" value="デプロイ">
+        </form>
+    </section>
+
+    <section class="publisher-section">
+        <h2>デプロイを管理</h2>
+        <table class="publisher-table">
+            <thead>
+                <tr>
+                    <th>バージョン</th>
+                    <th>説明</th>
+                    <th>日時</th>
+                    <th>作成者</th>
+                    <th>ページ数</th>
+                    <th>状態</th>
+                    <th></th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for deployment in deployments %}
+                <tr>
+                    <td>{{ deployment.version }}</td>
+                    <td>{{ deployment.description|default:"—" }}</td>
+                    <td>{{ deployment.created_at|date:"Y/m/d H:i" }}</td>
+                    <td>{{ deployment.created_by|default:"—" }}</td>
+                    <td>{{ deployment.page_count }}</td>
+                    <td>
+                        {% if deployment.status == "failed" %}
+                            <span class="publisher-badge publisher-badge--failed">{{ deployment.get_status_display }}</span>
+                            <details>
+                                <summary>エラー内容</summary>
+                                <pre>{{ deployment.error }}</pre>
+                            </details>
+                        {% elif deployment.version == active_version %}
+                            <span class="publisher-badge publisher-badge--active">公開中</span>
+                        {% else %}
+                            {{ deployment.get_status_display }}
+                        {% endif %}
+                    </td>
+                    <td>
+                        {% if deployment.status == "ready" and deployment.version != active_version %}
+                        <form method="post" action="{% url 'publisher:activate' deployment.version %}">
+                            {% csrf_token %}
+                            <input type="submit" value="このバージョンを公開">
+                        </form>
+                        {% endif %}
+                    </td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="7">まだデプロイしていません。</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </section>
+</div>
+{% endblock %}

@@ -1,3 +1,4 @@
+from django.conf import settings
 from django.shortcuts import render
 from django.utils import timezone
 
@@ -11,7 +12,9 @@ class MaintenanceModeMiddleware:
     def __call__(self, request):
         path = request.path_info
         if (
-            path == "/admin"
+            # 管理ホストはメンテ中こそ使うので止めない
+            settings.SITE_ROLE == "admin"
+            or path == "/admin"
             or path.startswith("/admin/")
             or path.startswith("/static/")
             or path.startswith("/media/")

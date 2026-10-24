@@ -17,17 +17,6 @@
         >
             <img src="{% static 'main/img/rbs.svg' %}" alt="rbs">
         </div>
-        {% if user.is_authenticated %}
-        <form
-            class="about-unlock-form"
-            data-superuser-unlock-form
-            action="{% url 'accounts:superuser_unlock' %}"
-            method="post"
-            hidden
-        >
-            {% csrf_token %}
-        </form>
-        {% endif %}
     </section>
 
     <section class="about-screen about-intro" id="about-screen-intro" aria-labelledby="about-intro-title" data-about-screen>

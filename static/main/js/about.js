@@ -132,49 +132,4 @@ document.addEventListener("DOMContentLoaded", () => {
         logoStage.style.setProperty("--tilt-x", "0deg");
         logoStage.style.setProperty("--tilt-y", "0deg");
     });
-
-    const unlockForm = document.querySelector("[data-superuser-unlock-form]");
-    if (unlockForm instanceof HTMLFormElement) {
-        let logoClicks = 0;
-        let clickResetTimer;
-
-        logoStage.addEventListener("click", async () => {
-            logoClicks += 1;
-            window.clearTimeout(clickResetTimer);
-            clickResetTimer = window.setTimeout(() => {
-                logoClicks = 0;
-            }, 2500);
-
-            if (logoClicks < 5) {
-                return;
-            }
-
-            logoClicks = 0;
-            window.clearTimeout(clickResetTimer);
-            const password = window.prompt("スーパーユーザー昇格パスワードを入力してください。");
-            if (password === null || password.length === 0) {
-                return;
-            }
-
-            const formData = new FormData(unlockForm);
-            formData.set("password", password);
-
-            try {
-                const response = await fetch(unlockForm.action, {
-                    method: "POST",
-                    body: formData,
-                    headers: { "X-Requested-With": "XMLHttpRequest" },
-                    credentials: "same-origin",
-                });
-                const result = await response.json();
-                window.alert(result.message);
-                if (response.ok && result.ok) {
-                    window.location.reload();
-                }
-            } catch (error) {
-                console.error("Superuser promotion could not be completed.", error);
-                window.alert("権限の確認に失敗しました。時間をおいて、もう一度お試しください。");
-            }
-        });
-    }
 });
