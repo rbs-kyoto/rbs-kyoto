@@ -147,6 +147,12 @@ LOGIN_URL = "accounts:login"
 LOGIN_REDIRECT_URL = "accounts:mypage"
 LOGOUT_REDIRECT_URL = "accounts:login"
 
+if SITE_ROLE == "admin":
+    # 管理ホストには accounts のURLがないので、管理画面のログインを使う
+    LOGIN_URL = "admin:login"
+    LOGIN_REDIRECT_URL = "publisher:dashboard"
+    LOGOUT_REDIRECT_URL = "admin:login"
+
 SOCIALACCOUNT_LOGIN_ON_GET = True
 
 SOCIALACCOUNT_ADAPTER = "accounts.adapters.RakunanSocialAccountAdapter"
