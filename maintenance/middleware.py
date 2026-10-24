@@ -19,6 +19,10 @@ class MaintenanceModeMiddleware:
         ):
             return self.get_response(request)
 
+        user = getattr(request, "user", None)
+        if user is not None and user.is_authenticated and user.is_superuser:
+            return self.get_response(request)
+
         setting = MaintenanceSetting.get_solo()
         status = setting.status_at(timezone.now())
         if status == MaintenanceSetting.Status.INACTIVE:
