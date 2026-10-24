@@ -1,0 +1,72 @@
+{% extends "admin/base_site.html" %}
+{% load static %}
+
+{% block extrastyle %}{{ block.super }}
+<link rel="stylesheet" href="{% static 'publisher/dashboard.css' %}">
+{% endblock %}
+
+{% block content %}
+<div class="publisher">
+    <section class="publisher-card">
+        <div class="publisher-row publisher-row--between">
+            <div class="publisher-row">
+                <span class="publisher-badge publisher-badge--{{ summary.0 }}">{{ summary.1 }}</span>
+                <span class="publisher-card__text">
+                    最終確認：{{ status.checked_at|date:"Y/m/d H:i"|default:"—" }}（1日1回、自動で確認します）
+                </span>
+            </div>
+            <form method="post" action="{% url 'system_status:check_now' %}">
+                {% csrf_token %}
+                <button class="publisher-button" type="submit">今すぐ確認</button>
+            </form>
+        </div>
+    </section>
+
+    <section class="publisher-card">
+        <h2 class="publisher-card__title">確認項目</h2>
+        <div class="publisher-table-wrapper">
+            <table class="publisher-table">
+                <thead>
+                    <tr>
+                        <th>項目</th>
+                        <th>状態</th>
+                        <th>内容</th>
+                        <th>詳細・すること</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for item in items %}
+                    <tr>
+                        <td>{{ item.label }}</td>
+                        <td><span class="publisher-badge publisher-badge--{{ item.badge }}">{{ item.level_label }}</span></td>
+                        <td>{{ item.value }}</td>
+                        <td>
+                            {{ item.detail }}
+                            {% if item.advice %}<p class="publisher-advice">{{ item.advice }}</p>{% endif %}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </section>
+
+    <section class="publisher-card">
+        <h2 class="publisher-card__title">困ったときの連絡先・引き継ぎメモ</h2>
+        {% if notes_form %}
+        <form class="publisher-notes" method="post" action="{% url 'system_status:update_notes' %}">
+            {% csrf_token %}
+            {{ notes_form.notes }}
+            <p class="publisher-card__text">{{ notes_form.notes.help_text }}</p>
+            <div>
+                <button class="publisher-button publisher-button--primary" type="submit">メモを保存</button>
+            </div>
+        </form>
+        {% elif status.notes %}
+        <p class="publisher-notes__text">{{ status.notes|linebreaksbr }}</p>
+        {% else %}
+        <p class="publisher-card__text">まだ何も書かれていません。</p>
+        {% endif %}
+    </section>
+</div>
+{% endblock %}

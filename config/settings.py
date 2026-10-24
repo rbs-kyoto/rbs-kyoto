@@ -72,6 +72,7 @@ INSTALLED_APPS = [
     'maintenance',
     'errors',
     'publisher',
+    'system_status',
 ]
 
 ASGI_APPLICATION = 'config.asgi.application'
@@ -233,7 +234,7 @@ UNFOLD = {
     "SITE_SYMBOL": "radio",
     "SITE_URL": os.getenv("PUBLIC_SITE_URL", "/"),
     "SHOW_VIEW_ON_SITE": False,
-    "ENVIRONMENT": "publisher.admin_ui.environment_callback",
+    "ENVIRONMENT": "system_status.admin_ui.environment_callback",
     "COLORS": {
         # rbsのえんじ色 #620610（oklch 31.7% .122 23.7）を900に置いた段階
         "primary": {
@@ -255,13 +256,19 @@ UNFOLD = {
         "show_all_applications": False,
         "navigation": [
             {
-                "title": "公開",
+                "title": "公開・運用",
                 "items": [
                     {
                         "title": "デプロイを管理",
                         "icon": "rocket_launch",
                         "link": reverse_lazy("publisher:dashboard"),
                         "badge": "publisher.admin_ui.unpublished_badge",
+                    },
+                    {
+                        "title": "システムの状態",
+                        "icon": "monitor_heart",
+                        "link": reverse_lazy("system_status:status"),
+                        "badge": "system_status.admin_ui.attention_badge",
                     },
                 ],
             },

@@ -58,6 +58,7 @@
     border-radius: 999px;
     font-size: .75rem;
     font-weight: 600;
+    white-space: nowrap;
 }
 
 .publisher-badge--success {
@@ -154,4 +155,38 @@
     overflow: auto;
     white-space: pre-wrap;
     font-size: .75rem;
+}
+
+.publisher-row--between {
+    justify-content: space-between;
+}
+
+.publisher-badge--neutral {
+    background: var(--color-base-100);
+    color: var(--color-base-600);
+}
+
+.dark .publisher-badge--neutral {
+    background: var(--color-base-800);
+    color: var(--color-base-300);
+}
+
+.publisher-advice {
+    margin-top: .25rem;
+    font-weight: 600;
+    color: var(--color-primary-700);
+}
+
+.dark .publisher-advice {
+    color: var(--color-primary-300);
+}
+
+.publisher-notes {
+    display: flex;
+    flex-direction: column;
+    gap: .5rem;
+}
+
+.publisher-notes__text {
+    font-size: .875rem;
 }

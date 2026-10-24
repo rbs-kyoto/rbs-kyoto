@@ -5,13 +5,6 @@ from django.urls import reverse
 from . import builder
 
 
-def environment_callback(request):
-    # 画面右上に常に出るラベル。どの画面にいても未公開の変更に気づけるようにする
-    if builder.has_unpublished_changes():
-        return ["未公開の変更あり", "warning"]
-    return None
-
-
 def unpublished_badge(request):
     return "未公開" if builder.has_unpublished_changes() else None
 

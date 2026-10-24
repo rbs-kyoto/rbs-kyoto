@@ -17,6 +17,7 @@ urlpatterns = [
     path("admin/", admin.site.urls),
     path("ckeditor5/", include("django_ckeditor_5.urls")),
     path("deploy/", include("publisher.urls")),
+    path("system/", include("system_status.urls")),
 ]
 
 # エラーテンプレートは公開側のURLを参照するので、公開側のURL設定で描画する
