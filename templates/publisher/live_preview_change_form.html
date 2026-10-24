@@ -1,0 +1,40 @@
+{% extends "admin/change_form.html" %}
+{% load static %}
+
+{% block extrahead %}{{ block.super }}
+<link rel="stylesheet" href="{% static 'publisher/live_preview.css' %}">
+<script src="{% static 'publisher/live_preview.js' %}" defer></script>
+{% endblock %}
+
+{% block content %}
+<div class="live-preview-layout">
+    <div class="live-preview-layout__form">{{ block.super }}</div>
+    <aside
+        class="live-preview"
+        aria-label="プレビュー"
+        data-live-preview
+        data-url="{{ live_preview_url }}"
+        data-object-id="{{ live_preview_object_id }}"
+        data-form-id="{{ opts.model_name }}_form"
+    >
+        <div class="live-preview__header">
+            <div>
+                <p class="live-preview__title">プレビュー</p>
+                <p class="live-preview__location" data-live-preview-location>読み込み中…</p>
+            </div>
+            <div class="live-preview__controls">
+                <span class="live-preview__status" data-live-preview-status aria-live="polite"></span>
+                <div class="live-preview__toggle" role="group" aria-label="表示幅">
+                    <button type="button" data-live-preview-mode="pc" aria-pressed="true">PC</button>
+                    <button type="button" data-live-preview-mode="mobile" aria-pressed="false">スマホ</button>
+                </div>
+            </div>
+        </div>
+        <div class="live-preview__viewport" data-live-preview-viewport>
+            {# Cloudflare Access のCookieで静的ファイルを読めるよう、管理画面と同じオリジンで描画する #}
+            <iframe title="プレビュー"></iframe>
+        </div>
+        <p class="live-preview__note">保存してデプロイするまで、公開サイトには反映されません。</p>
+    </aside>
+</div>
+{% endblock %}

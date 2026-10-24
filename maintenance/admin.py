@@ -1,10 +1,11 @@
 from django.contrib import admin
+from unfold.admin import ModelAdmin
 
 from .models import MaintenanceSetting
 
 
 @admin.register(MaintenanceSetting)
-class MaintenanceSettingAdmin(admin.ModelAdmin):
+class MaintenanceSettingAdmin(ModelAdmin):
     fieldsets = (
         (
             "運用状態",

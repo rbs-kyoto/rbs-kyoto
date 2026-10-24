@@ -36,8 +36,8 @@ class VideoGroup(models.Model):
 
     class Meta:
         ordering = ["order", "name"]
-        verbose_name = "Video group"
-        verbose_name_plural = "Video groups"
+        verbose_name = "動画グループ"
+        verbose_name_plural = "動画グループ"
 
     def __str__(self):
         return self.name
@@ -71,8 +71,8 @@ class Video(models.Model):
 
     class Meta:
         ordering = ["group__order", "group__name", "order", "-registered_at"]
-        verbose_name = "Video"
-        verbose_name_plural = "Video"
+        verbose_name = "動画"
+        verbose_name_plural = "動画"
 
     def __str__(self):
         return self.title

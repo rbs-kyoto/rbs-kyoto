@@ -14,8 +14,8 @@ class Pickup(models.Model):
 
     class Meta:
         ordering = ["order"]
-        verbose_name = "Pickup"
-        verbose_name_plural = "Pickup"
+        verbose_name = "ピックアップ"
+        verbose_name_plural = "ピックアップ"
 
     def __str__(self):
         return self.title
@@ -26,15 +26,15 @@ class Category(models.Model):
 
     class Meta:
         ordering = ["order", "name"]
-        verbose_name = "Category"
-        verbose_name_plural = "Category"
+        verbose_name = "カテゴリ"
+        verbose_name_plural = "カテゴリ"
 
     def __str__(self):
         return self.name
 
 class News(models.Model):
-    title = models.CharField(max_length=200)
-    date = models.DateField()
+    title = models.CharField("タイトル", max_length=200)
+    date = models.DateField("日付")
     category = models.ForeignKey(
         Category,
         verbose_name="カテゴリ",
@@ -44,14 +44,14 @@ class News(models.Model):
         related_name="news",
     )
     caption = CKEditor5Field("本文", config_name="extends")
-    image = models.ImageField(upload_to="news/", blank=True, null=True)
-    is_active = models.BooleanField(default=True)
-    is_internal = models.BooleanField(default=False)
+    image = models.ImageField("画像", upload_to="news/", blank=True, null=True)
+    is_active = models.BooleanField("公開", default=True)
+    is_internal = models.BooleanField("部内限定", default=False)
 
     class Meta:
         ordering = ["-date"]
-        verbose_name = "News"
-        verbose_name_plural = "News"
+        verbose_name = "ニュース"
+        verbose_name_plural = "ニュース"
 
     def __str__(self):
         return self.title

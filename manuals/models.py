@@ -10,8 +10,8 @@ class Manual(models.Model):
 
     class Meta:
         ordering = ["order", "-uploaded_at"]
-        verbose_name = "Manual"
-        verbose_name_plural = "Manual"
+        verbose_name = "マニュアル"
+        verbose_name_plural = "マニュアル"
 
     def __str__(self):
         return self.title

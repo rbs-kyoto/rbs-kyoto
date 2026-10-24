@@ -7,6 +7,7 @@ from . import views as config_views
 
 urlpatterns = [
     path("admin/", admin.site.urls),
+    path("deploy/", include("publisher.urls")),
     path("ckeditor5/", include("django_ckeditor_5.urls")),
     path("accounts/", include("accounts.urls")),
     path("service-worker.js", config_views.service_worker, name="service_worker"),

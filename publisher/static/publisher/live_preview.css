@@ -1,0 +1,128 @@
+.live-preview-layout {
+    display: grid;
+    gap: 1.5rem;
+}
+
+/* fieldset は既定で中身より狭くならず、プレビューの下にはみ出すため */
+.live-preview-layout__form fieldset,
+.live-preview-layout__form .field-line .grow {
+    min-width: 0;
+}
+
+@media (min-width: 1280px) {
+    .live-preview-layout {
+        grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+        align-items: start;
+    }
+
+    .live-preview {
+        position: sticky;
+        top: 1rem;
+    }
+}
+
+.live-preview {
+    display: flex;
+    flex-direction: column;
+    gap: .75rem;
+    padding: .75rem;
+    border: 1px solid var(--color-base-200);
+    border-radius: .5rem;
+    background: #fff;
+}
+
+.dark .live-preview {
+    border-color: var(--color-base-800);
+    background: var(--color-base-900);
+}
+
+.live-preview__header {
+    display: flex;
+    flex-wrap: wrap;
+    gap: .5rem 1rem;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.live-preview__title {
+    font-weight: 600;
+    color: var(--color-base-900);
+}
+
+.dark .live-preview__title {
+    color: var(--color-base-100);
+}
+
+.live-preview__location {
+    font-size: .875rem;
+    color: var(--color-primary-600);
+}
+
+.dark .live-preview__location {
+    color: var(--color-primary-300);
+}
+
+.live-preview__controls {
+    display: flex;
+    gap: .75rem;
+    align-items: center;
+}
+
+.live-preview__status {
+    font-size: .75rem;
+    color: var(--color-base-500);
+}
+
+.live-preview__status[data-state="error"] {
+    color: oklch(57.7% .245 27.325);
+}
+
+.live-preview__toggle {
+    display: inline-flex;
+    padding: .125rem;
+    border: 1px solid var(--color-base-200);
+    border-radius: .375rem;
+}
+
+.dark .live-preview__toggle {
+    border-color: var(--color-base-700);
+}
+
+.live-preview__toggle button {
+    padding: .125rem .625rem;
+    border-radius: .25rem;
+    font-size: .75rem;
+    color: var(--color-base-600);
+}
+
+.live-preview__toggle button[aria-pressed="true"] {
+    background: var(--color-primary-600);
+    color: #fff;
+}
+
+.live-preview__viewport {
+    position: relative;
+    height: calc(100vh - 16rem);
+    min-height: 24rem;
+    overflow: hidden;
+    border-radius: .375rem;
+    background: var(--color-base-100);
+}
+
+.dark .live-preview__viewport {
+    background: var(--color-base-800);
+}
+
+.live-preview__viewport iframe {
+    position: absolute;
+    top: 0;
+    left: 0;
+    border: 0;
+    background: #fff;
+    transform-origin: 0 0;
+}
+
+.live-preview__note {
+    font-size: .75rem;
+    color: var(--color-base-500);
+}

@@ -206,3 +206,105 @@ class AdminHostTests(BuildRootMixin, TestCase):
         response = self.client.get(reverse("publisher:dashboard"))
 
         self.assertEqual(response.status_code, 200)
+
+
+@override_settings(ROOT_URLCONF="config.urls_admin", SITE_ROLE="admin")
+class LivePreviewTests(BuildRootMixin, TestCase):
+    def setUp(self):
+        super().setUp()
+        self.staff = get_user_model().objects.create_superuser("staff", "staff@example.com", "pass")
+        self.client.force_login(self.staff)
+        self.news = News.objects.create(title="元のタイトル", date=date(2026, 10, 1), caption="<p>元の本文</p>")
+
+    def news_data(self, **overrides):
+        data = {
+            "title": "元のタイトル",
+            "date": "2026-10-01",
+            "caption": "<p>元の本文</p>",
+            "is_active": "on",
+            "_live_preview_object_id": str(self.news.pk),
+        }
+        data.update(overrides)
+        return data
+
+    def post(self, model, data):
+        app_label, model_name = model.split(".")
+        return self.client.post(reverse("publisher:live_preview", args=[app_label, model_name]), data)
+
+    def test_renders_unsaved_input_without_saving(self):
+        response = self.post("main.news", self.news_data(title="入力中のタイトル"))
+
+        self.assertEqual(response.status_code, 200)
+        self.assertIn("入力中のタイトル", response.json()["html"])
+        self.assertEqual(response.json()["location"], "ニュース記事のページ")
+        self.news.refresh_from_db()
+        self.assertEqual(self.news.title, "元のタイトル")
+
+    def test_member_only_news_is_rendered_as_members_page(self):
+        response = self.post("main.news", self.news_data(is_internal="on"))
+
+        self.assertIn("部員限定", response.json()["location"])
+        self.assertIn('href="/deploy/preview/members/accounts/mypage/"', response.json()["html"])
+
+    def test_caption_is_sanitized_like_on_save(self):
+        response = self.post("main.news", self.news_data(caption="<p>本文</p><script>alert(1)</script>"))
+
+        self.assertNotIn("<script>alert(1)</script>", response.json()["html"])
+
+    def test_invalid_fields_keep_previous_values(self):
+        response = self.post("main.news", self.news_data(title="", date="not-a-date"))
+
+        self.assertEqual(response.status_code, 200)
+        self.assertIn("元のタイトル", response.json()["html"])
+
+    def test_new_pickup_with_selected_image_is_shown_first(self):
+        response = self.post(
+            "main.pickup",
+            {"title": "新しいピックアップ", "caption": "", "order": "0", "is_active": "on", "_live_preview_files": "image"},
+        )
+
+        html = response.json()["html"]
+        self.assertIn('src="live-preview-file:image"', html)
+        self.assertIn("先頭", response.json()["location"])
+
+    def test_service_worker_is_not_registered_from_preview(self):
+        response = self.post("main.news", self.news_data())
+
+        self.assertNotIn("service_worker.js", response.json()["html"])
+
+    def test_requires_staff_and_post(self):
+        url = reverse("publisher:live_preview", args=["main", "news"])
+        self.assertEqual(self.client.get(url).status_code, 405)
+        self.assertEqual(
+            self.client.post(reverse("publisher:live_preview", args=["main", "category"])).status_code, 404
+        )
+
+        self.client.force_login(get_user_model().objects.create_user("member", "m@example.com", "pass"))
+        self.assertEqual(self.client.post(url, self.news_data()).status_code, 302)
+
+    def test_change_form_shows_preview_panel(self):
+        response = self.client.get(reverse("admin:main_news_change", args=[self.news.pk]))
+
+        self.assertContains(response, "data-live-preview")
+        self.assertContains(response, reverse("publisher:live_preview", args=["main", "news"]))
+
+
+@override_settings(ROOT_URLCONF="config.urls_admin", SITE_ROLE="admin")
+class AdminPagesTests(BuildRootMixin, TestCase):
+    def test_every_admin_list_and_add_page_renders(self):
+        self.client.force_login(get_user_model().objects.create_superuser("staff", "staff@example.com", "pass"))
+        for model in ("main.pickup", "main.news", "main.category", "manuals.manual", "video_archive.video",
+                      "video_archive.videogroup", "accounts.user", "auth.group"):
+            app_label, model_name = model.split(".")
+            for page in ("changelist", "add"):
+                with self.subTest(model=model, page=page):
+                    response = self.client.get(reverse(f"admin:{app_label}_{model_name}_{page}"))
+                    self.assertEqual(response.status_code, 200)
+
+    def test_unpublished_changes_are_flagged_in_the_header(self):
+        self.client.force_login(get_user_model().objects.create_superuser("staff", "staff@example.com", "pass"))
+        News.objects.create(title="a", date=date(2026, 10, 1), caption="<p>a</p>")
+
+        response = self.client.get(reverse("admin:main_news_changelist"))
+
+        self.assertContains(response, "未公開の変更あり")

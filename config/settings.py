@@ -12,6 +12,7 @@ https://docs.djangoproject.com/en/6.1/ref/settings/
 
 import os
 from pathlib import Path
+from django.urls import reverse_lazy
 from dotenv import load_dotenv
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
@@ -51,6 +52,8 @@ ALLOWED_HOSTS = list(
 INSTALLED_APPS = [
     'daphne',
     'channels',
+    # 管理画面のテーマ。django.contrib.admin より前に置く
+    'unfold',
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
@@ -217,6 +220,81 @@ CKEDITOR_5_CONFIGS = {
             "|",
             "undo",
             "redo",
+        ],
+    },
+}
+
+# 管理画面（Unfold）
+# https://unfoldadmin.com/docs/configuration/settings/
+UNFOLD = {
+    "SITE_TITLE": "rbs京都 管理",
+    "SITE_HEADER": "rbs京都",
+    "SITE_SUBHEADER": "管理画面",
+    "SITE_SYMBOL": "radio",
+    "SITE_URL": os.getenv("PUBLIC_SITE_URL", "/"),
+    "SHOW_VIEW_ON_SITE": False,
+    "ENVIRONMENT": "publisher.admin_ui.environment_callback",
+    "COLORS": {
+        # rbsのえんじ色 #620610（oklch 31.7% .122 23.7）を900に置いた段階
+        "primary": {
+            "50": "oklch(97.1% .013 17.4)",
+            "100": "oklch(93.6% .031 17.7)",
+            "200": "oklch(88.5% .061 18.3)",
+            "300": "oklch(80.8% .113 19.6)",
+            "400": "oklch(70.4% .17 22)",
+            "500": "oklch(61% .19 24)",
+            "600": "oklch(52% .18 24.5)",
+            "700": "oklch(44% .16 24)",
+            "800": "oklch(37.5% .14 24)",
+            "900": "oklch(31.7% .122 23.7)",
+            "950": "oklch(22% .085 23.7)",
+        },
+    },
+    "SIDEBAR": {
+        "show_search": False,
+        "show_all_applications": False,
+        "navigation": [
+            {
+                "title": "公開",
+                "items": [
+                    {
+                        "title": "デプロイを管理",
+                        "icon": "rocket_launch",
+                        "link": reverse_lazy("publisher:dashboard"),
+                        "badge": "publisher.admin_ui.unpublished_badge",
+                    },
+                ],
+            },
+            {
+                "title": "トップページ",
+                "items": [
+                    {"title": "ピックアップ", "icon": "view_carousel", "link": reverse_lazy("admin:main_pickup_changelist")},
+                ],
+            },
+            {
+                "title": "ニュース",
+                "items": [
+                    {"title": "ニュース", "icon": "newspaper", "link": reverse_lazy("admin:main_news_changelist")},
+                    {"title": "カテゴリ", "icon": "label", "link": reverse_lazy("admin:main_category_changelist")},
+                ],
+            },
+            {
+                "title": "部員向け",
+                "items": [
+                    {"title": "マニュアル", "icon": "menu_book", "link": reverse_lazy("admin:manuals_manual_changelist")},
+                    {"title": "動画", "icon": "smart_display", "link": reverse_lazy("admin:video_archive_video_changelist")},
+                    {"title": "動画グループ", "icon": "video_library", "link": reverse_lazy("admin:video_archive_videogroup_changelist")},
+                ],
+            },
+            {
+                "title": "設定",
+                "collapsible": True,
+                "items": [
+                    {"title": "メンテナンス", "icon": "construction", "link": reverse_lazy("admin:maintenance_maintenancesetting_changelist")},
+                    {"title": "ユーザー", "icon": "person", "link": reverse_lazy("admin:accounts_user_changelist")},
+                    {"title": "グループ", "icon": "group", "link": reverse_lazy("admin:auth_group_changelist")},
+                ],
+            },
         ],
     },
 }
