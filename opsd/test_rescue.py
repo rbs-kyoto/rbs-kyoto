@@ -229,5 +229,47 @@ class RescueTests(unittest.TestCase):
         self.assertIn("ログイン", html)
 
 
+@unittest.skipUnless(shutil.which("php"), "php がありません")
+class DownPageTests(unittest.TestCase):
+    """管理画面に繋がらないときの案内。Cloudflare に差し替えられない 503 で返す。"""
+
+    @classmethod
+    def setUpClass(cls):
+        cls.port = free_port()
+        cls.server = subprocess.Popen(
+            ["php", "-S", f"127.0.0.1:{cls.port}", "-t", str(ROOT / "rescue" / "public")],
+            stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
+        )
+        for _ in range(50):
+            try:
+                socket.create_connection(("127.0.0.1", cls.port), timeout=0.2).close()
+                break
+            except OSError:
+                time.sleep(0.1)
+
+    @classmethod
+    def tearDownClass(cls):
+        cls.server.terminate()
+        cls.server.wait(timeout=5)
+
+    def test_it_answers_503_with_retry_after_and_the_guidance(self):
+        try:
+            urllib.request.urlopen(f"http://127.0.0.1:{self.port}/down.php", timeout=10)
+        except urllib.error.HTTPError as error:
+            body = error.read().decode()
+            self.assertEqual(error.code, 503)
+            self.assertEqual(error.headers["Retry-After"], "30")
+            self.assertIn("no-store", error.headers["Cache-Control"])
+            self.assertIn("管理画面に繋がりません", body)
+            self.assertIn('href="/rescue/"', body)
+            self.assertIn('http-equiv="refresh"', body)
+        else:
+            self.fail("503 になるはずです")
+
+    def test_the_static_page_is_still_available_for_other_uses(self):
+        with urllib.request.urlopen(f"http://127.0.0.1:{self.port}/down.html", timeout=10) as response:
+            self.assertEqual(response.status, 200)
+
+
 if __name__ == "__main__":
     unittest.main()

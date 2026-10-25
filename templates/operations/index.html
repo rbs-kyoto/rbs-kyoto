@@ -33,7 +33,7 @@
             <div class="ops-actions">
                 <div>
                     <button class="publisher-button publisher-button--primary" type="button" data-ops-action="update_web"
-                            data-confirm="公開サイト（Apache・PHP）を更新します。よろしいですか？">{{ actions.update_web.label }}</button>
+                            data-confirm="公開サイト（Apache・PHP）を更新します。入れ替えの1〜2秒だけ、公開サイトとこの画面に繋がらなくなります。よろしいですか？">{{ actions.update_web.label }}</button>
                     <p class="publisher-card__text">{{ actions.update_web.description }}</p>
                 </div>
                 <div>
@@ -69,7 +69,7 @@
             <div class="publisher-row">
                 {% for service in restart_services %}
                 <button class="publisher-button" type="button" data-ops-action="restart" data-params='{"service": "{{ service }}"}'
-                        data-confirm="{{ service }} を再起動します。よろしいですか？">{{ service }} を再起動</button>
+                        data-confirm="{{ service }} を再起動します。{% if service == 'web' %}1〜2秒だけ、公開サイトとこの画面に繋がらなくなります。{% endif %}よろしいですか？">{{ service }} を再起動</button>
                 {% endfor %}
             </div>
             <p class="publisher-card__text">admin は管理画面（Django）、web は公開サイト（Apache・PHP）です。</p>

@@ -13,7 +13,7 @@ daphne==4.2.3
 django-allauth==65.19.1
 django-ckeditor-5==0.2.20
 django-unfold==0.110.0
-Django==6.1
+Django==6.1.2
 hyperlink==21.0.0
 idna==3.19
 Incremental==24.11.0
