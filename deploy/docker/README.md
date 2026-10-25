@@ -64,8 +64,14 @@ Django が壊れても、別プロセスの救出画面から元に戻せます�
    cloudflared がこのPCの中で動いているときだけ `localhost` にできます。
    別のPC（Proxmox の別ノードなど）で動いているときに `localhost` と書くと、そのPC自身を指してしまい、繋がりません。
 
-4. Google Cloud の OAuth クライアントに、リダイレクトURI
-   `https://www.rbs-kyoto.org/accounts/google/login/callback/` を登録する。
+4. Google ログインの設定（Google Cloud の「Google Auth Platform」）
+   - 「クライアント」で、種類「ウェブ アプリケーション」のクライアントIDを作る。
+   - 「承認済みのリダイレクト URI」に、`https://（公開サイトのホスト名）/accounts/google/login/callback/` を登録する
+     （末尾の `/` まで一致させる。ホスト名は `PUBLIC_HOST`）。「JavaScript 生成元」は要らない。
+   - 公開ステータスが「テスト中」のあいだは、「対象」のテストユーザーに入れたアカウントしかログインできない。
+   - 学校のアカウント（Google Workspace）以外も許すときだけ、`.env` の `GATE_ALLOWED_DOMAIN` を `gmail.com` などに変える。
+   - クライアントIDとシークレットを `.env` の `GOOGLE_CLIENT_ID` / `GOOGLE_CLIENT_SECRET` に書き、
+     下の「`.env` を変えたとき」の手順で反映する。シークレットは、人に見せない。
 5. 本番のデータを引き継ぐ場合は、止めた状態で `db.sqlite3` を `state/data/`、画像を `state/data/media/` に置き、
    `sudo chown -R rbs:rbs /srv/rbs/state` を実行する。
 6. 管理画面（`https://admin.rbs-kyoto.org/`）の「デプロイを管理」から最初のデプロイをすると、公開サイトが表示される。
@@ -166,6 +172,21 @@ Admin 権限がなくてもできます。ただし**自分のアカウントに
 - コードの更新は、GitHub の最新（`git pull --ff-only`）を取り込みます。大きなバージョンアップ
   （Django や Python の大きな更新）は、詳しい人に相談してから行ってください。
   管理画面の「システムの状態」に、サポート終了日が近いものが出ます。
+
+## `.env` を変えたとき
+
+`.env`（Googleの設定、ホスト名など）は、コンテナを**作り直した**ときに読み込まれます。
+`.env` を書き換えたら、管理画面の「システムの操作」で、次のボタンを押します。
+
+- 公開サイト側の設定（`GOOGLE_*`、`GATE_*`、`PUBLIC_HOST`）→ 「公開サイト用サーバー（Apache・PHP）を最新版にする」
+- 管理画面側の設定（`SECRET_KEY` など）→ 「管理画面（Django）のソースを取り直す」
+
+「再起動」ボタンだけでは、`.env` の変更は反映されません。
+
+## 動画などの大きなファイルを送るとき
+
+Cloudflare（無料プラン）は、1回の送信を**100MBまで**に制限しています。管理画面から、それより大きなファイルを
+そのままアップロードすることはできません（画像など、数MBのものは問題ありません）。
 
 ## 管理画面が開かなくなったとき（救出画面）
 
