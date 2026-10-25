@@ -26,7 +26,7 @@ from datetime import datetime, timedelta
 from logging.handlers import RotatingFileHandler
 from pathlib import Path
 
-from . import cloudflare, maintenance, protocol
+from . import autoupdate, cloudflare, maintenance, protocol
 
 OUTPUT_LIMIT = 20000
 BUILD_TIMEOUT = 1800
@@ -529,6 +529,8 @@ class Ops:
             self.maintenance_change(job, maintenance.Schedule(mode="off"), job.request.get("source", ""), force=True)
         elif action == "maintenance_set":
             self.maintenance_change(job, maintenance.Schedule(**params), job.request.get("source", ""), force=False)
+        elif action == "autoupdate_set":
+            self.autoupdate_set(job, params["enabled"], job.request.get("source", ""))
         elif action == "restore":
             self.restore(job, params["backup"])
         elif action == "rollback":
@@ -600,6 +602,32 @@ class Ops:
                 result["output"] = (result.get("output") or "") + "\noperator が再起動したため、この作業は途中で止まりました。"
                 protocol.write_json_atomic(path, result)
 
+    def autoupdate_tick(self):
+        """毎週日曜の4時を過ぎたら、公開サイト用サーバーの更新を1回だけ依頼する（手で押したときと同じ処理）。"""
+        spool = self.config.spool
+        moment = self.now()
+        if not (spool / autoupdate.STATE_FILE).exists():
+            # 入れた直後に、過ぎた時刻の分を実行しない
+            autoupdate.State(last_slot=autoupdate.latest_slot(moment).isoformat(timespec="minutes")).save(spool)
+            return
+        state = autoupdate.State.load(spool)
+        if not autoupdate.is_due(state, moment):
+            return
+        state.last_slot = autoupdate.latest_slot(moment).isoformat(timespec="minutes")
+        state.last_request = protocol.submit(spool, "update_web", {}, source="auto", now=moment)
+        state.save(spool)
+        logger.info("auto update requested: %s", state.last_request)
+
+    def autoupdate_set(self, job, enabled, source):
+        spool = self.config.spool
+        state = autoupdate.State.load(spool)
+        if not (spool / autoupdate.STATE_FILE).exists():
+            state.last_slot = autoupdate.latest_slot(self.now()).isoformat(timespec="minutes")
+        state.enabled = enabled
+        state.updated_by = source
+        state.save(spool)
+        job.emit("自動更新を" + ("オンにしました。毎週日曜の午前4時に、公開サイト用サーバー（Apache・PHP）を最新版にします。" if enabled else "オフにしました。"))
+
     def maintenance(self):
         """1日1回のバックアップと、古いイメージの掃除。"""
         moment = self.now()
@@ -667,6 +695,7 @@ def main():
             logger.info("restarting to load new code")
             return
         ops.maintenance_tick()
+        ops.autoupdate_tick()
         ops.maintenance()
         time.sleep(1)
     logger.info("opsd stopped")

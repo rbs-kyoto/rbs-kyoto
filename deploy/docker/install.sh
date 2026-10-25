@@ -37,6 +37,22 @@ chown -R rbs:rbs "$RBS_HOME/state"
 chmod 755 "$RBS_HOME" "$RBS_HOME/backups" "$RBS_HOME/spool" "$RBS_HOME/spool/results" "$RBS_HOME/spool/logs"
 chmod 1777 "$RBS_HOME/spool/requests"
 
+# OS のセキュリティ更新を、自動で行う（Ubuntu・Debian）。再起動が必要な更新のときだけ、朝5時に再起動する。
+# コンテナと operator は、再起動のあとで自動で立ち上がる
+if command -v apt-get >/dev/null 2>&1; then
+    DEBIAN_FRONTEND=noninteractive apt-get install -y -qq unattended-upgrades >/dev/null
+    cat > /etc/apt/apt.conf.d/20auto-upgrades <<'APT'
+APT::Periodic::Update-Package-Lists "1";
+APT::Periodic::Unattended-Upgrade "1";
+APT
+    cat > /etc/apt/apt.conf.d/52rbs-unattended-upgrades <<'APT'
+Unattended-Upgrade::Automatic-Reboot "true";
+Unattended-Upgrade::Automatic-Reboot-Time "05:00";
+Unattended-Upgrade::Remove-Unused-Dependencies "true";
+APT
+    echo "OS のセキュリティ更新を自動にしました（再起動が必要なときは、朝5時）。"
+fi
+
 echo "== 2/7 コードの取得"
 if [ ! -d "$RBS_HOME/repo/.git" ]; then
     git clone -b "$BRANCH" "$REPO_URL" "$RBS_HOME/repo" || {

@@ -8,7 +8,7 @@ from django.http import Http404, JsonResponse
 from django.shortcuts import render
 from django.views.decorators.http import require_POST
 
-from opsd import maintenance, protocol
+from opsd import autoupdate, maintenance, protocol
 
 
 def superuser_only(view):
@@ -46,6 +46,21 @@ def maintenance_summary(spool):
     }
 
 
+def autoupdate_summary(spool):
+    """自動更新の、いまの設定と、直近の自動実行。"""
+    if not spool:
+        return {"known": False}
+    path = spool / autoupdate.STATE_FILE
+    state = autoupdate.State.load(spool)
+    result = protocol.read_status(spool, state.last_request) if state.last_request else None
+    return {
+        "known": path.exists(),
+        "enabled": state.enabled,
+        "last": (result or {}).get("requested_at", "")[:16].replace("T", " "),
+        "last_status": (result or {}).get("status", ""),
+    }
+
+
 @superuser_only
 def index(request):
     spool = _spool()
@@ -63,6 +78,7 @@ def index(request):
             "log_services": protocol.LOG_SERVICES,
             "restart_services": protocol.RESTARTABLE_SERVICES,
             "maintenance": maintenance_summary(spool if spool and spool.is_dir() else None),
+            "autoupdate": autoupdate_summary(spool if spool and spool.is_dir() else None),
         },
     )
 

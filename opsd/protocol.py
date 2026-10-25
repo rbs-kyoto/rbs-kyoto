@@ -68,6 +68,10 @@ ACTIONS = {
         "label": "メンテナンスの予定を反映",
         "description": "管理画面の「メンテナンス」の設定（開始・終了の予定）を、Cloudflare の切り替えに反映します。",
     },
+    "autoupdate_set": {
+        "label": "自動更新の入・切",
+        "description": "毎週日曜の午前4時に、公開サイト用サーバー（Apache・PHP）を最新版にするかどうかを決めます。",
+    },
     "restore": {
         "label": "バックアップから復元",
         "description": "データと管理画面の版を、そのバックアップを取った時点に戻します。",
@@ -135,6 +139,12 @@ def validate(action, params):
             raise ValueError("お知らせが長すぎます。")
         clean["announcement"] = announcement
         return clean
+
+    if action == "autoupdate_set":
+        enabled = params.get("enabled")
+        if not isinstance(enabled, bool):
+            raise ValueError("自動更新の指定が正しくありません。")
+        return {"enabled": enabled}
 
     if action == "restore":
         backup = params.get("backup")

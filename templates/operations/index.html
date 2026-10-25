@@ -125,6 +125,30 @@
     </section>
 
     <section class="publisher-card">
+        <h2 class="publisher-card__title">自動更新</h2>
+        <p class="publisher-card__text">
+            毎週日曜の午前4時に、公開サイト用サーバー（Apache・PHP）を最新版にします（セキュリティ修正のためです）。
+            失敗したら自動で元に戻ります。管理画面（Django）は、ソースが変わるので、自動では更新しません。
+            このPCの OS のセキュリティ更新は、OS が自動で行います。
+        </p>
+        <div class="publisher-row">
+            {% if autoupdate.enabled %}
+                <span class="publisher-badge publisher-badge--success">オン</span>
+            {% else %}
+                <span class="publisher-badge publisher-badge--neutral">オフ</span>
+            {% endif %}
+            {% if autoupdate.last %}
+                <span class="publisher-card__text">前回：{{ autoupdate.last }}（{% if autoupdate.last_status == "succeeded" %}成功{% elif autoupdate.last_status == "failed" %}失敗しました。実行結果を見てください{% else %}実行中、または待機中{% endif %}）</span>
+            {% endif %}
+            {% if autoupdate.enabled %}
+                <button class="publisher-button" type="button" data-ops-action="autoupdate_set" data-params='{"enabled": false}'>オフにする</button>
+            {% else %}
+                <button class="publisher-button publisher-button--primary" type="button" data-ops-action="autoupdate_set" data-params='{"enabled": true}'>オンにする</button>
+            {% endif %}
+        </div>
+    </section>
+
+    <section class="publisher-card">
         <h2 class="publisher-card__title">実行結果</h2>
         <p class="ops-status" data-ops-status aria-live="polite"></p>
         <pre class="ops-output" data-ops-output hidden></pre>

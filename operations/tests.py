@@ -149,6 +149,16 @@ class OperationsViewTests(TestCase):
         self.assertCountEqual([item["action"] for item in self.written()], ["maintenance_on", "maintenance_off"])
         self.assertEqual(self.run_action("maintenance_on", {"message": "あ" * 201}).status_code, 400)
 
+    def test_autoupdate_card_shows_state_and_toggles_from_django(self):
+        self.assertContains(self.client.get(reverse("operations:index")), "自動更新")
+        (self.spool / "autoupdate.json").write_text(json.dumps({"enabled": False, "last_slot": "2026-10-25T04:00"}))
+        self.assertContains(self.client.get(reverse("operations:index")), "オンにする")
+
+        self.assertEqual(self.run_action("autoupdate_set", {"enabled": True}).status_code, 200)
+        self.assertEqual(self.run_action("autoupdate_set", {"enabled": "yes"}).status_code, 400)
+        [request] = self.written()
+        self.assertEqual(request["params"], {"enabled": True})
+
     def test_sidebar_links_to_the_page(self):
         response = self.client.get(reverse("operations:index"))
         self.assertContains(response, 'href="/ops/"')

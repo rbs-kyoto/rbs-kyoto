@@ -476,3 +476,56 @@ class EnvFileTests(unittest.TestCase):
         self.assertCountEqual(dropped, ["GATE_ALLOWED_DOMAIN", "RBS_UID"])
         self.assertEqual(environ, {"PATH": "/usr/bin"})
         self.assertEqual(forget_env_file_variables(directory / "missing", environ), [])
+
+
+class AutoUpdateTests(OpsTestCase):
+    def requests(self):
+        return [protocol._read_json(path) for path in sorted((self.config.spool / "requests").glob("*.json"))]
+
+    def at(self, text):
+        self.clock[0] = datetime.fromisoformat(text)
+
+    def test_nothing_runs_right_after_install(self):
+        self.at("2026-10-27 12:00")  # 火曜。直近の日曜4時はすでに過ぎている
+        self.ops.autoupdate_tick()
+        self.assertEqual(self.requests(), [])
+
+    def test_requests_a_web_update_once_on_sunday_after_four(self):
+        self.at("2026-10-24 12:00")
+        self.ops.autoupdate_tick()  # 状態ができる
+        self.at("2026-10-25 03:59")
+        self.ops.autoupdate_tick()
+        self.assertEqual(self.requests(), [])
+
+        self.at("2026-10-25 04:00")
+        self.ops.autoupdate_tick()
+        self.at("2026-10-25 04:05")
+        self.ops.autoupdate_tick()
+        [request] = self.requests()
+        self.assertEqual((request["action"], request["source"]), ("update_web", "auto"))
+
+        self.at("2026-11-01 04:00")
+        self.ops.autoupdate_tick()
+        self.assertEqual(len(self.requests()), 2)
+
+    def test_a_missed_sunday_is_made_up_once_when_the_pc_is_back(self):
+        self.at("2026-10-24 12:00")
+        self.ops.autoupdate_tick()
+        self.at("2026-10-27 09:00")
+        self.ops.autoupdate_tick()
+        self.ops.autoupdate_tick()
+        self.assertEqual(len(self.requests()), 1)
+
+    def test_switching_it_off_stops_requests(self):
+        self.at("2026-10-24 12:00")
+        self.ops.autoupdate_tick()
+        self.ops.autoupdate_set(self.job("autoupdate_set", {"enabled": False}), False, "django:admin")
+        self.at("2026-10-25 04:30")
+        self.ops.autoupdate_tick()
+        self.assertEqual(self.requests(), [])
+
+    def test_the_toggle_validates_its_argument(self):
+        self.assertEqual(protocol.validate("autoupdate_set", {"enabled": True}), {"enabled": True})
+        for bad in ({}, {"enabled": "yes"}, {"enabled": 1}):
+            with self.assertRaises(ValueError):
+                protocol.validate("autoupdate_set", bad)
