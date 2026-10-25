@@ -19,6 +19,13 @@ from dotenv import load_dotenv
 BASE_DIR = Path(__file__).resolve().parent.parent
 load_dotenv(os.getenv("ENV_FILE", BASE_DIR / ".env"))
 
+# DB（db.sqlite3）と画像（media/）の置き場所。Docker では bind mount したディレクトリを指す
+DATA_DIR = Path(os.getenv("DATA_DIR", BASE_DIR))
+
+# 操作ボタンの依頼と結果を受け渡す場所（operator = opsd と共有）。未設定なら操作ボタンは無効
+OPS_SPOOL = Path(os.environ["OPS_SPOOL"]) if os.getenv("OPS_SPOOL") else None
+OPS_BACKUPS = Path(os.environ["OPS_BACKUPS"]) if os.getenv("OPS_BACKUPS") else None
+
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/6.1/howto/deployment/checklist/
 
@@ -73,6 +80,7 @@ INSTALLED_APPS = [
     'errors',
     'publisher',
     'system_status',
+    'operations',
 ]
 
 ASGI_APPLICATION = 'config.asgi.application'
@@ -95,7 +103,15 @@ MIDDLEWARE = [
 # Apache + gate/ が配信する。
 SITE_ROLE = os.getenv("SITE_ROLE", "site").strip().lower()
 
+if (BASE_DIR / "staticfiles").is_dir():
+    # collectstatic 済み（＝Dockerのイメージの中）なら、管理画面のCSS・JSはDjangoがそのまま配信する
+    MIDDLEWARE.insert(1, 'whitenoise.middleware.WhiteNoiseMiddleware')
+
 ROOT_URLCONF = 'config.urls_admin' if SITE_ROLE == "admin" else 'config.urls'
+
+if SITE_ROLE == "admin":
+    # コンテナの健康チェックは localhost に向けて送る
+    ALLOWED_HOSTS = [*ALLOWED_HOSTS, "localhost", "127.0.0.1"]
 
 TEMPLATES = [
     {
@@ -121,7 +137,7 @@ WSGI_APPLICATION = 'config.wsgi.application'
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': BASE_DIR / 'db.sqlite3',
+        'NAME': DATA_DIR / 'db.sqlite3',
     }
 }
 
@@ -192,7 +208,7 @@ STATICFILES_DIRS = [
 STATIC_ROOT = BASE_DIR / "staticfiles"
 
 MEDIA_URL = "/media/"
-MEDIA_ROOT = BASE_DIR / "media"
+MEDIA_ROOT = DATA_DIR / "media"
 
 # 静的書き出しの出力先。releases/vN/ に各バージョン、current がその公開中への
 # シンボリックリンクになる。Apache と gate/ はここを読む。
@@ -263,6 +279,11 @@ UNFOLD = {
                         "icon": "rocket_launch",
                         "link": reverse_lazy("publisher:dashboard"),
                         "badge": "publisher.admin_ui.unpublished_badge",
+                    },
+                    {
+                        "title": "システムの操作",
+                        "icon": "terminal",
+                        "link": reverse_lazy("operations:index"),
                     },
                     {
                         "title": "システムの状態",

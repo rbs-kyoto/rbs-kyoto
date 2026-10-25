@@ -1,0 +1,66 @@
+# 本番（部室PCなど）用。操作は管理画面の「システムの操作」か、救出画面から行う。
+# 置き場所は ${RBS_HOME}（既定 /srv/rbs）。詳しくは README.md。
+name: rbs
+
+services:
+  admin:
+    build:
+      context: ../..
+      dockerfile: deploy/docker/admin.Dockerfile
+    image: rbs-admin:current
+    container_name: rbs-admin
+    user: "${RBS_UID}:${RBS_GID}"
+    restart: unless-stopped
+    environment:
+      TZ: Asia/Tokyo
+      SECRET_KEY: ${SECRET_KEY}
+      DEBUG: "false"
+      ALLOWED_HOSTS: ${ADMIN_HOST}
+      CSRF_TRUSTED_ORIGINS: ${CSRF_TRUSTED_ORIGINS:-https://${ADMIN_HOST}}
+      PUBLIC_SITE_URL: ${PUBLIC_SITE_URL}
+      CANONICAL_HOST: ${PUBLIC_HOST}
+      OPS_SPOOL: /spool
+      OPS_BACKUPS: /backups
+    volumes:
+      - ${RBS_HOME:-/srv/rbs}/state:/state
+      - ${RBS_HOME:-/srv/rbs}/spool:/spool
+      - ${RBS_HOME:-/srv/rbs}/backups:/backups:ro
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/healthz/', timeout=3)"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 20s
+
+  web:
+    build:
+      context: ../..
+      dockerfile: deploy/docker/web.Dockerfile
+    image: rbs-web:current
+    container_name: rbs-web
+    restart: unless-stopped
+    ports:
+      - "${WEB_PORT:-80}:80"
+      - "${ADMIN_PORT:-8080}:8080"
+    environment:
+      TZ: Asia/Tokyo
+      GATE_SITE_ROOT: /srv/site
+      GATE_BASE_URL: https://${PUBLIC_HOST}
+      GATE_ALLOWED_DOMAIN: ${GATE_ALLOWED_DOMAIN:-rakunan-h.ed.jp}
+      GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID:-}
+      GOOGLE_CLIENT_SECRET: ${GOOGLE_CLIENT_SECRET:-}
+      RESCUE_SPOOL: /spool
+      RESCUE_BACKUPS: /backups
+      RESCUE_PASSWORD_FILE: /run/rescue/password_hash
+    volumes:
+      - ${RBS_HOME:-/srv/rbs}/state/site:/srv/site:ro
+      - ${RBS_HOME:-/srv/rbs}/state/data/media:/srv/media:ro
+      - ${RBS_HOME:-/srv/rbs}/spool:/spool
+      - ${RBS_HOME:-/srv/rbs}/backups:/backups:ro
+      - ${RBS_HOME:-/srv/rbs}/rescue_password_hash:/run/rescue/password_hash:ro
+    healthcheck:
+      test: ["CMD", "php", "-r", "exit(@file_get_contents('http://127.0.0.1/healthz') === 'ok' ? 0 : 1);"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 10s

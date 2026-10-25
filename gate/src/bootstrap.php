@@ -8,12 +8,23 @@ function gate_config(): array
     static $config = null;
     if ($config === null) {
         $file = __DIR__ . '/../config.php';
-        if (!is_file($file)) {
+        if (is_file($file)) {
+            $config = require $file;
+        } elseif (getenv('GATE_BASE_URL')) {
+            // Docker では config.php を使わず、環境変数で設定する
+            $config = [
+                'site_root' => getenv('GATE_SITE_ROOT') ?: '/srv/site',
+                'base_url' => getenv('GATE_BASE_URL'),
+                'google_client_id' => getenv('GOOGLE_CLIENT_ID') ?: '',
+                'google_client_secret' => getenv('GOOGLE_CLIENT_SECRET') ?: '',
+                'allowed_domain' => getenv('GATE_ALLOWED_DOMAIN') !== false ? getenv('GATE_ALLOWED_DOMAIN') : 'rakunan-h.ed.jp',
+                'session_lifetime' => (int) (getenv('GATE_SESSION_LIFETIME') ?: 60 * 60 * 24 * 14),
+            ];
+        } else {
             http_response_code(500);
             header('Content-Type: text/plain; charset=utf-8');
             exit("gate/config.php がありません。config.example.php をコピーして設定してください。\n");
         }
-        $config = require $file;
     }
     return $config;
 }

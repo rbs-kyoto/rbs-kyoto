@@ -7,6 +7,13 @@ require __DIR__ . '/../src/bootstrap.php';
 require __DIR__ . '/../src/site.php';
 require __DIR__ . '/../src/google.php';
 
+// コンテナの健康チェック用。設定やログイン状態には触れない
+if (parse_url($_SERVER['REQUEST_URI'] ?? '/', PHP_URL_PATH) === '/healthz') {
+    header('Content-Type: text/plain; charset=utf-8');
+    header('Cache-Control: no-store');
+    exit('ok');
+}
+
 $config = gate_config();
 $path = gate_request_path();
 

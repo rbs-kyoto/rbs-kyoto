@@ -1,0 +1,32 @@
+.ops-actions {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+}
+
+.ops-actions .publisher-card__text {
+    margin-top: .25rem;
+}
+
+.ops-select {
+    flex: 0 0 auto;
+}
+
+.ops-status {
+    min-height: 1.25rem;
+    font-size: .875rem;
+    font-weight: 600;
+}
+
+.ops-output {
+    max-height: 24rem;
+    padding: .75rem;
+    overflow: auto;
+    border-radius: .375rem;
+    background: var(--color-base-900);
+    color: var(--color-base-100);
+    font-size: .75rem;
+    line-height: 1.5;
+    white-space: pre-wrap;
+    word-break: break-all;
+}

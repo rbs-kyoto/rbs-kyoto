@@ -1,0 +1,123 @@
+{% extends "admin/base_site.html" %}
+{% load static %}
+
+{% block extrastyle %}{{ block.super }}
+<link rel="stylesheet" href="{% static 'publisher/dashboard.css' %}">
+<link rel="stylesheet" href="{% static 'operations/ops.css' %}">
+{% endblock %}
+
+{% block extrahead %}{{ block.super }}
+<script src="{% static 'operations/ops.js' %}" defer></script>
+{% endblock %}
+
+{% block content %}
+<div class="publisher" data-ops data-run-url="{% url 'operations:run' %}" data-status-url="{% url 'operations:status' 'REQUEST_ID' %}">
+    {% csrf_token %}
+    {% if not enabled %}
+    <section class="publisher-card">
+        <h2 class="publisher-card__title">この環境では使えません</h2>
+        <p class="publisher-card__text">操作ボタンは、Docker で動かしている本番の環境でだけ使えます（operator と繋がっていません）。</p>
+    </section>
+    {% else %}
+
+    <section class="publisher-card ops-rescue">
+        <p class="publisher-card__text">
+            管理画面が開けなくなったときは、<a href="/rescue/">救出画面（/rescue/）</a>から、バックアップの復元とログの確認ができます。
+        </p>
+    </section>
+
+    <div class="publisher-grid">
+        <section class="publisher-card">
+            <h2 class="publisher-card__title">更新</h2>
+            <p class="publisher-card__text">更新の前に、自動でバックアップを取ります。失敗したら元の版に自動で戻ります。</p>
+            <div class="ops-actions">
+                <div>
+                    <button class="publisher-button publisher-button--primary" type="button" data-ops-action="update_web"
+                            data-confirm="公開サイト（Apache・PHP）を更新します。よろしいですか？">{{ actions.update_web.label }}</button>
+                    <p class="publisher-card__text">{{ actions.update_web.description }}</p>
+                </div>
+                <div>
+                    <button class="publisher-button publisher-button--primary" type="button" data-ops-action="update_admin"
+                            data-confirm="管理画面（Django）を更新します。1〜2分ほどこの画面が使えなくなります。よろしいですか？">{{ actions.update_admin.label }}</button>
+                    <p class="publisher-card__text">{{ actions.update_admin.description }}</p>
+                </div>
+            </div>
+        </section>
+
+        <section class="publisher-card">
+            <h2 class="publisher-card__title">バックアップ</h2>
+            <p class="publisher-card__text">毎日午前3時に自動で取ります。更新の前にも自動で取ります。</p>
+            <div class="publisher-row">
+                <button class="publisher-button" type="button" data-ops-action="backup">{{ actions.backup.label }}</button>
+            </div>
+            <div class="publisher-table-wrapper">
+                <table class="publisher-table">
+                    <thead><tr><th>日時</th><th>種類</th></tr></thead>
+                    <tbody>
+                        {% for backup in backups %}
+                        <tr><td>{{ backup.created_at|slice:":10" }} {{ backup.created_at|slice:"11:16" }}</td><td>{{ backup.label }}</td></tr>
+                        {% empty %}
+                        <tr><td colspan="2">まだありません。</td></tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </section>
+
+        <section class="publisher-card">
+            <h2 class="publisher-card__title">再起動</h2>
+            <div class="publisher-row">
+                {% for service in restart_services %}
+                <button class="publisher-button" type="button" data-ops-action="restart" data-params='{"service": "{{ service }}"}'
+                        data-confirm="{{ service }} を再起動します。よろしいですか？">{{ service }} を再起動</button>
+                {% endfor %}
+            </div>
+            <p class="publisher-card__text">admin は管理画面（Django）、web は公開サイト（Apache・PHP）です。</p>
+        </section>
+
+        <section class="publisher-card">
+            <h2 class="publisher-card__title">ログを見る</h2>
+            <form class="publisher-row" data-ops-logs>
+                <select class="publisher-input ops-select" name="service" aria-label="どのログか">
+                    {% for service in log_services %}<option value="{{ service }}">{{ service }}</option>{% endfor %}
+                </select>
+                <select class="publisher-input ops-select" name="lines" aria-label="行数">
+                    <option value="100">直近100行</option>
+                    <option value="200" selected>直近200行</option>
+                    <option value="500">直近500行</option>
+                </select>
+                <button class="publisher-button" type="submit">表示</button>
+            </form>
+        </section>
+    </div>
+
+    <section class="publisher-card">
+        <h2 class="publisher-card__title">実行結果</h2>
+        <p class="ops-status" data-ops-status aria-live="polite"></p>
+        <pre class="ops-output" data-ops-output hidden></pre>
+        <div class="publisher-table-wrapper">
+            <table class="publisher-table">
+                <thead><tr><th>日時</th><th>操作</th><th>実行した人</th><th>結果</th></tr></thead>
+                <tbody>
+                    {% for item in recent %}
+                    <tr>
+                        <td>{{ item.requested_at|slice:":10" }} {{ item.requested_at|slice:"11:16" }}</td>
+                        <td>{{ item.action }}</td>
+                        <td>{{ item.source }}</td>
+                        <td>
+                            {% if item.status == "succeeded" %}<span class="publisher-badge publisher-badge--success">成功</span>
+                            {% elif item.status == "failed" %}<span class="publisher-badge publisher-badge--danger">失敗</span>
+                            {% elif item.status == "running" %}<span class="publisher-badge publisher-badge--warning">実行中</span>
+                            {% else %}<span class="publisher-badge publisher-badge--neutral">待機中</span>{% endif %}
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr><td colspan="4">まだ実行していません。</td></tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </section>
+    {% endif %}
+</div>
+{% endblock %}

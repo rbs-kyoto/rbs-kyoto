@@ -18,7 +18,7 @@ class MaintenanceModeMiddleware:
             or path.startswith("/admin/")
             or path.startswith("/static/")
             or path.startswith("/media/")
-            or path in {"/favicon.ico", "/robots.txt", "/service-worker.js"}
+            or path in {"/favicon.ico", "/robots.txt", "/service-worker.js", "/healthz/"}
         ):
             return self.get_response(request)
 

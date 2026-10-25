@@ -10,14 +10,18 @@ from django.contrib import admin
 from django.urls import include, path
 from django.views.generic import RedirectView
 
+from . import views as config_views
+
 admin.site.site_url = "/deploy/"
 
 urlpatterns = [
+    path("healthz/", config_views.healthz, name="healthz"),
     path("", RedirectView.as_view(pattern_name="publisher:dashboard", permanent=False)),
     path("admin/", admin.site.urls),
     path("ckeditor5/", include("django_ckeditor_5.urls")),
     path("deploy/", include("publisher.urls")),
     path("system/", include("system_status.urls")),
+    path("ops/", include("operations.urls")),
 ]
 
 # エラーテンプレートは公開側のURLを参照するので、公開側のURL設定で描画する

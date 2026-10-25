@@ -1,0 +1,15 @@
+[Unit]
+Description=rbs-kyoto operator (opsd)
+After=docker.service network-online.target
+Requires=docker.service
+
+[Service]
+WorkingDirectory=@RBS_HOME@/repo
+EnvironmentFile=@RBS_HOME@/.env
+ExecStart=/usr/bin/python3 -m opsd
+# 更新でコードが変わったときは、自分で終了して、ここで新しいコードのまま起動し直す
+Restart=always
+RestartSec=3
+
+[Install]
+WantedBy=multi-user.target
