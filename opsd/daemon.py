@@ -548,7 +548,7 @@ class Ops:
             return
 
         logger.info("start %s %s %s", request_id, request["action"], request["params"])
-        job.emit(f"{protocol.ACTIONS[request['action']]['label']}を始めます。")
+        job.emit(f"「{protocol.ACTIONS[request['action']]['label']}」を実行します。")
         try:
             self.execute(job, request["action"], request["params"])
         except OpsError as error:
