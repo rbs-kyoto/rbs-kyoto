@@ -141,6 +141,27 @@ function rescue_page_dashboard(array $config, ?array $watch, ?string $error): vo
     }
     $html .= '</section>';
 
+    $maintenance = rescue_maintenance($config);
+    $applied = $maintenance['applied'] ?? null;
+    $html .= '<section><h2>メンテナンス画面</h2><p class="muted">公開サイトを、Cloudflare でメンテナンス画面に切り替えます。この救出画面と管理画面は、メンテナンス中も使えます。</p><p>';
+    if ($maintenance === null) {
+        $html .= '<span class="badge neutral">まだ状態がありません</span>';
+    } elseif (($maintenance['configured'] ?? true) === false) {
+        $html .= '<span class="badge warn">Cloudflare が未設定です</span>';
+    } elseif (!empty($applied['enabled'])) {
+        $html .= '<span class="badge bad">メンテナンス中</span> ' . h($applied['message'] ?? '');
+    } else {
+        $html .= '<span class="badge ok">通常どおり</span>';
+    }
+    $html .= '</p>';
+    if (!empty($maintenance['last_error'])) {
+        $html .= '<p class="error">Cloudflare に反映できていません（自動で再試行します）：' . h($maintenance['last_error']) . '</p>';
+    }
+    $html .= '<div class="row">'
+        . rescue_form($csrf, 'maintenance_on', '<input type="text" name="message" maxlength="200" placeholder="画面に出すお知らせ（任意）" aria-label="お知らせ">', 'メンテナンスを始める', false)
+        . rescue_form($csrf, 'maintenance_off', '', 'メンテナンスを終える', false)
+        . '</div></section>';
+
     $html .= '<section><h2>ログを見る</h2>'
         . rescue_form(
             $csrf,

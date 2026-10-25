@@ -139,4 +139,7 @@ Google のログイン用に、Google Cloud のリダイレクトURIへ次を登
 
 管理画面: https://$ADMIN_HOST/    救出画面: https://$ADMIN_HOST/rescue/
 最初に、管理画面の「デプロイを管理」からデプロイすると、公開サイトが表示されます。
+
+メンテナンス画面（Cloudflare）を使うときは、このあと:  sudo $RBS_HOME/repo/deploy/cloudflare/setup.sh
+  （手順: $RBS_HOME/repo/deploy/cloudflare/README.md）
 EOF

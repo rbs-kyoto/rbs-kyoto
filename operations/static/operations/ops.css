@@ -30,3 +30,11 @@
     white-space: pre-wrap;
     word-break: break-all;
 }
+
+.ops-error {
+    padding: .5rem .75rem;
+    border-radius: .375rem;
+    background: var(--color-primary-100);
+    color: var(--color-primary-800);
+    font-size: .875rem;
+}

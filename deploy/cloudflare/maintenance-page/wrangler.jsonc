@@ -1,0 +1,8 @@
+{
+  // setup.py が、name と account を書き換えてデプロイします（手で触る必要はありません）
+  "name": "rbs-maintenance",
+  "compatibility_date": "2026-10-01",
+  "workers_dev": true,
+  // Worker のプログラムは置かない（固定ページだけ）。静的ファイルへのアクセスは、無料・無制限です
+  "assets": { "directory": "./public" }
+}

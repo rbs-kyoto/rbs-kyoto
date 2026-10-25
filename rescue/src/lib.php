@@ -9,7 +9,8 @@ date_default_timezone_set(getenv('TZ') ?: 'Asia/Tokyo');
 const RESCUE_SESSION = 'rbs_rescue';
 const RESCUE_MAX_FAILURES = 5;
 const RESCUE_LOCK_SECONDS = 600;
-const RESCUE_ACTIONS = ['backup', 'restart', 'logs', 'restore', 'rollback'];
+const RESCUE_ACTIONS = ['backup', 'restart', 'logs', 'restore', 'rollback', 'maintenance_on', 'maintenance_off'];
+const RESCUE_MESSAGE_MAX = 200;
 const RESCUE_ID_RE = '/^\d{14}-[0-9a-f]{8}$/';
 const RESCUE_BACKUP_RE = '/^\d{8}-\d{6}-[a-z]+(?:-[a-z]+)*$/';
 
@@ -134,6 +135,12 @@ function rescue_submit(array $config, string $action, array $params): array
             return [null, 'ログの指定が正しくありません。'];
         }
         $clean = ['service' => $params['service'], 'lines' => $lines];
+    } elseif ($action === 'maintenance_on') {
+        $message = $params['message'] ?? '';
+        if (!is_string($message) || mb_strlen($message, 'UTF-8') > RESCUE_MESSAGE_MAX) {
+            return [null, 'お知らせは' . RESCUE_MESSAGE_MAX . '文字までです。'];
+        }
+        $clean = ['message' => $message];
     } elseif ($action === 'restore') {
         $backup = $params['backup'] ?? '';
         if (!is_string($backup) || !preg_match(RESCUE_BACKUP_RE, $backup)) {
@@ -220,4 +227,10 @@ function rescue_admin_alive(array $config): bool
     $body = @file_get_contents($config['admin_health_url'], false, $context);
     $status = $http_response_header[0] ?? '';
     return $body !== false && str_contains($status, ' 200');
+}
+
+// opsd が書くメンテナンスの状態（spool/maintenance.json）。無ければ null
+function rescue_maintenance(array $config): ?array
+{
+    return rescue_read_json($config['spool'] . '/maintenance.json');
 }

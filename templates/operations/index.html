@@ -92,6 +92,39 @@
     </div>
 
     <section class="publisher-card">
+        <h2 class="publisher-card__title">メンテナンス画面</h2>
+        <p class="publisher-card__text">
+            公開サイトを、Cloudflare でメンテナンス画面に切り替えます。サーバーが止まっていても働きます。
+            この管理画面と救出画面は、メンテナンス中も使えます。開始・終了の予定は、「設定 → メンテナンス」で決めます。
+        </p>
+        <div class="publisher-row">
+            {% if not maintenance.known %}
+                <span class="publisher-badge publisher-badge--neutral">まだ状態がありません</span>
+            {% elif not maintenance.configured %}
+                <span class="publisher-badge publisher-badge--warning">Cloudflare が未設定です（deploy/cloudflare/README.md）</span>
+            {% elif maintenance.active %}
+                <span class="publisher-badge publisher-badge--danger">メンテナンス中</span>
+                {% if maintenance.message %}<span class="publisher-card__text">「{{ maintenance.message }}」</span>{% endif %}
+            {% else %}
+                <span class="publisher-badge publisher-badge--success">通常どおり</span>
+            {% endif %}
+            {% if maintenance.known and maintenance.mode == "planned" and maintenance.starts_at %}
+                <span class="publisher-card__text">予定：{{ maintenance.starts_at }} 〜 {{ maintenance.auto_resume_at|default:"（終了は手動）" }}</span>
+            {% endif %}
+        </div>
+        {% if maintenance.error %}
+        <p class="ops-error">Cloudflare に反映できていません（自動で再試行します）：{{ maintenance.error }}</p>
+        {% endif %}
+        <div class="publisher-row">
+            <input class="publisher-input" type="text" id="ops-maintenance-message" maxlength="200" placeholder="画面に出すお知らせ（例：データを整理しています。10時ごろ再開します）" aria-label="お知らせ">
+            <button class="publisher-button publisher-button--primary" type="button" data-ops-action="maintenance_on"
+                    data-param-input="message=ops-maintenance-message"
+                    data-confirm="公開サイトをメンテナンス画面に切り替えます。部員向けのページも見られなくなります。よろしいですか？">メンテナンスを始める</button>
+            <button class="publisher-button" type="button" data-ops-action="maintenance_off">メンテナンスを終える</button>
+        </div>
+    </section>
+
+    <section class="publisher-card">
         <h2 class="publisher-card__title">実行結果</h2>
         <p class="ops-status" data-ops-status aria-live="polite"></p>
         <pre class="ops-output" data-ops-output hidden></pre>

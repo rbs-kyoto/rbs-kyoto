@@ -125,6 +125,30 @@ class OperationsViewTests(TestCase):
         self.assertEqual(self.client.get(reverse("operations:status", args=["20261025040000-aaaaaaaa"])).status_code, 404)
         self.assertEqual(self.client.get(reverse("operations:status", args=["..%2F..%2Fetc"])).status_code, 404)
 
+    def test_maintenance_card_shows_the_operators_state(self):
+        (self.spool / "maintenance.json").write_text(json.dumps({
+            "configured": True, "last_error": "権限が足りません",
+            "applied": {"enabled": True, "message": "整理中", "at": "2026-10-26T01:00:00"},
+            "schedule": {"mode": "planned", "starts_at": "2026-10-26T01:00:00+09:00", "auto_resume_at": "2026-10-26T03:00:00+09:00"},
+        }))
+        response = self.client.get(reverse("operations:index"))
+        self.assertContains(response, "メンテナンス中")
+        self.assertContains(response, "「整理中」")
+        self.assertContains(response, "権限が足りません")
+        self.assertContains(response, "2026-10-26 01:00")
+
+        (self.spool / "maintenance.json").write_text(json.dumps({"configured": False}))
+        self.assertContains(self.client.get(reverse("operations:index")), "Cloudflare が未設定です")
+        (self.spool / "maintenance.json").unlink()
+        self.assertContains(self.client.get(reverse("operations:index")), "まだ状態がありません")
+
+    def test_maintenance_can_be_started_and_ended_from_django(self):
+        started = self.run_action("maintenance_on", {"message": "整理中"})
+        ended = self.run_action("maintenance_off")
+        self.assertEqual((started.status_code, ended.status_code), (200, 200))
+        self.assertCountEqual([item["action"] for item in self.written()], ["maintenance_on", "maintenance_off"])
+        self.assertEqual(self.run_action("maintenance_on", {"message": "あ" * 201}).status_code, 400)
+
     def test_sidebar_links_to_the_page(self):
         response = self.client.get(reverse("operations:index"))
         self.assertContains(response, 'href="/ops/"')

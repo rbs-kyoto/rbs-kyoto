@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex">
+<meta name="theme-color" content="#620610">
+<title>メンテナンス中｜rbs京都</title>
+<style>
+:root { color-scheme: light dark; --accent: #620610; --bg: #f3f5f7; --text: #2a2a2a; --muted: #6b7280; --card: #fff; --line: #d9dde3; }
+@media (prefers-color-scheme: dark) { :root { --accent: #e7a3aa; --bg: #232324; --text: #f1f1f1; --muted: #a0a4ab; --card: #2b2b2c; --line: #3d3d3f; } }
+* { box-sizing: border-box; }
+body { min-height: 100vh; margin: 0; display: grid; place-items: center; padding: 1.5rem; background: var(--bg); color: var(--text); font: 16px/1.8 "Noto Sans JP", system-ui, -apple-system, "Segoe UI", sans-serif; }
+main { width: min(36rem, 100%); padding: 2.5rem 2rem; border: 1px solid var(--line); border-radius: 1.25rem; background: var(--card); text-align: center; }
+.logo { width: 9rem; height: auto; margin-bottom: 1.5rem; }
+.logo-dark { display: none; }
+@media (prefers-color-scheme: dark) { .logo-light { display: none; } .logo-dark { display: inline; } }
+h1 { margin: 0 0 .5rem; color: var(--accent); font-size: 1.5rem; }
+p { margin: .5rem 0; text-wrap: balance; }
+.notice { margin: 1.25rem 0 .5rem; padding: 1rem; border-radius: .75rem; background: var(--bg); font-weight: 600; white-space: pre-wrap; overflow-wrap: anywhere; }
+.until, .small { color: var(--muted); font-size: .9rem; }
+.button { display: inline-block; margin-top: 1rem; padding: .6rem 1.4rem; border-radius: 999px; background: var(--accent); color: var(--card); text-decoration: none; font-weight: 600; }
+[hidden] { display: none !important; }
+</style>
+</head>
+<body>
+<main>
+    <img class="logo logo-light" src="rbs.svg" alt="rbs京都">
+    <img class="logo logo-dark" src="rbs-dark.svg" alt="rbs京都">
+    <h1>ただいまメンテナンス中です</h1>
+    <p>ご不便をおかけします。しばらくしてから、もう一度お越しください。</p>
+    <p class="notice" id="notice" hidden></p>
+    <p class="until" id="until" hidden></p>
+    <a class="button" id="back" href="#" hidden>サイトを開く</a>
+    <p class="small" id="auto" hidden>このページは、1分ごとに自動で確認します。</p>
+</main>
+<script src="maintenance.js"></script>
+</body>
+</html>

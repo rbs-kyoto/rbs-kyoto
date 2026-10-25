@@ -67,7 +67,13 @@ document.addEventListener("DOMContentLoaded", () => {
     for (const button of root.querySelectorAll("[data-ops-action]")) {
         button.addEventListener("click", () => {
             if (button.dataset.confirm && !window.confirm(button.dataset.confirm)) return;
-            run(button.dataset.opsAction, button.dataset.params ? JSON.parse(button.dataset.params) : {});
+            const params = button.dataset.params ? JSON.parse(button.dataset.params) : {};
+            // 入力欄の値を渡すボタン（data-param-input="名前=入力欄のid"）
+            if (button.dataset.paramInput) {
+                const [name, id] = button.dataset.paramInput.split("=");
+                params[name] = (document.getElementById(id)?.value || "").trim();
+            }
+            run(button.dataset.opsAction, params);
         });
     }
 

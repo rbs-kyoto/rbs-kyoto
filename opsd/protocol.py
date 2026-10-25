@@ -24,6 +24,10 @@ LOG_SERVICES = ("admin", "web", "opsd")
 DEFAULT_LOG_LINES = 200
 MAX_LOG_LINES = 1000
 
+MAINTENANCE_MODES = ("off", "planned", "emergency")
+MAX_MESSAGE_LENGTH = 200
+MAX_ANNOUNCEMENT_LENGTH = 2000
+
 QUEUED = "queued"
 RUNNING = "running"
 SUCCEEDED = "succeeded"
@@ -52,6 +56,18 @@ ACTIONS = {
         "label": "ログを見る",
         "description": "直近のログを表示します。",
     },
+    "maintenance_on": {
+        "label": "メンテナンスを始める",
+        "description": "公開サイトを、Cloudflare でメンテナンス画面に切り替えます（管理画面は今までどおり使えます）。",
+    },
+    "maintenance_off": {
+        "label": "メンテナンスを終える",
+        "description": "メンテナンス画面をやめて、公開サイトを元に戻します。",
+    },
+    "maintenance_set": {
+        "label": "メンテナンスの予定を反映",
+        "description": "管理画面の「メンテナンス」の設定（開始・終了の予定）を、Cloudflare の切り替えに反映します。",
+    },
     "restore": {
         "label": "バックアップから復元",
         "description": "データと管理画面の版を、そのバックアップを取った時点に戻します。",
@@ -63,7 +79,7 @@ ACTIONS = {
 }
 
 # 救出画面（PHP）から受け付ける種類。Django 側の操作ボタンは全部使える。
-RESCUE_ACTIONS = ("backup", "restart", "logs", "restore", "rollback")
+RESCUE_ACTIONS = ("backup", "restart", "logs", "restore", "rollback", "maintenance_on", "maintenance_off")
 
 
 def validate(action, params):
@@ -88,6 +104,37 @@ def validate(action, params):
         if isinstance(lines, bool) or not isinstance(lines, int) or not 1 <= lines <= MAX_LOG_LINES:
             raise ValueError(f"行数は1〜{MAX_LOG_LINES}で指定してください。")
         return {"service": service, "lines": lines}
+
+    if action == "maintenance_on":
+        message = params.get("message", "")
+        if not isinstance(message, str) or len(message) > MAX_MESSAGE_LENGTH:
+            raise ValueError(f"お知らせは{MAX_MESSAGE_LENGTH}文字までです。")
+        return {"message": message}
+
+    if action == "maintenance_set":
+        mode = params.get("mode", "off")
+        if mode not in MAINTENANCE_MODES:
+            raise ValueError("メンテナンスの状態が正しくありません。")
+        clean = {"mode": mode}
+        for name in ("starts_at", "resume_at", "auto_resume_at"):
+            value = params.get(name, "")
+            if not isinstance(value, str) or len(value) > 40:
+                raise ValueError("日時の形式が正しくありません。")
+            if value:
+                try:
+                    datetime.fromisoformat(value)
+                except ValueError:
+                    raise ValueError("日時の形式が正しくありません。") from None
+            clean[name] = value
+        recovery = params.get("recovery_in_progress", False)
+        if not isinstance(recovery, bool):
+            raise ValueError("復旧作業の指定が正しくありません。")
+        clean["recovery_in_progress"] = recovery
+        announcement = params.get("announcement", "")
+        if not isinstance(announcement, str) or len(announcement) > MAX_ANNOUNCEMENT_LENGTH:
+            raise ValueError("お知らせが長すぎます。")
+        clean["announcement"] = announcement
+        return clean
 
     if action == "restore":
         backup = params.get("backup")

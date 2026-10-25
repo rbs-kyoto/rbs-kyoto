@@ -136,3 +136,87 @@ class MaintenanceSettingTests(TestCase):
         )
 
         self.assertEqual(response.status_code, 200)
+
+
+import json
+import shutil
+import tempfile
+from datetime import timedelta
+from pathlib import Path
+
+from django.test import TestCase, override_settings
+from django.utils import timezone
+
+from opsd import protocol
+from opsd.maintenance import Schedule
+
+from .models import MaintenanceSetting
+from .signals import schedule_params
+
+
+class OperatorHandoffTests(TestCase):
+    def setUp(self):
+        self.spool = Path(tempfile.mkdtemp())
+        self.addCleanup(shutil.rmtree, self.spool, ignore_errors=True)
+        (self.spool / "requests").mkdir()
+
+    def written(self):
+        return [json.loads(path.read_text()) for path in (self.spool / "requests").glob("*.json")]
+
+    def test_saving_the_setting_hands_the_schedule_to_the_operator(self):
+        starts = timezone.now() + timedelta(days=1)
+        with override_settings(OPS_SPOOL=self.spool):
+            setting = MaintenanceSetting.get_solo()
+            setting.mode = MaintenanceSetting.Mode.PLANNED
+            setting.starts_at = starts
+            setting.auto_resume_at = starts + timedelta(hours=2)
+            setting.announcement = "夜間に作業します"
+            setting.save()
+
+        [request] = self.written()
+        self.assertEqual(request["action"], "maintenance_set")
+        self.assertEqual(request["source"], "django:maintenance")
+        params = request["params"]
+        self.assertEqual((params["mode"], params["announcement"]), ("planned", "夜間に作業します"))
+        self.assertEqual(protocol.validate("maintenance_set", params), params)
+        self.assertEqual(Schedule.from_params(params).status_at(timezone.now()), "inactive")
+
+    def test_nothing_happens_without_an_operator(self):
+        with override_settings(OPS_SPOOL=None):
+            setting = MaintenanceSetting.get_solo()
+            setting.save()
+        self.assertEqual(self.written(), [])
+
+    def test_a_missing_spool_directory_does_not_break_saving(self):
+        with override_settings(OPS_SPOOL=self.spool / "nope"):
+            MaintenanceSetting.get_solo().save()
+
+    def test_very_long_announcements_are_cut_instead_of_rejected(self):
+        with override_settings(OPS_SPOOL=self.spool):
+            setting = MaintenanceSetting.get_solo()
+            setting.announcement = "あ" * 5000
+            setting.save()
+        [request] = self.written()
+        self.assertEqual(len(request["params"]["announcement"]), protocol.MAX_ANNOUNCEMENT_LENGTH)
+
+
+class ScheduleParityTests(TestCase):
+    """opsd の予定の判定は、Django のモデルの判定と、まったく同じ結果になること。"""
+
+    def test_every_case_agrees_with_the_django_model(self):
+        base = timezone.now().replace(microsecond=0)
+        hour = timedelta(hours=1)
+        times = {"none": None, "past": base - 2 * hour, "soon": base + hour, "later": base + 3 * hour}
+        cases = 0
+        for mode in MaintenanceSetting.Mode.values:
+            for start_name, starts in times.items():
+                for resume_name, resume in times.items():
+                    for recovery in (False, True):
+                        with self.subTest(mode=mode, start=start_name, auto_resume=resume_name, recovery=recovery):
+                            setting = MaintenanceSetting(mode=mode, starts_at=starts, auto_resume_at=resume, recovery_in_progress=recovery)
+                            schedule = Schedule.from_params(schedule_params(setting))
+                            for offset in (-4, 0, 2, 4, 5):
+                                moment = base + offset * hour
+                                self.assertEqual(schedule.status_at(moment), setting.status_at(moment).value, offset)
+                            cases += 1
+        self.assertEqual(cases, 3 * 4 * 4 * 2)

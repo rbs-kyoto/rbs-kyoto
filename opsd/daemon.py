@@ -20,12 +20,13 @@ import sqlite3
 import subprocess
 import sys
 import time
+import urllib.request
 from dataclasses import dataclass
 from datetime import datetime, timedelta
 from logging.handlers import RotatingFileHandler
 from pathlib import Path
 
-from . import protocol
+from . import cloudflare, maintenance, protocol
 
 OUTPUT_LIMIT = 20000
 BUILD_TIMEOUT = 1800
@@ -157,11 +158,12 @@ class Job:
 
 
 class Ops:
-    def __init__(self, config, runner=subprocess_runner, now=datetime.now, sleep=time.sleep):
+    def __init__(self, config, runner=subprocess_runner, now=datetime.now, sleep=time.sleep, cloudflare_opener=None):
         self.config = config
         self.runner = runner
         self.now = now
         self.sleep = sleep
+        self.cloudflare_opener = cloudflare_opener or urllib.request.urlopen
         self.restart_requested = False
 
     # --- 下回り -----------------------------------------------------------
@@ -414,6 +416,86 @@ class Ops:
             return
         self.sh(job, self.compose("logs", "--no-color", "--tail", str(lines), service))
 
+    # --- メンテナンス（Cloudflare） ----------------------------------------
+
+    def maintenance_settings(self):
+        return cloudflare.Settings.load(self.config.home / "cloudflare.env")
+
+    def maintenance_sync(self, force=False):
+        """予定から「いまどうあるべきか」を決めて、Cloudflare の状態と違っていれば反映する。
+
+        戻り値: "unchanged" / "unconfigured" / "applied-on" / "applied-off"。反映に失敗したら CloudflareError。
+        """
+        spool = self.config.spool
+        state = maintenance.State.load(spool)
+        enabled, message, until = state.schedule.wanted(self.now())
+        wanted = {"enabled": enabled, "message": message, "until": until}
+        if not force and state.applied is not None and {key: state.applied.get(key) for key in wanted} == wanted:
+            return "unchanged"
+
+        settings = self.maintenance_settings()
+        if settings is None:
+            if state.configured:
+                state.configured = False
+                state.save(spool)
+            return "unconfigured"
+
+        state.configured = True
+        try:
+            settings.apply(enabled, message, until, opener=self.cloudflare_opener)
+        except cloudflare.CloudflareError as error:
+            state.last_error = str(error)
+            retry_at = self.now() + timedelta(seconds=maintenance.RETRY_SECONDS)
+            state.next_retry = retry_at.isoformat(timespec="seconds")
+            state.save(spool)
+            raise
+        state.applied = {**wanted, "at": self.now().isoformat(timespec="seconds")}
+        state.last_error = ""
+        state.next_retry = ""
+        state.save(spool)
+        return "applied-on" if enabled else "applied-off"
+
+    def maintenance_tick(self):
+        """1秒ごとに呼ばれる。予定の時刻が来たら切り替え、失敗したら30秒おいて再試行する。"""
+        state = maintenance.State.load(self.config.spool)
+        if state.next_retry and self.now() < datetime.fromisoformat(state.next_retry):
+            return
+        try:
+            self.maintenance_sync()
+        except cloudflare.CloudflareError as error:
+            logger.warning("maintenance sync failed: %s", error)
+
+    def maintenance_change(self, job, schedule, source, force):
+        spool = self.config.spool
+        state = maintenance.State.load(spool)
+        state.schedule = schedule
+        state.updated_at = self.now().isoformat(timespec="seconds")
+        state.updated_by = source
+        state.save(spool)
+
+        try:
+            result = self.maintenance_sync(force=force)
+        except cloudflare.CloudflareError as error:
+            raise OpsError(f"予定は保存しましたが、Cloudflare に反映できませんでした（30秒ごとに再試行します）: {error}") from error
+
+        if not force:
+            # 予定の保存（Django の設定画面から）。いま始まった・終わったのではなく、予定を受け取っただけ
+            if result == "unconfigured":
+                job.emit("予定を保存しました（Cloudflare が未設定なので、画面の切り替えは行いません）。")
+            else:
+                active = schedule.status_at(self.now()) != maintenance.INACTIVE
+                job.emit("予定を保存しました。" + ("いまメンテナンス中です。" if active else "いまは通常どおりです。"))
+            return
+
+        settings = self.maintenance_settings()
+        hosts = ", ".join(settings.hosts) if settings else ""
+        if result == "applied-on":
+            job.emit(f"メンテナンスを始めました。{hosts} は、メンテナンス画面に切り替わります（反映に数秒かかります）。")
+        elif result == "applied-off":
+            job.emit(f"メンテナンスを終えました。{hosts} は、元に戻ります（反映に数秒かかります）。")
+        elif result == "unconfigured":
+            raise OpsError("Cloudflare が設定されていません。deploy/cloudflare の手順（setup.sh）を済ませてください。予定は保存しました。")
+
     # --- 依頼の処理 ---------------------------------------------------------
 
     def execute(self, job, action, params):
@@ -427,6 +509,13 @@ class Ops:
             self.restart(job, params["service"])
         elif action == "logs":
             self.logs(job, params["service"], params["lines"])
+        elif action == "maintenance_on":
+            schedule = maintenance.Schedule(mode="emergency", announcement=params["message"])
+            self.maintenance_change(job, schedule, job.request.get("source", ""), force=True)
+        elif action == "maintenance_off":
+            self.maintenance_change(job, maintenance.Schedule(mode="off"), job.request.get("source", ""), force=True)
+        elif action == "maintenance_set":
+            self.maintenance_change(job, maintenance.Schedule(**params), job.request.get("source", ""), force=False)
         elif action == "restore":
             self.restore(job, params["backup"])
         elif action == "rollback":
@@ -542,6 +631,7 @@ def main():
         if ops.restart_requested:
             logger.info("restarting to load new code")
             return
+        ops.maintenance_tick()
         ops.maintenance()
         time.sleep(1)
     logger.info("opsd stopped")

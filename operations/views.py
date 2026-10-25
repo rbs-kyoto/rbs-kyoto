@@ -8,7 +8,7 @@ from django.http import Http404, JsonResponse
 from django.shortcuts import render
 from django.views.decorators.http import require_POST
 
-from opsd import protocol
+from opsd import maintenance, protocol
 
 
 def superuser_only(view):
@@ -24,6 +24,26 @@ def superuser_only(view):
 
 def _spool():
     return settings.OPS_SPOOL
+
+
+def maintenance_summary(spool):
+    """画面に出す、メンテナンスの現在の状態。"""
+    state = maintenance.read_state(spool) if spool else None
+    if state is None:
+        return {"known": False}
+    applied = state.get("applied") or {}
+    schedule = state.get("schedule", {})
+    return {
+        "known": True,
+        "configured": state.get("configured", True),
+        "active": bool(applied.get("enabled")),
+        "message": applied.get("message", ""),
+        "applied_at": (applied.get("at") or "")[:16].replace("T", " "),
+        "error": state.get("last_error", ""),
+        "mode": schedule.get("mode", "off"),
+        "starts_at": (schedule.get("starts_at") or "")[:16].replace("T", " "),
+        "auto_resume_at": (schedule.get("auto_resume_at") or "")[:16].replace("T", " "),
+    }
 
 
 @superuser_only
@@ -42,6 +62,7 @@ def index(request):
             "backups": backups[:10],
             "log_services": protocol.LOG_SERVICES,
             "restart_services": protocol.RESTARTABLE_SERVICES,
+            "maintenance": maintenance_summary(spool if spool and spool.is_dir() else None),
         },
     )
 

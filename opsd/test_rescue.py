@@ -171,6 +171,9 @@ class RescueTests(unittest.TestCase):
             {"action": "restart", "service": "web"},
             {"action": "logs", "service": "opsd", "lines": "200"},
             {"action": "backup"},
+            {"action": "maintenance_on", "message": "データを整理しています"},
+            {"action": "maintenance_on", "message": ""},
+            {"action": "maintenance_off"},
         ]
         for data in submissions:
             with self.subTest(data=data):
@@ -180,7 +183,7 @@ class RescueTests(unittest.TestCase):
 
         written = self.requests_written()
         self.assertCountEqual(
-            [item["action"] for item in written], ["rollback", "restore", "restart", "restart", "logs", "backup"]
+            [item["action"] for item in written], ["rollback", "restore", "restart", "restart", "logs", "backup", "maintenance_on", "maintenance_on", "maintenance_off"]
         )
         self.assertEqual(len(written), len(submissions))
         for item in written:
@@ -200,6 +203,8 @@ class RescueTests(unittest.TestCase):
             {"action": "logs", "service": "admin", "lines": "5; rm"},
             {"action": "update_admin"},
             {"action": "shell"},
+            {"action": "maintenance_on", "message": "あ" * 201},
+            {"action": "maintenance_set", "mode": "emergency"},
         ]
         for data in bad:
             with self.subTest(data=data):
@@ -207,6 +212,30 @@ class RescueTests(unittest.TestCase):
                 self.assertEqual(status, 200)
                 self.assertIn('class="error"', html)
         self.assertEqual(self.requests_written(), [])
+
+    def test_maintenance_message_limit_matches_the_operators_in_characters_not_bytes(self):
+        self.login()
+        csrf = self.csrf(self.dashboard())
+        status, _, _ = self.request("/rescue/run", {"csrf": csrf, "action": "maintenance_on", "message": "あ" * 200})
+        self.assertEqual(status, 303)
+        [request] = self.requests_written()
+        self.assertEqual(protocol.validate(request["action"], request["params"]), request["params"])
+
+    def test_dashboard_shows_the_maintenance_state_written_by_the_operator(self):
+        self.login()
+        self.assertIn("まだ状態がありません", self.dashboard())
+        state_file = self.spool / "maintenance.json"
+        state_file.write_text(json.dumps({"configured": True, "applied": {"enabled": True, "message": "<b>整理中</b>"},
+                                          "last_error": "権限が足りません"}))
+        html = self.dashboard()
+        self.assertIn("メンテナンス中", html)
+        self.assertIn("&lt;b&gt;整理中&lt;/b&gt;", html)
+        self.assertIn("権限が足りません", html)
+        state_file.write_text(json.dumps({"configured": False}))
+        self.assertIn("Cloudflare が未設定です", self.dashboard())
+        state_file.write_text(json.dumps({"configured": True, "applied": {"enabled": False}}))
+        self.assertIn("通常どおり", self.dashboard())
+        state_file.unlink()
 
     def test_result_page_shows_operator_output_escaped(self):
         self.login()
