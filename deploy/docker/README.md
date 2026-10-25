@@ -57,8 +57,12 @@ Django が壊れても、別プロセスの救出画面から元に戻せます�
 
    | ホスト名 | 転送先 | Cloudflare Access |
    |---|---|---|
-   | `www.rbs-kyoto.org` | `http://localhost:80` | 付けない（部員向けのログインは `gate/` が担当） |
-   | `admin.rbs-kyoto.org` | `http://localhost:8080` | **付ける**（管理者だけ） |
+   | `www.rbs-kyoto.org` | `http://（このPCのIP）:80` | 付けない（部員向けのログインは `gate/` が担当） |
+   | `admin.rbs-kyoto.org` | `http://（このPCのIP）:8080` | **付ける**（管理者だけ） |
+
+   転送先は、**cloudflared が動いているPCから見た、このPCのアドレス**です（`hostname -I` で分かります）。
+   cloudflared がこのPCの中で動いているときだけ `localhost` にできます。
+   別のPC（Proxmox の別ノードなど）で動いているときに `localhost` と書くと、そのPC自身を指してしまい、繋がりません。
 
 4. Google Cloud の OAuth クライアントに、リダイレクトURI
    `https://www.rbs-kyoto.org/accounts/google/login/callback/` を登録する。

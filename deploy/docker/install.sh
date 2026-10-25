@@ -122,12 +122,17 @@ else
 fi
 
 source "$RBS_HOME/.env"
+HOST_IP="$(hostname -I 2>/dev/null | awk '{print $1}')"
+HOST_IP="${HOST_IP:-このPCのIP}"
 cat <<EOF
 
 できました。次に、Cloudflare Tunnel の公開ホスト名を設定してください。
 
-  $PUBLIC_HOST  →  http://localhost:$WEB_PORT      （Accessは付けない）
-  $ADMIN_HOST   →  http://localhost:$ADMIN_PORT     （Cloudflare Access で管理者だけに限定）
+  $PUBLIC_HOST  →  http://$HOST_IP:$WEB_PORT      （Accessは付けない）
+  $ADMIN_HOST   →  http://$HOST_IP:$ADMIN_PORT     （Cloudflare Access で管理者だけに限定）
+
+  ※ cloudflared を動かしているPCが、このPCとは別のとき（Proxmoxの別ノードなど）は、上のIPアドレスのままにします。
+    cloudflared をこのPCの中で動かしているときだけ、$HOST_IP を localhost にできます。
 
 Google のログイン用に、Google Cloud のリダイレクトURIへ次を登録してください。
   https://$PUBLIC_HOST/accounts/google/login/callback/
