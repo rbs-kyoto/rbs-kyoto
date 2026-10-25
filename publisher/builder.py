@@ -25,6 +25,7 @@ from django.template.loader import render_to_string
 from django.urls import get_urlconf, set_urlconf
 from django.utils import timezone
 
+from config.staticstorage import plain_static_urls
 from .models import ContentRevision, Deployment
 from .pages import ERROR_CODES, PUBLIC_URLCONF, VARIANTS, iter_pages, viewer_for
 
@@ -43,12 +44,12 @@ def public_urlconf():
 
 
 def render_page(page, variant):
-    with public_urlconf():
+    with public_urlconf(), plain_static_urls():
         return render_to_string(page.template, {**page.context, "user": viewer_for(variant)})
 
 
 def render_error(code):
-    with public_urlconf():
+    with public_urlconf(), plain_static_urls():
         return render_to_string(f"{code}.html")
 
 

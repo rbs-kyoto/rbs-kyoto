@@ -4,7 +4,8 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1 \
     SITE_ROLE=admin \
     DATA_DIR=/state/data \
-    SITE_BUILD_ROOT=/state/site
+    SITE_BUILD_ROOT=/state/site \
+    STATIC_MANIFEST=1
 
 WORKDIR /app
 

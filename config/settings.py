@@ -207,6 +207,14 @@ STATICFILES_DIRS = [
 
 STATIC_ROOT = BASE_DIR / "staticfiles"
 
+if os.getenv("STATIC_MANIFEST") == "1":
+    # Docker のイメージ用。CSS・JS のファイル名にハッシュを付け、更新したときにブラウザが古い版を使い続けないようにする
+    STORAGES = {
+        "default": {"BACKEND": "django.core.files.storage.FileSystemStorage"},
+        "staticfiles": {"BACKEND": "config.staticstorage.HashedAdminStaticStorage"},
+    }
+    WHITENOISE_MANIFEST_STRICT = False
+
 MEDIA_URL = "/media/"
 MEDIA_ROOT = DATA_DIR / "media"
 
