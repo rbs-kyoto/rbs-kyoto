@@ -49,25 +49,55 @@ def _parse_date(value):
     return date.fromisoformat(value[:10])
 
 
-def check_domain(domain, today):
-    label = f"ドメイン（{domain}）の期限"
-    try:
-        response = requests.get(RDAP_URL.format(domain=domain), timeout=TIMEOUT)
-        response.raise_for_status()
-        events = response.json().get("events", [])
-        expiration = next(event["eventDate"] for event in events if event.get("eventAction") == "expiration")
-        expires_on = _parse_date(expiration)
-    except (requests.RequestException, ValueError, KeyError, StopIteration):
-        return result("domain", label, "—", Level.UNKNOWN, "期限を確認できませんでした。", "時間をおいて「今すぐ確認」を押してください。")
+def _rdap_expiration(domain):
+    """(状態, 期限) を返す。状態は "found"（期限あり）、"missing"（登録情報なし）、"no-date"（期限の公開なし）。"""
+    response = requests.get(RDAP_URL.format(domain=domain), timeout=TIMEOUT)
+    # 登録されていない名前（サブドメインなど）への答えは、.com は 404、.org は 400 と、レジストリごとに違う
+    if response.status_code in (400, 404):
+        return "missing", None
+    response.raise_for_status()
+    for event in response.json().get("events", []):
+        if event.get("eventAction") == "expiration":
+            return "found", _parse_date(event["eventDate"])
+    return "no-date", None
 
+
+def check_domain(host, today):
+    """host がサブドメイン（poc-rbs.example.com など）のときは、登録情報のある親のドメインまでさかのぼって調べる。"""
+    labels = host.lower().rstrip(".").split(".")
+    # 長い順に、2つ以上のラベルが残るものまで（co.jp のような親は、本体が見つかった時点で調べない）
+    candidates = [".".join(labels[start:]) for start in range(len(labels) - 1)] or [host]
+    unknown = result(
+        "domain", f"ドメイン（{host}）の期限", "—", Level.UNKNOWN, "期限を確認できませんでした。", "時間をおいて「今すぐ確認」を押してください。"
+    )
+
+    for domain in candidates:
+        try:
+            state, expires_on = _rdap_expiration(domain)
+        except (requests.RequestException, ValueError, KeyError):
+            return unknown
+        if state == "missing":
+            continue
+        label = f"ドメイン（{domain}）の期限"
+        if state == "no-date":
+            return result(
+                "domain", label, "—", Level.UNKNOWN,
+                "このドメインは、登録情報に期限が公開されていません。",
+                "ドメインの登録サービスの管理画面で、期限と自動更新の設定を確認してください。",
+            )
+        break
+    else:
+        return unknown
+
+    note = f"{host} は {domain} のサブドメインなので、{domain} の期限を確認しました。" if domain != host else ""
     days = _days_until(expires_on, today)
     value = f"{expires_on:%Y年%-m月%-d日}（あと{days}日）" if days >= 0 else f"{expires_on:%Y年%-m月%-d日}（期限切れ）"
     advice = "ドメインの登録サービスで、更新手続き（または自動更新の設定）を確認してください。"
     if days <= DOMAIN_DANGER_DAYS:
-        return result("domain", label, value, Level.DANGER, "期限が切れるとサイトが表示されなくなります。", advice)
+        return result("domain", label, value, Level.DANGER, f"{note}期限が切れるとサイトが表示されなくなります。", advice)
     if days <= DOMAIN_WARNING_DAYS:
-        return result("domain", label, value, Level.WARNING, "期限が近づいています。", advice)
-    return result("domain", label, value, Level.OK)
+        return result("domain", label, value, Level.WARNING, f"{note}期限が近づいています。", advice)
+    return result("domain", label, value, Level.OK, note)
 
 
 def _os_release():

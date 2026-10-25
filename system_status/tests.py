@@ -58,6 +58,79 @@ class DomainCheckTests(TestCase):
                 self.assertEqual(item["level"], Level.UNKNOWN)
 
 
+class SubdomainDomainCheckTests(TestCase):
+    """サブドメインは、登録情報のある親のドメインの期限を調べる。"""
+
+    def check(self, host, responses):
+        with mock.patch("system_status.checks.requests.get", side_effect=responses) as get:
+            item = checks.check_domain(host, TODAY)
+        return item, [call.args[0] for call in get.call_args_list]
+
+    def test_subdomain_uses_the_registered_parent_domain(self):
+        item, urls = self.check(
+            "poc-rbs.clusters-prj.com",
+            [fake_response({}, status=404), fake_response(rdap(date(2027, 8, 19)))],
+        )
+
+        self.assertEqual(
+            urls, ["https://rdap.org/domain/poc-rbs.clusters-prj.com", "https://rdap.org/domain/clusters-prj.com"]
+        )
+        self.assertEqual(item["level"], Level.OK)
+        self.assertEqual(item["label"], "ドメイン（clusters-prj.com）の期限")
+        self.assertEqual(item["value"], "2027年8月19日（あと299日）")
+        self.assertIn("poc-rbs.clusters-prj.com は clusters-prj.com のサブドメイン", item["detail"])
+
+    def test_the_note_is_kept_when_the_expiry_is_close(self):
+        item, _ = self.check(
+            "poc-rbs.clusters-prj.com",
+            [fake_response({}, status=404), fake_response(rdap(TODAY + timedelta(days=10)))],
+        )
+        self.assertEqual(item["level"], Level.DANGER)
+        self.assertIn("サブドメインなので", item["detail"])
+        self.assertIn("サイトが表示されなくなります", item["detail"])
+
+    def test_a_plain_domain_has_no_subdomain_note_and_one_request(self):
+        item, urls = self.check("rbs-kyoto.org", [fake_response(rdap(date(2027, 8, 19)))])
+        self.assertEqual(urls, ["https://rdap.org/domain/rbs-kyoto.org"])
+        self.assertEqual(item["detail"], "")
+
+    def test_registries_that_answer_400_for_a_subdomain_are_handled_too(self):
+        # .org のレジストリは、登録されていない名前に 404 ではなく 400 を返す
+        item, urls = self.check("www.rbs-kyoto.org", [fake_response({}, status=400), fake_response(rdap(date(2027, 8, 19)))])
+        self.assertEqual([url.rsplit("/", 1)[1] for url in urls], ["www.rbs-kyoto.org", "rbs-kyoto.org"])
+        self.assertEqual(item["label"], "ドメイン（rbs-kyoto.org）の期限")
+        self.assertEqual(item["level"], Level.OK)
+
+    def test_deeper_subdomains_and_multi_part_suffixes(self):
+        _, urls = self.check(
+            "a.b.example.co.jp",
+            [fake_response({}, status=404), fake_response({}, status=404), fake_response(rdap(date(2027, 8, 19)))],
+        )
+        self.assertEqual(
+            [url.rsplit("/", 1)[1] for url in urls], ["a.b.example.co.jp", "b.example.co.jp", "example.co.jp"]
+        )
+
+    def test_it_never_asks_about_the_bare_suffix(self):
+        item, urls = self.check("poc.example.com", [fake_response({}, status=404)] * 2)
+        self.assertEqual([url.rsplit("/", 1)[1] for url in urls], ["poc.example.com", "example.com"])
+        self.assertEqual(item["level"], Level.UNKNOWN)
+
+    def test_a_network_error_stops_without_guessing(self):
+        item, urls = self.check("poc-rbs.clusters-prj.com", [requests.ConnectionError()])
+        self.assertEqual(item["level"], Level.UNKNOWN)
+        self.assertEqual(len(urls), 1)
+
+    def test_a_server_error_is_unknown_not_a_missing_domain(self):
+        item, urls = self.check("poc-rbs.clusters-prj.com", [fake_response({}, status=503)])
+        self.assertEqual(item["level"], Level.UNKNOWN)
+        self.assertEqual(len(urls), 1)
+
+    def test_a_registry_that_hides_the_expiry_says_where_to_look(self):
+        item, _ = self.check("example.jp", [fake_response({"events": [{"eventAction": "registration", "eventDate": "2020-01-01T00:00:00Z"}]})])
+        self.assertEqual(item["level"], Level.UNKNOWN)
+        self.assertIn("登録サービスの管理画面", item["advice"])
+
+
 class SoftwareCheckTests(TestCase):
     def check(self, key, payload, installed="6.1"):
         with mock.patch("system_status.checks.requests.get", return_value=fake_response(payload)):
