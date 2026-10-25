@@ -28,17 +28,17 @@
 
     <div class="publisher-grid">
         <section class="publisher-card">
-            <h2 class="publisher-card__title">更新</h2>
-            <p class="publisher-card__text">更新の前に、自動でバックアップを取ります。失敗したら元の版に自動で戻ります。</p>
+            <h2 class="publisher-card__title">ソースの取り直し</h2>
+            <p class="publisher-card__text">GitHub から最新のソースを取り直して、入れ替えます。入れ替えの前に、自動でバックアップを取り、失敗したら元の版に自動で戻ります。</p>
             <div class="ops-actions">
                 <div>
                     <button class="publisher-button publisher-button--primary" type="button" data-ops-action="update_web"
-                            data-confirm="公開サイト（Apache・PHP）を更新します。入れ替えの1〜2秒だけ、公開サイトとこの画面に繋がらなくなります。よろしいですか？">{{ actions.update_web.label }}</button>
+                            data-confirm="公開サイト（Apache・PHP）のソースを取り直して入れ替えます。入れ替えの1〜2秒だけ、公開サイトとこの画面に繋がらなくなります。よろしいですか？">{{ actions.update_web.label }}</button>
                     <p class="publisher-card__text">{{ actions.update_web.description }}</p>
                 </div>
                 <div>
                     <button class="publisher-button publisher-button--primary" type="button" data-ops-action="update_admin"
-                            data-confirm="管理画面（Django）を更新します。1〜2分ほどこの画面が使えなくなります。よろしいですか？">{{ actions.update_admin.label }}</button>
+                            data-confirm="管理画面（Django）のソースを取り直して入れ替えます。1〜2分ほどこの画面が使えなくなります。よろしいですか？">{{ actions.update_admin.label }}</button>
                     <p class="publisher-card__text">{{ actions.update_admin.description }}</p>
                 </div>
             </div>

@@ -48,7 +48,7 @@ class OperationsViewTests(TestCase):
 
         response = self.client.get(reverse("operations:index"))
 
-        self.assertContains(response, "管理画面（Django）を更新")
+        self.assertContains(response, "管理画面（Django）のソースを取り直す")
         self.assertContains(response, "救出画面")
         self.assertContains(response, "2026-10-25 05:00")
         self.assertContains(response, "成功")
