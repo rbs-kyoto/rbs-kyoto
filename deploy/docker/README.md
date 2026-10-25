@@ -42,9 +42,14 @@ Django が壊れても、別プロセスの救出画面から元に戻せます�
    URL をそちらの指定に変える。
 
    ```sh
-   git clone https://github.com/rbs-kyoto/rbs-kyoto.git /tmp/rbs-install
-   sudo /tmp/rbs-install/deploy/docker/install.sh https://github.com/rbs-kyoto/rbs-kyoto.git main
+   BRANCH=feature/static-site-poc    # main に取り込んだあとは main にする
+   git clone -b $BRANCH https://github.com/rbs-kyoto/rbs-kyoto.git /tmp/rbs-install
+   sudo /tmp/rbs-install/deploy/docker/install.sh https://github.com/rbs-kyoto/rbs-kyoto.git $BRANCH
    ```
+
+   > **ブランチ名を必ず指定してください。** 指定しないと `main` が取得され、`main` に取り込む前は
+   > `install.sh` が見つからず `command not found` になります。取得するブランチは `install.sh` の2つ目の引数と
+   > 同じにします（このブランチが、以後の「更新」ボタンで追いかけるブランチになります）。
 
    ホスト名、Google のクライアントID、救出画面のパスワード、管理画面にログインするユーザーを聞かれます。
    **救出画面のパスワードは12文字以上にして、紙に書いて保管してください。**
@@ -106,8 +111,9 @@ Django が壊れても、別プロセスの救出画面から元に戻せます�
 5. インストールの URL を、次の形に変える。
 
    ```sh
-   sudo git clone git@github-rbs:rbs-kyoto/rbs-kyoto.git /tmp/rbs-install
-   sudo /tmp/rbs-install/deploy/docker/install.sh git@github-rbs:rbs-kyoto/rbs-kyoto.git main
+   BRANCH=feature/static-site-poc    # main に取り込んだあとは main にする
+   sudo git clone -b $BRANCH git@github-rbs:rbs-kyoto/rbs-kyoto.git /tmp/rbs-install
+   sudo /tmp/rbs-install/deploy/docker/install.sh git@github-rbs:rbs-kyoto/rbs-kyoto.git $BRANCH
    ```
 
 ### 方法B：個人アクセストークン（管理者権限がないとき）
