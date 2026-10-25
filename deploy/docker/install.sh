@@ -32,7 +32,7 @@ echo "== 1/7 ユーザーとフォルダ"
 id rbs >/dev/null 2>&1 || useradd --system --home "$RBS_HOME" --shell /usr/sbin/nologin rbs
 RBS_UID="$(id -u rbs)"
 RBS_GID="$(id -g rbs)"
-mkdir -p "$RBS_HOME"/{state/data,state/site,backups,spool/requests,spool/results,spool/running,spool/logs}
+mkdir -p "$RBS_HOME"/{state/data/media,state/site,backups,spool/requests,spool/results,spool/running,spool/logs}
 chown -R rbs:rbs "$RBS_HOME/state"
 chmod 755 "$RBS_HOME" "$RBS_HOME/backups" "$RBS_HOME/spool" "$RBS_HOME/spool/results" "$RBS_HOME/spool/logs"
 chmod 1777 "$RBS_HOME/spool/requests"

@@ -295,6 +295,15 @@ class UpdateTests(OpsTestCase):
         self.assertLess(migrate, up)
         self.assertTrue(any("docker tag rbs-admin:current rbs-admin:previous" in c for c in commands))
 
+    @unittest.skipUnless(os.geteuid() == 0, "持ち主を変えるには root が必要")
+    def test_update_hands_the_media_folder_to_the_app_user(self):
+        # Docker が media を root 持ちで作ってしまった状態（画像を保存できない）を直す
+        config = Config(home=self.home, health_timeout=3, uid=12345, gid=12345)
+        ops = Ops(config, runner=self.docker, now=lambda: self.clock[0], sleep=lambda seconds: None)
+        ops.ensure_state_dirs()
+        for directory in (config.data_dir, config.media, self.home / "state" / "site"):
+            self.assertEqual(directory.stat().st_uid, 12345, directory)
+
     def test_web_update_does_not_touch_data_or_admin(self):
         self.ops.update(self.job("update_web"), "web")
 

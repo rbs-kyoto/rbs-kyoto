@@ -203,6 +203,18 @@ class Ops:
             for name in [".", *subdirectories, *files]:
                 os.chown(Path(directory) / name, c.uid, c.gid if c.gid is not None else -1, follow_symlinks=False)
 
+    def ensure_state_dirs(self):
+        """コンテナが使うフォルダを、先に作って持ち主を合わせる。
+
+        compose.yaml は media を web に読み取りで渡すので、無いと Docker が root 持ちで作ってしまい、
+        管理画面（rbs ユーザー）が画像を保存できなくなる。
+        """
+        c = self.config
+        for directory in (c.data_dir, c.media, c.home / "state" / "site"):
+            directory.mkdir(parents=True, exist_ok=True)
+            if c.uid is not None and directory.stat().st_uid != c.uid:
+                os.chown(directory, c.uid, c.gid if c.gid is not None else -1)
+
     def wait_healthy(self, job, service):
         deadline = time.monotonic() + self.config.health_timeout
         template = "{{.State.Status}} {{if .State.Health}}{{.State.Health.Status}}{{end}}"
@@ -349,6 +361,7 @@ class Ops:
         image = f"rbs-{service}"
         repo = str(c.repo)
 
+        self.ensure_state_dirs()
         pre_update = self.backup(job, "pre-update") if service == "admin" else None
         old_commit = self.git_head()
         self.sh(job, ["git", "-C", repo, "pull", "--ff-only"], timeout=300)
