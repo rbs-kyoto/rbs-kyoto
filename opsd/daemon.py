@@ -622,11 +622,33 @@ class Ops:
             job.write(protocol.SUCCEEDED, finished=True)
 
 
+def forget_env_file_variables(env_file, environ=None):
+    """.env に書かれた変数を、この operator の環境から消す。
+
+    systemd の EnvironmentFile で起動時に読んだ古い値が残っていると、docker compose は
+    --env-file より環境変数を優先するので、.env を書き換えても反映されなくなる。
+    """
+    environ = os.environ if environ is None else environ
+    try:
+        lines = Path(env_file).read_text(encoding="utf-8").splitlines()
+    except OSError:
+        return []
+    names = []
+    for line in lines:
+        line = line.strip()
+        if line and not line.startswith("#") and "=" in line:
+            name = line.split("=", 1)[0].strip()
+            if environ.pop(name, None) is not None:
+                names.append(name)
+    return names
+
+
 def main():
     # 依頼ID・バックアップ名・「毎日3時」の基準を、Django や救出画面と同じ日本時間にそろえる
     os.environ["TZ"] = os.environ.get("RBS_TZ", "Asia/Tokyo")
     time.tzset()
     config = Config.from_env()
+    forget_env_file_variables(config.env_file)
     ops = Ops(config)
     ops.recover()
     handler = RotatingFileHandler(config.spool / "logs" / "opsd.log", maxBytes=1_000_000, backupCount=3, encoding="utf-8")

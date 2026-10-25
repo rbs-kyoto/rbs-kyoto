@@ -8,7 +8,7 @@ from datetime import datetime
 from pathlib import Path
 
 from . import protocol
-from .daemon import Config, Job, Ops, OpsError
+from .daemon import Config, Job, Ops, OpsError, forget_env_file_variables
 
 HEALTHY = "running healthy"
 
@@ -461,3 +461,18 @@ class DaemonLoopTests(OpsTestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class EnvFileTests(unittest.TestCase):
+    def test_variables_from_the_env_file_are_dropped_so_compose_reads_the_file(self):
+        directory = Path(tempfile.mkdtemp())
+        self.addCleanup(shutil.rmtree, directory, ignore_errors=True)
+        env_file = directory / ".env"
+        env_file.write_text("# 設定\nGATE_ALLOWED_DOMAIN=gmail.com\nRBS_UID=999\n\n", encoding="utf-8")
+        environ = {"GATE_ALLOWED_DOMAIN": "rakunan-h.ed.jp", "RBS_UID": "999", "PATH": "/usr/bin"}
+
+        dropped = forget_env_file_variables(env_file, environ)
+
+        self.assertCountEqual(dropped, ["GATE_ALLOWED_DOMAIN", "RBS_UID"])
+        self.assertEqual(environ, {"PATH": "/usr/bin"})
+        self.assertEqual(forget_env_file_variables(directory / "missing", environ), [])
