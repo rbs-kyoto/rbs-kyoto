@@ -5,6 +5,8 @@ Requires=docker.service
 
 [Service]
 WorkingDirectory=@RBS_HOME@/repo
+# git pull が /root/.ssh と /root/.git-credentials を見つけられるように
+Environment=HOME=/root
 EnvironmentFile=@RBS_HOME@/.env
 ExecStart=/usr/bin/python3 -m opsd
 # 更新でコードが変わったときは、自分で終了して、ここで新しいコードのまま起動し直す

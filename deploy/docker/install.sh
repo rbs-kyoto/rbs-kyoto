@@ -39,7 +39,12 @@ chmod 1777 "$RBS_HOME/spool/requests"
 
 echo "== 2/7 コードの取得"
 if [ ! -d "$RBS_HOME/repo/.git" ]; then
-    git clone -b "$BRANCH" "$REPO_URL" "$RBS_HOME/repo"
+    git clone -b "$BRANCH" "$REPO_URL" "$RBS_HOME/repo" || {
+        echo >&2
+        echo "リポジトリを取得できませんでした。非公開のリポジトリなら、先に deploy/docker/README.md の" >&2
+        echo "「非公開リポジトリの取得」（デプロイキーかトークン）を済ませてください。" >&2
+        exit 1
+    }
 fi
 
 echo "== 3/7 設定ファイル（$RBS_HOME/.env）"

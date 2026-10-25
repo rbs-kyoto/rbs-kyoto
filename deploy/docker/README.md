@@ -38,7 +38,8 @@ Django が壊れても、別プロセスの救出画面から元に戻せます�
 
 1. Ubuntu Server 24.04 LTS を入れ、[Docker をインストール](https://docs.docker.com/engine/install/ubuntu/)する。
    `sudo timedatectl set-timezone Asia/Tokyo` も実行する。
-2. 次を実行する（GitHub のリポジトリを非公開にしている場合は、先にこのPC用のデプロイキーかトークンを用意する）。
+2. 次を実行する。**GitHub のリポジトリが非公開なら、先に[下の「非公開リポジトリの取得」](#非公開リポジトリの取得)を済ませて**、
+   URL をそちらの指定に変える。
 
    ```sh
    git clone https://github.com/rbs-kyoto/rbs-kyoto.git /tmp/rbs-install
@@ -61,6 +62,80 @@ Django が壊れても、別プロセスの救出画面から元に戻せます�
 6. 管理画面（`https://admin.rbs-kyoto.org/`）の「デプロイを管理」から最初のデプロイをすると、公開サイトが表示される。
 
 `install.sh` は何度実行しても、すでにある設定やパスワードは上書きしません。
+
+## 非公開リポジトリの取得
+
+リポジトリが非公開（Private）のときは、このPCが GitHub から読み取れるように、**このPC専用の読み取り専用の鍵**を登録します。
+インストール時の取得にも、あとの「更新」ボタン（`git pull`）にも使います。
+
+### 方法A：デプロイキー（おすすめ）
+
+特定のリポジトリを**読むだけ**の鍵です。**期限がなく、人のアカウントにも紐付きません**
+（人が卒業しても止まりません）。登録には、リポジトリの **Admin 権限**が必要です（持っていなければ、持っている人に頼む）。
+
+1. PC で鍵を作る（パスフレーズは空のまま Enter）。
+
+   ```sh
+   sudo mkdir -p /root/.ssh && sudo chmod 700 /root/.ssh
+   sudo ssh-keygen -t ed25519 -f /root/.ssh/rbs_deploy -N "" -C "rbs-club-pc"
+   sudo cat /root/.ssh/rbs_deploy.pub
+   ```
+
+   最後に出る `ssh-ed25519 AAAA… rbs-club-pc` の1行が、登録する**公開鍵**です。
+   （`rbs_deploy`（`.pub` が付かない方）は秘密鍵です。**絶対に人に渡さない・貼らない**）
+2. GitHub のリポジトリを開く → **Settings → Deploy keys → Add deploy key**。
+   Title に「部室PC」、Key に先ほどの1行を貼り、**「Allow write access」にはチェックを入れずに**追加する。
+3. PC で、この鍵を使う設定を書く。
+
+   ```sh
+   sudo tee -a /root/.ssh/config > /dev/null <<'EOF'
+   Host github-rbs
+       HostName github.com
+       User git
+       IdentityFile /root/.ssh/rbs_deploy
+       IdentitiesOnly yes
+       StrictHostKeyChecking accept-new
+   EOF
+   sudo chmod 600 /root/.ssh/config
+   ```
+4. 繋がるか確かめる。`Hi rbs-kyoto/rbs-kyoto! You've successfully authenticated…` と出れば成功。
+
+   ```sh
+   sudo ssh -T git@github-rbs
+   ```
+5. インストールの URL を、次の形に変える。
+
+   ```sh
+   sudo git clone git@github-rbs:rbs-kyoto/rbs-kyoto.git /tmp/rbs-install
+   sudo /tmp/rbs-install/deploy/docker/install.sh git@github-rbs:rbs-kyoto/rbs-kyoto.git main
+   ```
+
+### 方法B：個人アクセストークン（管理者権限がないとき）
+
+Admin 権限がなくてもできます。ただし**自分のアカウントに紐付き、期限があります**（最長1年）。
+期限が切れる・アカウントがリポジトリから外れる（卒業など）と、更新できなくなります。
+**期限の日をカレンダーに入れておいてください。**
+
+1. GitHub の右上のアイコン → **Settings → Developer settings → Personal access tokens → Fine-grained tokens → Generate new token**。
+2. **Repository access** は「Only select repositories」で `rbs-kyoto/rbs-kyoto` だけを選ぶ。
+   **Permissions → Repository permissions → Contents** を **Read-only** にする（ほかは触らない）。
+   Expiration を決めて作成し、表示される `github_pat_…` をコピーする（**この画面を閉じると二度と見られません**）。
+3. PC に保存する（トークンは root だけが読めるファイルに入る）。
+
+   ```sh
+   sudo git config --global credential.helper store
+   sudo sh -c 'umask 077; echo "https://x-access-token:github_pat_ここにトークン@github.com" > /root/.git-credentials'
+   ```
+4. URL は、そのまま `https://github.com/rbs-kyoto/rbs-kyoto.git` を使う。
+
+### どちらの場合も
+
+- トークンや鍵を、チャットやスクリーンショット、リポジトリの中に**貼らない**でください。
+  万一貼ってしまったら、GitHub 側でその鍵（Deploy keys）やトークンを削除して、作り直してください。
+- 鍵を作り直したとき・トークンの期限が切れたときは、上の手順をやり直すだけです。
+  インストール済みのPCでも、`/root/.ssh/` と `/root/.git-credentials` を差し替えれば、「更新」ボタンがまた使えます。
+- 更新が `git pull` で失敗したときは、管理画面の更新ボタンの結果に `Permission denied` や `Authentication failed` と出ます
+  （そのときは自動で元に戻るので、公開サイトは止まりません）。
 
 ## 普段の操作（管理画面の「システムの操作」）
 
