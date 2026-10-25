@@ -1,0 +1,44 @@
+
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="theme-color" content="#f3f5f7">
+    <title>システムエラー｜rbs京都</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Comfortaa:wght@300..700&family=Material+Symbols+Rounded:opsz,wght,FILL,GRAD@20..48,400,0,0&family=Noto+Sans+JP:wght@100..900&display=swap"
+        rel="stylesheet"
+    >
+    <link rel="stylesheet" href="/static/main/css/error.css">
+</head>
+<body>
+    <main>
+        <header class="error-heading">
+            <span class="error-heading__icon material-symbols-rounded" aria-hidden="true">error</span>
+            <h1>ページを表示できませんでした。</h1>
+        </header>
+
+        <p class="error-code">500<span>Internal Server Error</span></p>
+
+        <section class="reasons" aria-labelledby="reasons-title">
+            <h2 id="reasons-title">次のような理由が考えられます。</h2>
+            <ul>
+                
+<li><span class="material-symbols-rounded" aria-hidden="true">cloud_off</span>サーバーで一時的な問題が発生している</li>
+<li><span class="material-symbols-rounded" aria-hidden="true">build</span>メンテナンスまたは復旧作業を行っている</li>
+
+            </ul>
+        </section>
+
+        <p class="guidance">ご不便をおかけします。時間をおいてから、もう一度お試しください。</p>
+        <nav class="navigation" aria-label="ページ移動">
+            <a href="/">トップページへ戻る</a>
+            <a href="/news/">News一覧を見る</a>
+        </nav>
+        <img class="logo" src="/static/main/img/rbs.svg" alt="rbs京都">
+    </main>
+</body>
+</html>

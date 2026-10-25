@@ -1,0 +1,165 @@
+
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="theme-color" content="#620610">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-title" content="rbs京都">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <title>About｜rbs京都</title>
+    <link rel="manifest" href="/static/main/manifest.webmanifest">
+    <link rel="apple-touch-icon" href="/static/main/img/pwa-icon-180.png">
+    <meta
+        name="description"
+        content="洛南高等学校・洛南高等学校附属中学校の放送部と、rbs京都のWebサイトをご紹介します。"
+    >
+    <link rel="stylesheet" href="/static/main/css/base.css">
+    <link rel="stylesheet" href="/static/main/css/about.css">
+    <script src="/static/main/js/base.js"></script>
+    <script src="/static/main/js/service_worker.js" defer></script>
+    
+<script src="/static/main/js/about.js" defer></script>
+
+</head>
+<body>
+    <script>
+        try {
+            const savedTheme = localStorage.getItem("rbs-theme");
+            const useDarkTheme = savedTheme === "dark"
+                || (savedTheme !== "light" && window.matchMedia("(prefers-color-scheme: dark)").matches);
+            document.body.classList.toggle("dark-mode", useDarkTheme);
+        } catch (error) {
+            console.warn("Theme preference could not be read from local storage.", error);
+            document.body.classList.toggle(
+                "dark-mode",
+                window.matchMedia("(prefers-color-scheme: dark)").matches
+            );
+        }
+    </script>
+    <header class="global-header">
+        <nav class="global-header__nav">
+            <a class="global-header__nav__link" href="/">
+                <img
+                    class="global-header-logo"
+                    src="/static/main/img/rbs.svg"
+                    data-theme-light-src="/static/main/img/rbs.svg"
+                    data-theme-dark-src="/static/main/img/rbs-dark.svg"
+                    alt="rbs"
+                >
+            </a>
+        </nav>
+        <div class="global-header__controls">
+            <div class="theme-toggle" role="group" aria-label="表示モード">
+                <button class="theme-toggle__option" type="button" data-theme-mode="light" aria-pressed="true">
+                    <span class="theme-toggle__icon" aria-hidden="true">light_mode</span>
+                    <span>ライト</span>
+                </button>
+                <button class="theme-toggle__option" type="button" data-theme-mode="dark" aria-pressed="false">
+                    <span class="theme-toggle__icon" aria-hidden="true">dark_mode</span>
+                    <span>ダーク</span>
+                </button>
+            </div>
+            <nav class="global-header__menu" aria-label="メインメニュー">
+                <a href="/about/">About</a>
+                <a href="/news/">News</a>
+                <a href="/manuals/">Manual</a>
+                <a href="/videos/">Video Archive</a>
+            </nav>
+        </div>
+        
+        <a class="global-header__login" href="/accounts/login/">
+            <img
+                src="/static/main/img/login.svg"
+                data-theme-light-src="/static/main/img/login.svg"
+                data-theme-dark-src="/static/main/img/login-dark.svg"
+                alt=""
+            >
+            <span>login</span>
+        </a> 
+    </header>
+    <main>
+    
+<div class="about-page">
+    <section class="about-screen about-logo-screen" id="about-screen-logo" aria-label="rbsロゴ" data-about-screen>
+        <div
+            class="about-logo-stage"
+            data-logo-stage
+            tabindex="-1"
+            role="group"
+            aria-label="rbsロゴ。マウスの動きに合わせて傾きます"
+        >
+            <img src="/static/main/img/rbs.svg" alt="rbs">
+        </div>
+    </section>
+
+    <section class="about-screen about-intro" id="about-screen-intro" aria-labelledby="about-intro-title" data-about-screen>
+        <div class="about-section-label">
+            <span>ABOUT rbs-kyoto</span>
+        </div>
+        <div class="about-intro__content">
+            <h1 id="about-intro-title">声と映像を「とどける」</h1>
+            <p>
+                rbs京都は、洛南高等学校・洛南高等学校附属中学校の放送部のWebサイトです。
+                お知らせや活動の記録を掲載し、放送部の「今」も「過去」もそのままお届けします。
+            </p>
+            <a class="about-intro__link" href="/news/">
+                最新のお知らせを見る <span aria-hidden="true">↗</span>
+            </a>
+        </div>
+    </section>
+
+    <section class="about-screen about-links" id="about-screen-links" aria-labelledby="about-links-title" data-about-screen>
+        <div class="about-section-label">
+            <span>01</span>
+            <span>EXPLORE</span>
+        </div>
+        <div class="about-links__heading">
+            <h2 id="about-links-title">サイトをめぐる</h2>
+            <p>気になる入り口から、rbs京都をご覧ください。</p>
+        </div>
+        <div class="about-links__grid">
+            <a class="about-link-card about-link-card--news" href="/news/">
+                <span class="about-link-card__number">01 / NEWS</span>
+                <span class="about-link-card__title">お知らせ</span>
+                <span class="about-link-card__description">放送部からのニュースや更新情報。</span>
+                <span class="about-link-card__arrow" aria-hidden="true">↗</span>
+            </a>
+            <a class="about-link-card about-link-card--manual" href="/manuals/">
+                <span class="about-link-card__number">02 / MANUAL</span>
+                <span class="about-link-card__title">マニュアル</span>
+                <span class="about-link-card__description">部内向けの手順書・資料。</span>
+                <span class="about-link-card__arrow" aria-hidden="true">↗</span>
+            </a>
+            <a class="about-link-card about-link-card--video" href="/videos/">
+                <span class="about-link-card__number">03 / VIDEO ARCHIVE</span>
+                <span class="about-link-card__title">動画アーカイブ</span>
+                <span class="about-link-card__description">過去の動画を振り返るアーカイブ。</span>
+                <span class="about-link-card__arrow" aria-hidden="true">↗</span>
+            </a>
+        </div>
+    </section>
+
+    <nav class="about-pagination" aria-label="紹介ページ">
+        <button type="button" data-screen-target="about-screen-logo" aria-label="ロゴ" aria-current="step"></button>
+        <button type="button" data-screen-target="about-screen-intro" aria-label="放送部について"></button>
+        <button type="button" data-screen-target="about-screen-links" aria-label="サイト内コンテンツ"></button>
+    </nav>
+</div>
+
+    </main>
+    <footer>
+        <div class="footer__logo">
+            <img
+                class="global-header-logo"
+                src="/static/main/img/rbs_long.svg"
+                data-theme-light-src="/static/main/img/rbs_long.svg"
+                data-theme-dark-src="/static/main/img/rbs_long-dark.svg"
+                alt="rbs京都"
+            >
+        </div>
+        <div class="footer__copyright">© 2026 rbs-kyoto</div>
+    </footer>
+</body>
+</html>

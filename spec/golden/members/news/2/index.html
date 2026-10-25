@@ -1,0 +1,136 @@
+
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="theme-color" content="#620610">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-title" content="rbs京都">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <title>部内限定の連絡｜rbs京都</title>
+    <link rel="manifest" href="/static/main/manifest.webmanifest">
+    <link rel="apple-touch-icon" href="/static/main/img/pwa-icon-180.png">
+    <meta
+        name="description"
+        content=""
+    >
+    <link rel="stylesheet" href="/static/main/css/base.css">
+    <link rel="stylesheet" href="/static/main/css/news.css">
+    <script src="/static/main/js/base.js"></script>
+    <script src="/static/main/js/service_worker.js" defer></script>
+    
+</head>
+<body>
+    <script>
+        try {
+            const savedTheme = localStorage.getItem("rbs-theme");
+            const useDarkTheme = savedTheme === "dark"
+                || (savedTheme !== "light" && window.matchMedia("(prefers-color-scheme: dark)").matches);
+            document.body.classList.toggle("dark-mode", useDarkTheme);
+        } catch (error) {
+            console.warn("Theme preference could not be read from local storage.", error);
+            document.body.classList.toggle(
+                "dark-mode",
+                window.matchMedia("(prefers-color-scheme: dark)").matches
+            );
+        }
+    </script>
+    <header class="global-header">
+        <nav class="global-header__nav">
+            <a class="global-header__nav__link" href="/">
+                <img
+                    class="global-header-logo"
+                    src="/static/main/img/rbs.svg"
+                    data-theme-light-src="/static/main/img/rbs.svg"
+                    data-theme-dark-src="/static/main/img/rbs-dark.svg"
+                    alt="rbs"
+                >
+            </a>
+        </nav>
+        <div class="global-header__controls">
+            <div class="theme-toggle" role="group" aria-label="表示モード">
+                <button class="theme-toggle__option" type="button" data-theme-mode="light" aria-pressed="true">
+                    <span class="theme-toggle__icon" aria-hidden="true">light_mode</span>
+                    <span>ライト</span>
+                </button>
+                <button class="theme-toggle__option" type="button" data-theme-mode="dark" aria-pressed="false">
+                    <span class="theme-toggle__icon" aria-hidden="true">dark_mode</span>
+                    <span>ダーク</span>
+                </button>
+            </div>
+            <nav class="global-header__menu" aria-label="メインメニュー">
+                <a href="/about/">About</a>
+                <a href="/news/">News</a>
+                <a href="/manuals/">Manual</a>
+                <a href="/videos/">Video Archive</a>
+            </nav>
+        </div>
+        
+        <a class="global-header__login" href="/accounts/mypage/">
+            <img
+                src="/static/main/img/person.svg"
+                data-theme-light-src="/static/main/img/person.svg"
+                data-theme-dark-src="/static/main/img/person-dark.svg"
+                alt=""
+            >
+            <span>mypage</span> 
+        </a>
+        
+    </header>
+    <main>
+    
+
+<section class="news-detail-section">
+    <div class="news-detail__header">
+        <img
+            src="/static/main/img/title_bg.svg"
+            alt=""
+        >
+        <div class="news-detail__header__info">
+            <div class="news-detail__meta">
+                <span class="news-detail__date">
+                    2026.09.29
+                </span>
+
+                
+                <span class="category__element">
+                    大会
+                </span>
+                
+            </div>
+            <h1 class="news-detail__title">
+                部内限定の連絡
+            </h1>
+        </div>
+        
+    </div>
+    
+    
+        <div class="news-detail__content">
+            <p>部員だけの本文です。</p>
+        </div>
+    
+    <div class="page_control">
+        <a class="page-control-style-back" href="/news/">
+            記事一覧へ
+        </a>
+    </div>
+</section>
+
+
+    </main>
+    <footer>
+        <div class="footer__logo">
+            <img
+                class="global-header-logo"
+                src="/static/main/img/rbs_long.svg"
+                data-theme-light-src="/static/main/img/rbs_long.svg"
+                data-theme-dark-src="/static/main/img/rbs_long-dark.svg"
+                alt="rbs京都"
+            >
+        </div>
+        <div class="footer__copyright">© 2026 rbs-kyoto</div>
+    </footer>
+</body>
+</html>

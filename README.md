@@ -48,6 +48,7 @@ Django（管理画面）は、更新でいちばん壊れやすい部品です�
 | 部室PCに入れる・日々の操作・困ったとき | [`deploy/docker/README.md`](deploy/docker/README.md)（**まずこれ**） |
 | メンテナンス画面（Cloudflare）の準備・使い方 | [`deploy/cloudflare/README.md`](deploy/cloudflare/README.md) |
 | Docker を使わない、最小の試験構成 | [`deploy/poc/README.md`](deploy/poc/README.md) |
+| **仕様（作り直すときの基準）** | [`spec/README.md`](spec/README.md)。書き出しHTMLの見本（`spec/golden/`）と、入口の応答の表 |
 
 ## フォルダの案内
 
@@ -62,6 +63,7 @@ Django（管理画面）は、更新でいちばん壊れやすい部品です�
 | `maintenance/` | 「設定 → メンテナンス」（予定の登録） |
 | `system_status/` | 「システムの状態」（ドメイン・ソフトの期限の確認） |
 | `deploy/` | 入れ方（Docker・Cloudflare・apt 版）と設定ファイル |
+| `spec/` | 仕様の記録（書き出しHTMLの見本と、入口の応答のテスト） |
 
 ## 開発者向け
 

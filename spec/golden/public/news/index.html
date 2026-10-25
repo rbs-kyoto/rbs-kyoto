@@ -1,0 +1,470 @@
+
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="theme-color" content="#620610">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-title" content="rbs京都">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <title>記事一覧｜rbs京都</title>
+    <link rel="manifest" href="/static/main/manifest.webmanifest">
+    <link rel="apple-touch-icon" href="/static/main/img/pwa-icon-180.png">
+    <meta
+        name="description"
+        content="rbs京都の最新ニュースを一覧で閲覧できます．"
+    >
+    <link rel="stylesheet" href="/static/main/css/base.css">
+    <link rel="stylesheet" href="/static/main/css/news.css">
+    <script src="/static/main/js/base.js"></script>
+    <script src="/static/main/js/service_worker.js" defer></script>
+    
+</head>
+<body>
+    <script>
+        try {
+            const savedTheme = localStorage.getItem("rbs-theme");
+            const useDarkTheme = savedTheme === "dark"
+                || (savedTheme !== "light" && window.matchMedia("(prefers-color-scheme: dark)").matches);
+            document.body.classList.toggle("dark-mode", useDarkTheme);
+        } catch (error) {
+            console.warn("Theme preference could not be read from local storage.", error);
+            document.body.classList.toggle(
+                "dark-mode",
+                window.matchMedia("(prefers-color-scheme: dark)").matches
+            );
+        }
+    </script>
+    <header class="global-header">
+        <nav class="global-header__nav">
+            <a class="global-header__nav__link" href="/">
+                <img
+                    class="global-header-logo"
+                    src="/static/main/img/rbs.svg"
+                    data-theme-light-src="/static/main/img/rbs.svg"
+                    data-theme-dark-src="/static/main/img/rbs-dark.svg"
+                    alt="rbs"
+                >
+            </a>
+        </nav>
+        <div class="global-header__controls">
+            <div class="theme-toggle" role="group" aria-label="表示モード">
+                <button class="theme-toggle__option" type="button" data-theme-mode="light" aria-pressed="true">
+                    <span class="theme-toggle__icon" aria-hidden="true">light_mode</span>
+                    <span>ライト</span>
+                </button>
+                <button class="theme-toggle__option" type="button" data-theme-mode="dark" aria-pressed="false">
+                    <span class="theme-toggle__icon" aria-hidden="true">dark_mode</span>
+                    <span>ダーク</span>
+                </button>
+            </div>
+            <nav class="global-header__menu" aria-label="メインメニュー">
+                <a href="/about/">About</a>
+                <a href="/news/">News</a>
+                <a href="/manuals/">Manual</a>
+                <a href="/videos/">Video Archive</a>
+            </nav>
+        </div>
+        
+        <a class="global-header__login" href="/accounts/login/">
+            <img
+                src="/static/main/img/login.svg"
+                data-theme-light-src="/static/main/img/login.svg"
+                data-theme-dark-src="/static/main/img/login-dark.svg"
+                alt=""
+            >
+            <span>login</span>
+        </a> 
+    </header>
+    <main>
+    
+
+<section class="news-all-section">
+    <div class="section-heading">
+        <h2 class="heading">News</h2>
+        
+    </div>
+    <div class="news-all__list">
+        
+        <a class="news-all__item" href="/news/1/">
+            <div class="news-all__image">
+                
+                    <img class="thumbnail" src="/static/main/img/pwa-icon.svg" alt="">
+                
+            </div>
+            <div class="news-all__content">
+                <span class="news-all__date">2026.09.30</span>
+                <h3 class="news-all__title">公開のお知らせ</h3>
+            </div>
+            <div class="news-all__categories">
+                
+                <span class="news-all__badge">お知らせ</span>
+                
+                
+            </div>
+            <span class="news-all__link">詳細を見る</span>
+        </a>
+        
+        <a class="news-all__item" href="/news/4/">
+            <div class="news-all__image">
+                
+                    <img class="thumbnail" src="/static/main/img/pwa-icon.svg" alt="">
+                
+            </div>
+            <div class="news-all__content">
+                <span class="news-all__date">2026.09.01</span>
+                <h3 class="news-all__title">カテゴリなしの記事</h3>
+            </div>
+            <div class="news-all__categories">
+                
+                
+            </div>
+            <span class="news-all__link">詳細を見る</span>
+        </a>
+        
+        <a class="news-all__item" href="/news/27/">
+            <div class="news-all__image">
+                
+                    <img class="thumbnail" src="/static/main/img/pwa-icon.svg" alt="">
+                
+            </div>
+            <div class="news-all__content">
+                <span class="news-all__date">2026.08.24</span>
+                <h3 class="news-all__title">記事23</h3>
+            </div>
+            <div class="news-all__categories">
+                
+                
+            </div>
+            <span class="news-all__link">詳細を見る</span>
+        </a>
+        
+        <a class="news-all__item" href="/news/26/">
+            <div class="news-all__image">
+                
+                    <img class="thumbnail" src="/static/main/img/pwa-icon.svg" alt="">
+                
+            </div>
+            <div class="news-all__content">
+                <span class="news-all__date">2026.08.23</span>
+                <h3 class="news-all__title">記事22</h3>
+            </div>
+            <div class="news-all__categories">
+                
+                
+            </div>
+            <span class="news-all__link">詳細を見る</span>
+        </a>
+        
+        <a class="news-all__item" href="/news/25/">
+            <div class="news-all__image">
+                
+                    <img class="thumbnail" src="/static/main/img/pwa-icon.svg" alt="">
+                
+            </div>
+            <div class="news-all__content">
+                <span class="news-all__date">2026.08.22</span>
+                <h3 class="news-all__title">記事21</h3>
+            </div>
+            <div class="news-all__categories">
+                
+                
+            </div>
+            <span class="news-all__link">詳細を見る</span>
+        </a>
+        
+        <a class="news-all__item" href="/news/24/">
+            <div class="news-all__image">
+                
+                    <img class="thumbnail" src="/static/main/img/pwa-icon.svg" alt="">
+                
+            </div>
+            <div class="news-all__content">
+                <span class="news-all__date">2026.08.21</span>
+                <h3 class="news-all__title">記事20</h3>
+            </div>
+            <div class="news-all__categories">
+                
+                
+            </div>
+            <span class="news-all__link">詳細を見る</span>
+        </a>
+        
+        <a class="news-all__item" href="/news/23/">
+            <div class="news-all__image">
+                
+                    <img class="thumbnail" src="/static/main/img/pwa-icon.svg" alt="">
+                
+            </div>
+            <div class="news-all__content">
+                <span class="news-all__date">2026.08.20</span>
+                <h3 class="news-all__title">記事19</h3>
+            </div>
+            <div class="news-all__categories">
+                
+                
+            </div>
+            <span class="news-all__link">詳細を見る</span>
+        </a>
+        
+        <a class="news-all__item" href="/news/22/">
+            <div class="news-all__image">
+                
+                    <img class="thumbnail" src="/static/main/img/pwa-icon.svg" alt="">
+                
+            </div>
+            <div class="news-all__content">
+                <span class="news-all__date">2026.08.19</span>
+                <h3 class="news-all__title">記事18</h3>
+            </div>
+            <div class="news-all__categories">
+                
+                
+            </div>
+            <span class="news-all__link">詳細を見る</span>
+        </a>
+        
+        <a class="news-all__item" href="/news/21/">
+            <div class="news-all__image">
+                
+                    <img class="thumbnail" src="/static/main/img/pwa-icon.svg" alt="">
+                
+            </div>
+            <div class="news-all__content">
+                <span class="news-all__date">2026.08.18</span>
+                <h3 class="news-all__title">記事17</h3>
+            </div>
+            <div class="news-all__categories">
+                
+                
+            </div>
+            <span class="news-all__link">詳細を見る</span>
+        </a>
+        
+        <a class="news-all__item" href="/news/20/">
+            <div class="news-all__image">
+                
+                    <img class="thumbnail" src="/static/main/img/pwa-icon.svg" alt="">
+                
+            </div>
+            <div class="news-all__content">
+                <span class="news-all__date">2026.08.17</span>
+                <h3 class="news-all__title">記事16</h3>
+            </div>
+            <div class="news-all__categories">
+                
+                
+            </div>
+            <span class="news-all__link">詳細を見る</span>
+        </a>
+        
+        <a class="news-all__item" href="/news/19/">
+            <div class="news-all__image">
+                
+                    <img class="thumbnail" src="/static/main/img/pwa-icon.svg" alt="">
+                
+            </div>
+            <div class="news-all__content">
+                <span class="news-all__date">2026.08.16</span>
+                <h3 class="news-all__title">記事15</h3>
+            </div>
+            <div class="news-all__categories">
+                
+                
+            </div>
+            <span class="news-all__link">詳細を見る</span>
+        </a>
+        
+        <a class="news-all__item" href="/news/18/">
+            <div class="news-all__image">
+                
+                    <img class="thumbnail" src="/static/main/img/pwa-icon.svg" alt="">
+                
+            </div>
+            <div class="news-all__content">
+                <span class="news-all__date">2026.08.15</span>
+                <h3 class="news-all__title">記事14</h3>
+            </div>
+            <div class="news-all__categories">
+                
+                
+            </div>
+            <span class="news-all__link">詳細を見る</span>
+        </a>
+        
+        <a class="news-all__item" href="/news/17/">
+            <div class="news-all__image">
+                
+                    <img class="thumbnail" src="/static/main/img/pwa-icon.svg" alt="">
+                
+            </div>
+            <div class="news-all__content">
+                <span class="news-all__date">2026.08.14</span>
+                <h3 class="news-all__title">記事13</h3>
+            </div>
+            <div class="news-all__categories">
+                
+                
+            </div>
+            <span class="news-all__link">詳細を見る</span>
+        </a>
+        
+        <a class="news-all__item" href="/news/16/">
+            <div class="news-all__image">
+                
+                    <img class="thumbnail" src="/static/main/img/pwa-icon.svg" alt="">
+                
+            </div>
+            <div class="news-all__content">
+                <span class="news-all__date">2026.08.13</span>
+                <h3 class="news-all__title">記事12</h3>
+            </div>
+            <div class="news-all__categories">
+                
+                
+            </div>
+            <span class="news-all__link">詳細を見る</span>
+        </a>
+        
+        <a class="news-all__item" href="/news/15/">
+            <div class="news-all__image">
+                
+                    <img class="thumbnail" src="/static/main/img/pwa-icon.svg" alt="">
+                
+            </div>
+            <div class="news-all__content">
+                <span class="news-all__date">2026.08.12</span>
+                <h3 class="news-all__title">記事11</h3>
+            </div>
+            <div class="news-all__categories">
+                
+                
+            </div>
+            <span class="news-all__link">詳細を見る</span>
+        </a>
+        
+        <a class="news-all__item" href="/news/14/">
+            <div class="news-all__image">
+                
+                    <img class="thumbnail" src="/static/main/img/pwa-icon.svg" alt="">
+                
+            </div>
+            <div class="news-all__content">
+                <span class="news-all__date">2026.08.11</span>
+                <h3 class="news-all__title">記事10</h3>
+            </div>
+            <div class="news-all__categories">
+                
+                
+            </div>
+            <span class="news-all__link">詳細を見る</span>
+        </a>
+        
+        <a class="news-all__item" href="/news/13/">
+            <div class="news-all__image">
+                
+                    <img class="thumbnail" src="/static/main/img/pwa-icon.svg" alt="">
+                
+            </div>
+            <div class="news-all__content">
+                <span class="news-all__date">2026.08.10</span>
+                <h3 class="news-all__title">記事09</h3>
+            </div>
+            <div class="news-all__categories">
+                
+                
+            </div>
+            <span class="news-all__link">詳細を見る</span>
+        </a>
+        
+        <a class="news-all__item" href="/news/12/">
+            <div class="news-all__image">
+                
+                    <img class="thumbnail" src="/static/main/img/pwa-icon.svg" alt="">
+                
+            </div>
+            <div class="news-all__content">
+                <span class="news-all__date">2026.08.09</span>
+                <h3 class="news-all__title">記事08</h3>
+            </div>
+            <div class="news-all__categories">
+                
+                
+            </div>
+            <span class="news-all__link">詳細を見る</span>
+        </a>
+        
+        <a class="news-all__item" href="/news/11/">
+            <div class="news-all__image">
+                
+                    <img class="thumbnail" src="/static/main/img/pwa-icon.svg" alt="">
+                
+            </div>
+            <div class="news-all__content">
+                <span class="news-all__date">2026.08.08</span>
+                <h3 class="news-all__title">記事07</h3>
+            </div>
+            <div class="news-all__categories">
+                
+                
+            </div>
+            <span class="news-all__link">詳細を見る</span>
+        </a>
+        
+        <a class="news-all__item" href="/news/10/">
+            <div class="news-all__image">
+                
+                    <img class="thumbnail" src="/static/main/img/pwa-icon.svg" alt="">
+                
+            </div>
+            <div class="news-all__content">
+                <span class="news-all__date">2026.08.07</span>
+                <h3 class="news-all__title">記事06</h3>
+            </div>
+            <div class="news-all__categories">
+                
+                
+            </div>
+            <span class="news-all__link">詳細を見る</span>
+        </a>
+        
+    </div>
+    <div class="page_control">
+        <a class="page-control-style-back" href="/">
+            ホームへ
+        </a>
+        <div class="page_control__paginator">
+        
+            
+                <span class="page-number active-page">
+                    <span>1</span>
+                </span>
+            
+        
+            
+                <a href="?page=2" class="page-number">
+                    2
+                </a>
+            
+        
+        </div>
+    </div>
+</section>
+
+
+    </main>
+    <footer>
+        <div class="footer__logo">
+            <img
+                class="global-header-logo"
+                src="/static/main/img/rbs_long.svg"
+                data-theme-light-src="/static/main/img/rbs_long.svg"
+                data-theme-dark-src="/static/main/img/rbs_long-dark.svg"
+                alt="rbs京都"
+            >
+        </div>
+        <div class="footer__copyright">© 2026 rbs-kyoto</div>
+    </footer>
+</body>
+</html>

@@ -1,0 +1,164 @@
+
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="theme-color" content="#620610">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-title" content="rbs京都">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <title>文化祭2025｜Video Archive</title>
+    <link rel="manifest" href="/static/main/manifest.webmanifest">
+    <link rel="apple-touch-icon" href="/static/main/img/pwa-icon-180.png">
+    <meta
+        name="description"
+        content=""
+    >
+    <link rel="stylesheet" href="/static/main/css/base.css">
+    <link rel="stylesheet" href="/static/main/css/video_archive.css">
+    <script src="/static/main/js/base.js"></script>
+    <script src="/static/main/js/service_worker.js" defer></script>
+    <script src="/static/main/js/video_detail.js"></script>
+</head>
+<body>
+    <script>
+        try {
+            const savedTheme = localStorage.getItem("rbs-theme");
+            const useDarkTheme = savedTheme === "dark"
+                || (savedTheme !== "light" && window.matchMedia("(prefers-color-scheme: dark)").matches);
+            document.body.classList.toggle("dark-mode", useDarkTheme);
+        } catch (error) {
+            console.warn("Theme preference could not be read from local storage.", error);
+            document.body.classList.toggle(
+                "dark-mode",
+                window.matchMedia("(prefers-color-scheme: dark)").matches
+            );
+        }
+    </script>
+    <header class="global-header">
+        <nav class="global-header__nav">
+            <a class="global-header__nav__link" href="/">
+                <img
+                    class="global-header-logo"
+                    src="/static/main/img/rbs.svg"
+                    data-theme-light-src="/static/main/img/rbs.svg"
+                    data-theme-dark-src="/static/main/img/rbs-dark.svg"
+                    alt="rbs"
+                >
+            </a>
+        </nav>
+        <div class="global-header__controls">
+            <div class="theme-toggle" role="group" aria-label="表示モード">
+                <button class="theme-toggle__option" type="button" data-theme-mode="light" aria-pressed="true">
+                    <span class="theme-toggle__icon" aria-hidden="true">light_mode</span>
+                    <span>ライト</span>
+                </button>
+                <button class="theme-toggle__option" type="button" data-theme-mode="dark" aria-pressed="false">
+                    <span class="theme-toggle__icon" aria-hidden="true">dark_mode</span>
+                    <span>ダーク</span>
+                </button>
+            </div>
+            <nav class="global-header__menu" aria-label="メインメニュー">
+                <a href="/about/">About</a>
+                <a href="/news/">News</a>
+                <a href="/manuals/">Manual</a>
+                <a href="/videos/">Video Archive</a>
+            </nav>
+        </div>
+        
+        <a class="global-header__login" href="/accounts/mypage/">
+            <img
+                src="/static/main/img/person.svg"
+                data-theme-light-src="/static/main/img/person.svg"
+                data-theme-dark-src="/static/main/img/person-dark.svg"
+                alt=""
+            >
+            <span>mypage</span> 
+        </a>
+        
+    </header>
+    <main>
+    
+<section class="video-archive-section">
+    <article class="video-detail">
+        <div class="video-detail__header">
+            <h2 class="video-archive__title">文化祭2025</h2>
+            
+            <span class="video-detail__group">文化祭</span>
+            
+            <div class="video-detail__dates">
+                
+                <span>開催日：2025.09.20</span>
+                
+                
+                <span>制作日：2025.10.01</span>
+                
+            </div>
+            
+        </div>
+        
+        <div class="video-detail__player">
+            <iframe
+                data-embed-url="https://www.youtube-nocookie.com/embed/dQw4w9WgXcQ?playsinline=1"
+                title="文化祭2025"
+                allow="accelerometer; autoplay; encrypted-media; gyroscope; picture-in-picture"
+                referrerpolicy="strict-origin-when-cross-origin"
+                hidden
+                allowfullscreen
+            ></iframe>
+            <button class="video-detail__poster" type="button" aria-label="動画を再生">
+                
+                <img src="https://i.ytimg.com/vi/dQw4w9WgXcQ/hqdefault.jpg" alt="">
+                
+                <span class="video-detail__play-icon" aria-hidden="true">play_arrow</span>
+            </button>
+            <noscript>
+                <p>動画を再生するにはJavaScriptを有効にしてください。</p>
+            </noscript>
+        </div>
+        <dialog class="video-playback-dialog" aria-labelledby="video-playback-dialog-title">
+            <h2 class="video-playback-dialog__title" id="video-playback-dialog-title">
+                音声を再生しますか？
+            </h2>
+            <p class="video-playback-dialog__message">
+                「音声あり」を選ぶと音声をオンにして再生します。「音声なし」を選ぶとミュートで再生します。
+            </p>
+            <div class="video-playback-dialog__actions">
+                <button class="common-style" type="button" data-playback-muted="true">
+                    音声なし
+                </button>
+                <button class="common-style reverse" type="button" data-playback-muted="false">
+                    音声あり
+                </button>
+            </div>
+        </dialog>
+        
+        
+        <p class="video-detail__description">説明です。</p>
+        
+    </article>
+    <div class="page_control">
+        
+        <a class="page-control-style-back" href="/videos/year/2025/">
+            一覧へ
+        </a>
+        
+    </div>
+</section>
+
+    </main>
+    <footer>
+        <div class="footer__logo">
+            <img
+                class="global-header-logo"
+                src="/static/main/img/rbs_long.svg"
+                data-theme-light-src="/static/main/img/rbs_long.svg"
+                data-theme-dark-src="/static/main/img/rbs_long-dark.svg"
+                alt="rbs京都"
+            >
+        </div>
+        <div class="footer__copyright">© 2026 rbs-kyoto</div>
+    </footer>
+</body>
+</html>

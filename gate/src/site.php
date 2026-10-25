@@ -23,6 +23,9 @@ function gate_request_path(): ?string
 // 公開中のバージョンのディレクトリ。リクエストの途中で切り替わっても混ざらないよう最初に解決する
 function gate_release_root(array $config): ?string
 {
+    // PHP は realpath の結果を既定で120秒覚えているので、current の付け替え（デプロイ・公開バージョンの切り替え）が
+    // すぐに効かなくなる。毎回、覚えているものを捨てる
+    clearstatcache(true);
     $root = realpath($config['site_root'] . '/current');
     return ($root !== false && is_dir($root)) ? $root : null;
 }
