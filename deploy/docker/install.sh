@@ -90,7 +90,7 @@ fi
 
 COMPOSE=(docker compose -p rbs -f "$RBS_HOME/repo/deploy/docker/compose.yaml")
 # その環境だけの設定を重ねたいとき（ポートの変更など）: RBS_COMPOSE_OVERRIDES=/path/a.yaml:/path/b.yaml
-for override in ${RBS_COMPOSE_OVERRIDES//:/ }; do COMPOSE+=(-f "$override"); done
+for override in ${RBS_COMPOSE_OVERRIDES:+${RBS_COMPOSE_OVERRIDES//:/ }}; do COMPOSE+=(-f "$override"); done
 COMPOSE+=(--env-file "$RBS_HOME/.env")
 
 echo "== 5/7 イメージのビルド（初回は数分かかります）"
