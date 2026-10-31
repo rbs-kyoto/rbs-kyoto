@@ -56,7 +56,7 @@
 }
 
 .schedule-cell.is-today {
-    background-color: var(--Hoverbackground);
+    background-color: color-mix(in srgb, var(--Textcolor) 10%, transparent);
 }
 
 .schedule-cell.is-today .schedule-cell__day {
