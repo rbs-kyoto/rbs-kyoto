@@ -1,0 +1,39 @@
+{% extends "main/base.html" %}
+{% load static %}
+
+{% block title %}{% if event %}予定を編集{% else %}予定を追加{% endif %}｜rbs京都{% endblock %}
+{% block extra_css %}<link rel="stylesheet" href="{% static 'main/css/schedule.css' %}">{% endblock %}
+
+{% block content %}
+
+<section class="schedule-section">
+    <h2 class="heading">{% if event %}予定を編集{% else %}予定を追加{% endif %}</h2>
+
+    <form class="schedule-form" method="post" novalidate>
+        {% csrf_token %}
+        {{ form.non_field_errors }}
+
+        {% for field in form %}
+        <div class="schedule-form__field{% if field.field.widget.input_type == 'checkbox' %} schedule-form__field--checkbox{% endif %}">
+            {% if field.field.widget.input_type == 'checkbox' %}
+            <label for="{{ field.id_for_label }}">{{ field }} {{ field.label }}</label>
+            {% else %}
+            <label for="{{ field.id_for_label }}">{{ field.label }}</label>
+            {{ field }}
+            {% endif %}
+            {% for error in field.errors %}<p class="schedule-form__error">{{ error }}</p>{% endfor %}
+        </div>
+        {% endfor %}
+
+        {% if event and event.recurrence != "none" %}
+        <p class="schedule-form__note">繰り返し予定の編集は、すべての回に反映されます。</p>
+        {% endif %}
+
+        <div class="schedule-form__footer">
+            <a class="common-style" href="{% if event %}{% url 'schedule:event_detail' event.pk %}{% else %}{% url 'schedule:calendar' %}{% endif %}">キャンセル</a>
+            <button class="common-style" type="submit">保存</button>
+        </div>
+    </form>
+</section>
+
+{% endblock %}

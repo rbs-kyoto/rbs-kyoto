@@ -1,0 +1,223 @@
+.schedule-section {
+    width: min(100%, 1100px);
+    margin: 0 auto;
+    padding: 1rem;
+}
+
+.schedule-nav {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    padding: .5rem 0 1rem;
+}
+
+.schedule-nav__title {
+    margin: 0;
+    font-size: 1.3rem;
+}
+
+.schedule-nav__link {
+    color: var(--Subtlecolor);
+    font-size: .9rem;
+    transition: color .3s;
+}
+
+.schedule-nav__link:hover {
+    color: var(--Textcolor);
+}
+
+.schedule-grid {
+    display: grid;
+    grid-template-columns: repeat(7, minmax(0, 1fr));
+    border-top: var(--Bordercolor) solid .1rem;
+    border-left: var(--Bordercolor) solid .1rem;
+}
+
+.schedule-grid__weekday {
+    padding: .4rem;
+    text-align: center;
+    font-size: .85rem;
+    color: var(--Subtlecolor);
+    border-right: var(--Bordercolor) solid .1rem;
+    border-bottom: var(--Bordercolor) solid .1rem;
+}
+
+.schedule-cell {
+    min-height: 6.5rem;
+    padding: .3rem;
+    border-right: var(--Bordercolor) solid .1rem;
+    border-bottom: var(--Bordercolor) solid .1rem;
+    min-width: 0;
+}
+
+.schedule-cell.is-other-month {
+    opacity: .45;
+}
+
+.schedule-cell.is-today {
+    background-color: var(--Hoverbackground);
+}
+
+.schedule-cell.is-today .schedule-cell__day {
+    font-weight: 700;
+    text-decoration: underline;
+}
+
+.schedule-cell__head {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.schedule-cell__day {
+    font-size: .85rem;
+}
+
+.schedule-cell__day.is-sat,
+.schedule-grid__weekday.is-sat {
+    color: #3b82f6;
+}
+
+.schedule-cell__day.is-sun,
+.schedule-grid__weekday.is-sun {
+    color: #ef4444;
+}
+
+.schedule-cell__add {
+    color: var(--Subtlecolor);
+    font-size: 1rem;
+    line-height: 1;
+    padding: 0 .3rem;
+    opacity: 0;
+    transition: opacity .2s;
+}
+
+.schedule-cell:hover .schedule-cell__add,
+.schedule-cell__add:focus {
+    opacity: 1;
+}
+
+.schedule-cell__events {
+    list-style: none;
+    margin: .2rem 0 0;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    gap: .15rem;
+}
+
+.schedule-event {
+    display: flex;
+    gap: .3rem;
+    align-items: baseline;
+    padding: .1rem .25rem;
+    border-radius: .2rem;
+    font-size: .75rem;
+    line-height: 1.3;
+    overflow: hidden;
+    transition: background-color .2s;
+}
+
+.schedule-event.is-block {
+    background-color: var(--Textcolor);
+    color: var(--Backgroundcolor);
+}
+
+.schedule-event:not(.is-block):hover {
+    background-color: var(--Hoverbackground);
+    color: var(--Hovertextcolor);
+}
+
+.schedule-event__time {
+    flex: 0 0 auto;
+    color: var(--Subtlecolor);
+}
+
+.schedule-event__title {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+/* 詳細 */
+.schedule-detail__list {
+    display: grid;
+    grid-template-columns: max-content 1fr;
+    gap: .8rem 1.5rem;
+    padding: 1rem;
+}
+
+.schedule-detail__list dt {
+    color: var(--Subtlecolor);
+}
+
+.schedule-detail__list dd {
+    margin: 0;
+}
+
+.schedule-detail__actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 1rem;
+    align-items: center;
+}
+
+/* フォーム */
+.schedule-form {
+    display: flex;
+    flex-direction: column;
+    gap: 1.2rem;
+    padding: 1rem;
+    max-width: 640px;
+}
+
+.schedule-form__field {
+    display: flex;
+    flex-direction: column;
+    gap: .4rem;
+}
+
+.schedule-form__field input:not([type="checkbox"]),
+.schedule-form__field select,
+.schedule-form__field textarea {
+    padding: .6rem;
+    border: var(--Bordercolor) solid .1rem;
+    border-radius: .2rem;
+    background-color: transparent;
+    color: var(--Textcolor);
+    font: inherit;
+}
+
+.schedule-form__error {
+    margin: 0;
+    color: #ef4444;
+    font-size: .85rem;
+}
+
+.schedule-form__note {
+    margin: 0;
+    color: var(--Subtlecolor);
+    font-size: .85rem;
+}
+
+.schedule-form__footer {
+    display: flex;
+    gap: 1rem;
+}
+
+@media (max-width: 700px) {
+    .schedule-cell {
+        min-height: 4.5rem;
+        padding: .15rem;
+    }
+
+    .schedule-event__time {
+        display: none;
+    }
+
+    .schedule-cell__add {
+        display: none;
+    }
+}

@@ -1,0 +1,47 @@
+{% extends "main/base.html" %}
+{% load static %}
+
+{% block title %}{{ event.title }}｜予定｜rbs京都{% endblock %}
+{% block extra_css %}<link rel="stylesheet" href="{% static 'main/css/schedule.css' %}">{% endblock %}
+
+{% block content %}
+
+<section class="schedule-section schedule-detail">
+    <h2 class="heading">{{ event.title }}</h2>
+
+    <dl class="schedule-detail__list">
+        <dt>日時</dt>
+        <dd>
+            {% if event.all_day %}
+                {{ event.start|date:"Y年n月j日" }}{% if event.end and event.end|date:"Ymd" != event.start|date:"Ymd" %} 〜 {{ event.end|date:"Y年n月j日" }}{% endif %}（終日）
+            {% else %}
+                {{ event.start|date:"Y年n月j日 H:i" }}{% if event.end %} 〜 {% if event.end|date:"Ymd" == event.start|date:"Ymd" %}{{ event.end|date:"H:i" }}{% else %}{{ event.end|date:"Y年n月j日 H:i" }}{% endif %}{% endif %}
+            {% endif %}
+        </dd>
+        {% if event.location %}
+        <dt>場所</dt>
+        <dd>{{ event.location }}</dd>
+        {% endif %}
+        {% if event.recurrence != "none" %}
+        <dt>繰り返し</dt>
+        <dd>{{ event.get_recurrence_display }}{% if event.recurrence_until %}（{{ event.recurrence_until|date:"Y年n月j日" }}まで）{% else %}（終了日なし）{% endif %}</dd>
+        {% endif %}
+        {% if event.description %}
+        <dt>メモ</dt>
+        <dd class="schedule-detail__memo">{{ event.description|linebreaksbr }}</dd>
+        {% endif %}
+    </dl>
+
+    <div class="page_control schedule-detail__actions">
+        <a class="page-control-style-back" href="{% url 'schedule:calendar' %}?year={{ event.start|date:'Y' }}&month={{ event.start|date:'n' }}">カレンダーへ</a>
+        {% if user.is_staff %}
+        <a class="common-style" href="{% url 'schedule:event_edit' event.pk %}">編集</a>
+        <form method="post" action="{% url 'schedule:event_delete' event.pk %}" onsubmit="return confirm('この予定を削除しますか？{% if event.recurrence != 'none' %}\n繰り返し予定はすべて削除されます。{% endif %}');">
+            {% csrf_token %}
+            <button class="common-style reverse" type="submit">削除</button>
+        </form>
+        {% endif %}
+    </div>
+</section>
+
+{% endblock %}

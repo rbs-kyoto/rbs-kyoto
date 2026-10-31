@@ -65,6 +65,7 @@ INSTALLED_APPS = [
     'main',
     'accounts',
     'manuals',
+    'schedule',
     'video_archive',
     'maintenance',
     'errors',

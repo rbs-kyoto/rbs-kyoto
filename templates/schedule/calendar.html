@@ -1,0 +1,57 @@
+{% extends "main/base.html" %}
+{% load static %}
+
+{% block title %}{{ year }}年{{ month }}月の予定｜rbs京都{% endblock %}
+{% block extra_css %}<link rel="stylesheet" href="{% static 'main/css/schedule.css' %}">{% endblock %}
+
+{% block content %}
+
+<section class="schedule-section">
+    <div class="section-heading">
+        <h2 class="heading">Schedule</h2>
+        {% if user.is_staff %}
+        <a class="section-heading__link page-control-style-forward" href="{% url 'schedule:event_create' %}">
+            予定を追加
+        </a>
+        {% endif %}
+    </div>
+
+    <div class="schedule-nav">
+        <a class="schedule-nav__link" href="?year={{ prev.year }}&month={{ prev.month }}" aria-label="前の月">&lt; 前の月</a>
+        <h3 class="schedule-nav__title">{{ year }}年{{ month }}月</h3>
+        <a class="schedule-nav__link" href="?year={{ next.year }}&month={{ next.month }}" aria-label="次の月">次の月 &gt;</a>
+    </div>
+
+    <div class="schedule-grid" role="grid" aria-label="{{ year }}年{{ month }}月のカレンダー">
+        {% for name in weekdays %}
+        <div class="schedule-grid__weekday{% if forloop.counter == 6 %} is-sat{% elif forloop.counter == 7 %} is-sun{% endif %}" role="columnheader">{{ name }}</div>
+        {% endfor %}
+
+        {% for week in rows %}{% for cell in week %}
+        <div class="schedule-cell{% if not cell.in_month %} is-other-month{% endif %}{% if cell.is_today %} is-today{% endif %}" role="gridcell">
+            <div class="schedule-cell__head">
+                <span class="schedule-cell__day{% if forloop.counter == 6 %} is-sat{% elif forloop.counter == 7 %} is-sun{% endif %}">{{ cell.date.day }}</span>
+                {% if user.is_staff %}
+                <a class="schedule-cell__add" href="{% url 'schedule:event_create' %}?date={{ cell.date|date:'Y-m-d' }}" aria-label="{{ cell.date|date:'n月j日' }}に予定を追加">+</a>
+                {% endif %}
+            </div>
+            <ul class="schedule-cell__events">
+                {% for occ in cell.occurrences %}
+                <li>
+                    <a class="schedule-event{% if occ.event.all_day or occ.first_day != occ.last_day %} is-block{% endif %}" href="{% url 'schedule:event_detail' occ.event.pk %}">
+                        {% if not occ.event.all_day and occ.first_day == cell.date %}<span class="schedule-event__time">{{ occ.start|date:"H:i" }}</span>{% endif %}
+                        <span class="schedule-event__title">{{ occ.event.title }}</span>
+                    </a>
+                </li>
+                {% endfor %}
+            </ul>
+        </div>
+        {% endfor %}{% endfor %}
+    </div>
+
+    <div class="page_control">
+        <a class="page-control-style-back" href="{% url 'main:index' %}">ホームへ</a>
+    </div>
+</section>
+
+{% endblock %}
