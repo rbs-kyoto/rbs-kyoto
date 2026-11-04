@@ -419,7 +419,13 @@ class EquipmentWorkflowTests(TestCase):
     def test_scanner_page_loads_versioned_scanner_script(self):
         response = self.client.get(reverse("equipment:scan_camera"))
 
-        self.assertContains(response, "equipment/scan.js?v=3")
+        self.assertContains(response, "equipment/vendor/jsQR.min.js?v=1")
+        self.assertContains(response, "equipment/scan.js?v=4")
+        rendered_page = response.content.decode()
+        self.assertLess(
+            rendered_page.index("equipment/vendor/jsQR.min.js?v=1"),
+            rendered_page.index("equipment/scan.js?v=4"),
+        )
 
     def test_qr_scan_manual_search_input_and_button_share_a_row(self):
         response = self.client.get(reverse("equipment:scan"))
@@ -538,6 +544,18 @@ class EquipmentWorkflowTests(TestCase):
                         response,
                         'class="common-style white equipment__button',
                     )
+                    self.assertContains(
+                        response,
+                        "QRコードは株式会社デンソーウェーブの登録商標です。",
+                    )
+
+    def test_scanner_page_displays_qr_trademark_notice(self):
+        response = self.client.get(reverse("equipment:scan_camera"))
+
+        self.assertContains(
+            response,
+            "QRコードは株式会社デンソーウェーブの登録商標です。",
+        )
 
     def test_equipment_detail_groups_information_and_uses_full_width_without_photo(self):
         response = self.client.get(

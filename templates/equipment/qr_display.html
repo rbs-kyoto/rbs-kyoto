@@ -6,6 +6,7 @@
     <h2>{{ equipment.inventory_number }} · {{ equipment.name }}</h2>
     <p>QRコードには備品番号のみを記録し、読み取り後の検索・画面遷移はアプリ側で行います。</p>
     <img src="{% url 'equipment:qr_png' equipment.pk %}" alt="{{ equipment.inventory_number }}のQRコード">
+    <p>QRコードは株式会社デンソーウェーブの登録商標です。</p>
     <div class="equipment__actions">
         <a class="common-style white equipment__button" href="{% url 'equipment:qr_png' equipment.pk %}">PNGをダウンロード</a>
         <a class="common-style white equipment__button" href="{% url 'equipment:qr_svg' equipment.pk %}">SVGをダウンロード</a>
