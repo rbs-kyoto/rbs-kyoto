@@ -1,7 +1,7 @@
 {% extends "main/base.html" %}
 {% load static %}
 
-{% block title %}{{ video.title }}｜Video Archive{% endblock %}
+{% block title %}{{ video.title }}{% endblock %}
 {% block extra_css %}<link rel="stylesheet" href="{% static 'main/css/video_archive.css' %}">{% endblock %}
 
 {% block content %}
@@ -62,7 +62,7 @@
                 「音声あり」を選ぶと音声をオンにして再生します。「音声なし」を選ぶとミュートで再生します。
             </p>
             <div class="video-playback-dialog__actions">
-                <button class="common-style" type="button" data-playback-muted="true">
+                <button class="common-style white" type="button" data-playback-muted="true">
                     音声なし
                 </button>
                 <button class="common-style reverse" type="button" data-playback-muted="false">

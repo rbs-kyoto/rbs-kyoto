@@ -1,7 +1,7 @@
 {% extends "main/base.html" %}
 {% load static %}
 
-{% block title %}Googleアカウントの紐付け｜rbs京都{% endblock %}
+{% block title %}Googleアカウントの紐付け{% endblock %}
 {% block extra_css %}<link rel="stylesheet" href="{% static 'main/css/login.css' %}">{% endblock %}
 
 {% block content %}
@@ -35,7 +35,7 @@
             <form method="post">
                 {% csrf_token %}
                 <div class="change_control">
-                    <button class="common-style" type="submit" name="action" value="cancel">
+                    <button class="common-style white" type="submit" name="action" value="cancel">
                         キャンセル
                     </button>
                     <button class="page-control-style-forward" type="submit" name="action" value="confirm">

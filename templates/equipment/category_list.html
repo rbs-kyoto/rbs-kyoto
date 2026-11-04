@@ -1,0 +1,13 @@
+{% extends "equipment/base.html" %}
+
+{% block title %}分類一覧{% endblock %}
+{% block equipment_content %}
+<section class="equipment__section">
+    <h2>分類一覧（A〜Z）</h2>
+    <p class="equipment__muted">分類情報はデータベースで管理しています。分類の追加・編集は管理画面から行えます。</p>
+    {% if user.is_staff %}<a class="common-style reverse equipment__button" href="{% url 'admin:equipment_category_changelist' %}">分類を管理</a>{% endif %}
+    <div class="equipment__table-wrap"><table><thead><tr><th>コード</th><th>分類名</th><th>英語名</th><th>主な対象</th><th>登録備品数</th></tr></thead><tbody>
+        {% for category in categories %}<tr><td><strong>{{ category.code }}</strong></td><td>{{ category.name }}</td><td>{{ category.english_name }}</td><td>{{ category.examples }}</td><td><a href="{% url 'equipment:list' %}?category={{ category.pk }}">{{ category.equipment_count }}</a></td></tr>{% endfor %}
+    </tbody></table></div>
+</section>
+{% endblock %}

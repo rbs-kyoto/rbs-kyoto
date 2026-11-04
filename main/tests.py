@@ -9,7 +9,7 @@ from django.test import TestCase
 from django.urls import reverse
 
 from .admin import PickupAdminForm
-from .models import News, Pickup
+from .models import FooterSocialLink, News, Pickup, SitePage
 
 
 class PickupLinkTests(TestCase):
@@ -65,6 +65,30 @@ class PickupLinkTests(TestCase):
 
 
 class NewsListTests(TestCase):
+    def test_homepage_lists_roll_app_for_staff_only(self):
+        response = self.client.get(reverse("main:index"))
+
+        self.assertNotContains(response, reverse("roll:list"))
+
+        staff = get_user_model().objects.create_user(
+            username="roll-app-staff",
+            is_staff=True,
+        )
+        self.client.force_login(staff)
+        response = self.client.get(reverse("main:index"))
+
+        self.assertContains(response, reverse("roll:list"))
+        self.assertContains(response, "校内名簿・部員・役職の管理")
+
+    def test_page_title_gets_the_site_name_from_shared_base_template(self):
+        response = self.client.get(reverse("main:index"))
+
+        self.assertContains(
+            response,
+            "<title>洛南高等学校放送部｜rbs京都</title>",
+            html=True,
+        )
+
     def test_news_list_uses_archive_style_rows(self):
         news = News.objects.create(
             title="お知らせ",
@@ -107,6 +131,82 @@ class AboutPageTests(TestCase):
             response.content.index(b"data-logo-stage"),
             response.content.index(b"about-intro-title"),
         )
+
+
+class FooterAndSitePageTests(TestCase):
+    def test_footer_lists_information_pages_and_icon_only_social_links(self):
+        x_icon_files = {
+            "light_icon": SimpleUploadedFile("x-light.svg", b"<svg></svg>"),
+            "dark_icon": SimpleUploadedFile("x-dark.svg", b"<svg></svg>"),
+            "hover_icon": SimpleUploadedFile("x-hover.svg", b"<svg></svg>"),
+        }
+        x_link = FooterSocialLink.objects.create(
+            label="X公式アカウント",
+            url="https://x.com/example",
+            **x_icon_files,
+        )
+        for field_name in ("light_icon", "dark_icon", "hover_icon"):
+            self.addCleanup(
+                getattr(x_link, field_name).delete,
+                save=False,
+            )
+        instagram_icon_files = {
+            "light_icon": SimpleUploadedFile("instagram-light.svg", b"<svg></svg>"),
+            "dark_icon": SimpleUploadedFile("instagram-dark.svg", b"<svg></svg>"),
+            "hover_icon": SimpleUploadedFile("instagram-hover.svg", b"<svg></svg>"),
+        }
+        instagram_link = FooterSocialLink.objects.create(
+            label="Instagram公式アカウント",
+            url="https://www.instagram.com/example/",
+            order=1,
+            **instagram_icon_files,
+        )
+        for field_name in ("light_icon", "dark_icon", "hover_icon"):
+            self.addCleanup(
+                getattr(instagram_link, field_name).delete,
+                save=False,
+            )
+        incomplete_link = FooterSocialLink.objects.create(
+            label="追加SNS",
+            url="https://example.com/social",
+            order=2,
+        )
+
+        response = self.client.get(reverse("main:index"))
+
+        for slug, title in SitePage.PAGE_CHOICES:
+            self.assertContains(response, reverse("main:site_page", args=[slug]))
+            self.assertContains(response, title)
+        self.assertContains(response, x_link.url)
+        self.assertContains(response, instagram_link.url)
+        self.assertContains(response, 'aria-label="X公式アカウント"')
+        self.assertContains(response, 'aria-label="Instagram公式アカウント"')
+        self.assertContains(response, 'aria-label="公式SNS"')
+        self.assertContains(response, 'class="footer__social-icon-image footer__social-icon-image--light"')
+        self.assertContains(response, 'class="footer__social-icon-image footer__social-icon-image--dark"')
+        self.assertContains(
+            response,
+            'class="footer__social-icon-image footer__social-icon-image--hover"',
+            count=2,
+        )
+        self.assertContains(response, x_link.light_icon.url)
+        self.assertContains(response, x_link.dark_icon.url)
+        self.assertContains(response, x_link.hover_icon.url)
+        self.assertContains(response, incomplete_link.url)
+        self.assertContains(response, 'class="footer__social-icon-fallback">追</span>')
+
+    def test_site_page_renders_database_content_after_sanitizing(self):
+        page = SitePage.objects.get(slug="privacy")
+        page.content = "<p>登録した本文</p><script>alert(1)</script>"
+        page.save()
+
+        response = self.client.get(reverse("main:site_page", args=[page.slug]))
+
+        self.assertNotIn("<script>", page.content)
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, page.title)
+        self.assertContains(response, "<p>登録した本文</p>", html=True)
+        self.assertNotContains(response, "alert(1)")
 
 
 class CanonicalHostTests(TestCase):

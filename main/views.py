@@ -5,7 +5,7 @@ from django.http import Http404
 from django.urls import reverse
 from accounts.decorators import staff_required
 from .forms import NewsForm
-from .models import Pickup, News
+from .models import Pickup, News, SitePage
 
 APPS = [
     {
@@ -17,6 +17,17 @@ APPS = [
         "title": "Video Archive",
         "description": "過去の動画アーカイブ",
         "url_name": "video_archive:video_list",
+    },
+    {
+        "title": "Equipment",
+        "description": "機材・備品の管理",
+        "url_name": "equipment:dashboard",
+    },
+    {
+        "title": "Roll",
+        "description": "校内名簿・部員・役職の管理",
+        "url_name": "roll:list",
+        "staff_only": True,
     },
 ]
 
@@ -33,6 +44,7 @@ def index(request):
     apps = [
         {**app, "url": reverse(app["url_name"])}
         for app in APPS
+        if not app.get("staff_only") or request.user.is_staff
     ]
     return render(
         request,
@@ -47,6 +59,11 @@ def index(request):
 
 def about(request):
     return render(request, "main/about.html")
+
+
+def site_page(request, slug):
+    page = get_object_or_404(SitePage, slug=slug)
+    return render(request, "main/site_page.html", {"page": page})
 
 
 def news_all(request):

@@ -1,0 +1,13 @@
+{% extends "equipment/base.html" %}
+
+{% block title %}保管場所{% if is_new %}登録{% else %}編集{% endif %}{% endblock %}
+{% block equipment_content %}
+<section class="equipment__section equipment__form-section">
+    <h2>保管場所{% if is_new %}登録{% else %}編集{% endif %}</h2>
+    <form method="post" class="equipment__form">{% csrf_token %}
+        {% if form.non_field_errors %}<div class="equipment__errors">{{ form.non_field_errors }}</div>{% endif %}
+        {% for field in form %}<div class="equipment__field {% if field.errors %}equipment__field--error{% endif %}">{{ field.label_tag }}{{ field }}{% for error in field.errors %}<span class="equipment__error">{{ error }}</span>{% endfor %}</div>{% endfor %}
+        <div class="equipment__actions"><button class="common-style reverse equipment__button" type="submit">保存</button><a class="common-style white equipment__button" href="{% url 'equipment:locations' %}">キャンセル</a></div>
+    </form>
+</section>
+{% endblock %}

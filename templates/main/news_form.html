@@ -1,7 +1,7 @@
 {% extends "main/base.html" %}
 {% load static %}
 
-{% block title %}{% if news %}記事を編集{% else %}記事を作成{% endif %}｜rbs京都{% endblock %}
+{% block title %}{% if news %}記事を編集{% else %}記事を作成{% endif %}{% endblock %}
 {% block extra_css %}
 <link rel="stylesheet" href="{% static 'main/css/form.css' %}">
 {{ form.media }}
@@ -84,11 +84,11 @@
 
         <div class="site-form__footer">
             {% if news %}
-            <a class="common-style" href="{% url 'main:news_detail' news.pk %}">キャンセル</a>
+            <a class="common-style white" href="{% url 'main:news_detail' news.pk %}">キャンセル</a>
             {% else %}
-            <a class="common-style" href="{% url 'main:news_all' %}">キャンセル</a>
+            <a class="common-style white" href="{% url 'main:news_all' %}">キャンセル</a>
             {% endif %}
-            <button class="common-style" type="submit">保存</button>
+            <button class="common-style reverse" type="submit">保存</button>
         </div>
     </form>
 </section>

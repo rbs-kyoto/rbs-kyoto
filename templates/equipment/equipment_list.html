@@ -1,0 +1,71 @@
+{% extends "equipment/base.html" %}
+
+{% block title %}備品一覧{% endblock %}
+{% block equipment_content %}
+<section class="equipment__section equipment__list-section">
+    <div class="equipment__section-heading">
+        <h2>備品一覧</h2>
+        <div class="equipment__actions">
+            <a class="common-style white equipment__button" href="{% url 'equipment:scan_camera' %}">QRを読み取る</a>
+            <a class="common-style reverse equipment__button" href="{% url 'equipment:register' %}">備品を登録</a>
+        </div>
+    </div>
+    <form method="get" class="equipment__filters">
+        <label>キーワード<input type="search" name="q" value="{{ query }}" placeholder="番号・備品名・メーカー・型番・製造番号・レシート番号・貸出先"></label>
+        <label>分類<select name="category"><option value="">すべて</option>{% for category in categories %}<option value="{{ category.pk }}" {% if selected_category == category.pk|stringformat:"s" %}selected{% endif %}>{{ category.code }}：{{ category.name }}</option>{% endfor %}</select></label>
+        <label>備品の状態<select name="condition"><option value="">すべて</option>{% for value, label in conditions %}<option value="{{ value }}" {% if selected_condition == value %}selected{% endif %}>{{ label }}</option>{% endfor %}</select></label>
+        <label>保管場所<select name="location"><option value="">すべて</option>{% for location in locations %}<option value="{{ location.pk }}" {% if selected_location == location.pk|stringformat:"s" %}selected{% endif %}>{{ location }}</option>{% endfor %}</select></label>
+        <label>管理担当者<select name="manager"><option value="">すべて</option>{% for person in managers %}<option value="{{ person.pk }}" {% if manager == person.pk|stringformat:"s" %}selected{% endif %}>{{ person }}</option>{% endfor %}</select></label>
+        <label>利用状況<select name="usage_status"><option value="">すべて</option><option {% if selected_usage_status == "保管中" %}selected{% endif %}>保管中</option><option {% if selected_usage_status == "貸出中" %}selected{% endif %}>貸出中</option><option {% if selected_usage_status == "持出中" %}selected{% endif %}>持出中</option><option {% if selected_usage_status == "一部貸出・持出中" %}selected{% endif %}>一部貸出・持出中</option><option {% if selected_usage_status == "在庫なし" %}selected{% endif %}>在庫なし</option></select></label>
+        <label class="equipment__checkbox"><input type="checkbox" name="archived" value="1" {% if archived %}checked{% endif %}>登録解除済みを表示</label>
+        <label>表示件数<select name="page_size"><option value="10" {% if page_size == "10" %}selected{% endif %}>10件</option><option value="25" {% if page_size == "25" %}selected{% endif %}>25件</option><option value="100" {% if page_size == "100" %}selected{% endif %}>100件</option></select></label>
+        <button class="common-style reverse equipment__button" type="submit">検索</button>
+    </form>
+
+    <div class="equipment__list-toolbar">
+        <span>{{ page_obj.start_index }}–{{ page_obj.end_index }}件 / {{ page_obj.paginator.count }}件</span>
+        {% if page_obj.has_other_pages %}
+        <nav class="equipment__pagination" aria-label="ページ送り">
+            {% if page_obj.has_previous %}<a class="equipment__page-arrow" href="?{{ query_string }}&page={{ page_obj.previous_page_number }}" aria-label="前のページ">‹</a>{% else %}<span class="equipment__page-arrow is-disabled" aria-hidden="true">‹</span>{% endif %}
+            {% for page_number in page_range %}
+                {% if page_number == "…" %}<span class="equipment__page-ellipsis">…</span>
+                {% elif page_number == page_obj.number %}<span class="equipment__page-number is-current" aria-current="page">{{ page_number }}</span>
+                {% else %}<a class="equipment__page-number" href="?{{ query_string }}&page={{ page_number }}">{{ page_number }}</a>{% endif %}
+            {% endfor %}
+            {% if page_obj.has_next %}<a class="equipment__page-arrow" href="?{{ query_string }}&page={{ page_obj.next_page_number }}" aria-label="次のページ">›</a>{% else %}<span class="equipment__page-arrow is-disabled" aria-hidden="true">›</span>{% endif %}
+        </nav>
+        {% endif %}
+        <a class="common-style white equipment__button equipment__csv" href="{{ csv_url }}">CSVダウンロード</a>
+    </div>
+
+    <div class="equipment__table-wrap"><table class="equipment__inventory-table">
+        <thead><tr><th>備品番号</th><th>備品 / カテゴリー / メーカー</th><th>使用場所</th><th>ステータス</th><th>登録日時</th><th>最終更新日時</th></tr></thead>
+        <tbody>{% for item in equipment_list %}
+            <tr>
+                <td><a class="equipment__inventory-number" href="{% url 'equipment:detail' item.pk %}{% if archived %}?show_archived=1{% endif %}">{{ item.inventory_number }}</a></td>
+                <td>
+                    <div class="equipment__item-cell">
+                        {% if item.image %}<img src="{{ item.image.url }}" alt="" loading="lazy">{% else %}<span class="equipment__image-placeholder" aria-hidden="true"></span>{% endif %}
+                        <div>
+                            <span class="equipment__category-tag">{{ item.category.code }}：{{ item.category.name }}</span>
+                            <a class="equipment__item-name" href="{% url 'equipment:detail' item.pk %}{% if archived %}?show_archived=1{% endif %}">{{ item.name }}</a>
+                            <small>{{ item.manufacturer|default:"—" }}{% if item.model_number %} · {{ item.model_number }}{% endif %}</small>
+                        </div>
+                    </div>
+                </td>
+                <td>{{ item.location|default:"—" }}<small>{{ item.quantity }}{{ item.unit }} · 保管 {{ item.stored_quantity }}{{ item.unit }}</small></td>
+                <td>
+                    {% if not item.is_active %}
+                    <span class="equipment__status equipment__status--unregistered">登録解除済み</span>
+                    {% else %}
+                    <span class="equipment__status {% if item.usage_status == '保管中' %}equipment__status--stored{% elif item.usage_status == '在庫なし' %}equipment__status--empty{% elif item.usage_status == '一部貸出・持出中' %}equipment__status--partial{% else %}equipment__status--in-use{% endif %}">{{ item.usage_status }}</span>
+                    <small>{{ item.get_condition_display }}</small>
+                    {% endif %}
+                </td>
+                <td>{{ item.created_at|date:"Y/m/d H:i" }}</td>
+                <td>{{ item.updated_at|date:"Y/m/d H:i" }}</td>
+            </tr>
+        {% empty %}<tr><td colspan="6" class="equipment__empty">該当する備品はありません。</td></tr>{% endfor %}</tbody>
+    </table></div>
+</section>
+{% endblock %}

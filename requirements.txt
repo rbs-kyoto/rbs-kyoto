@@ -24,6 +24,7 @@ pycparser==3.12
 PyJWT==2.15.1
 pyOpenSSL==26.4.0
 python-dotenv==1.2.4
+qrcode==8.2
 requests==2.34.2
 service-identity==26.1.0
 sqlparse==0.6.0

@@ -139,6 +139,7 @@
     --Controlbackground: var(--Natural-white);
     --Controlborder: var(--themecolor-300);
     --Controlfocus: var(--Skyblue-500);
+    --Placeholdercolor: var(--themecolor-500);
     --Shadowcolor: var(--Black-t200);
     --Overlaycolor: var(--Black-t700);
     --Codebackground: var(--themecolor-50);
@@ -153,11 +154,12 @@ body.dark-mode {
     --Subtlecolor: var(--Gray-500);
     --Arrowcolor: var(--Subtlecolor);
     --Badgebordercolor: var(--Gray-100);
-    --Hoverbackground: var(--themecolor-200);
-    --Hovertextcolor: var(--Gray-900);
+    --Hoverbackground: var(--themecolor-900);
+    --Hovertextcolor: var(--Gray-50);
     --Controlbackground: var(--Gray-900);
     --Controlborder: var(--Gray-600);
     --Controlfocus: var(--Gray-50);
+    --Placeholdercolor: var(--Gray-500);
     --Shadowcolor: var(--Black-t800);
     --Overlaycolor: var(--Black-t800);
     --Codebackground: var(--Black-t400);
@@ -187,6 +189,18 @@ body {
 
 body.dark-mode {
     color-scheme: dark;
+}
+
+input::placeholder,
+textarea::placeholder {
+    color: var(--Placeholdercolor);
+    opacity: 1;
+    transition: color .25s ease;
+}
+
+input::-webkit-input-placeholder,
+textarea::-webkit-input-placeholder {
+    color: var(--Placeholdercolor);
 }
 
 p,
@@ -228,27 +242,68 @@ input.common-style {
 }
 
 input.common-style:focus {
-    border-color: var(--Controlfocus);
+    border-color: var(--Natural-themecolor);
     box-shadow: 0 0 0 3px var(--Black-t100);
 }
 
-input#id_is_active,
-input#id_is_internal {
+input[type="checkbox"] {
     appearance: none;
     -webkit-appearance: none;
-    width: 2rem;
-    height: 2rem;
+    flex: 0 0 1.35rem;
+    width: 1.35rem;
+    min-width: 1.35rem;
+    height: 1.35rem;
     margin: 0;
+    padding: 0;
+    border: 0;
     cursor: pointer;
-    mask: url("../img/checkbox.svg") center / 80% 80% no-repeat;
-    -webkit-mask: url("../img/checkbox.svg") center / 80% 80% no-repeat;
-    background-color: var(--Subtlecolor);
-    transition: all .3s;
+    mask: url("../img/checkbox-outline.svg") center / contain no-repeat;
+    -webkit-mask: url("../img/checkbox-outline.svg") center / contain no-repeat;
+    background-color: var(--Controlborder);
+    transition: background-color .18s ease, transform .18s ease, box-shadow .18s ease;
 }
 
-input#id_is_active:checked,
-input#id_is_internal:checked {
-    background-color: var(--Textcolor);
+input[type="checkbox"]:checked {
+    mask-image: url("../img/checkbox.svg");
+    -webkit-mask-image: url("../img/checkbox.svg");
+    background-color: var(--Natural-themecolor);
+}
+
+input[type="checkbox"]:hover {
+    background-color: var(--Natural-themecolor);
+}
+
+input[type="checkbox"]:active {
+    transform: scale(.92);
+}
+
+input[type="checkbox"]:focus-visible {
+    border-radius: .2rem;
+    outline: .15rem solid var(--Natural-themecolor);
+    outline-offset: .15rem;
+}
+
+input[type="checkbox"]:disabled {
+    background-color: var(--Subtlecolor);
+    cursor: not-allowed;
+    opacity: .55;
+}
+
+body.dark-mode input[type="checkbox"] {
+    background-color: var(--Gray-400);
+}
+
+body.dark-mode input[type="checkbox"]:checked,
+body.dark-mode input[type="checkbox"]:hover {
+    background-color: var(--Gray-50);
+}
+
+body.dark-mode input[type="checkbox"]:focus-visible {
+    outline-color: var(--Gray-50);
+}
+
+body.dark-mode input[type="checkbox"]:disabled {
+    background-color: var(--Gray-600);
 }
 
 a {
@@ -274,7 +329,8 @@ button.common-style {
     font-size: 0.9rem;
     text-align: center;
     padding: .5rem 1rem;
-    border: .15rem solid var(--Controlborder);
+    border: .15rem solid var(--themecolor-100);
+    background-color: var(--themecolor-100);
     border-radius: .5rem;
     corner-shape: superellipse(1.4);
     transition: all .3s;
@@ -282,16 +338,63 @@ button.common-style {
 
 a.common-style.reverse,
 button.common-style.reverse {
+    color: var(--Natural-white);
+    background-color: var(--Natural-themecolor);
+    border-color: var(--Natural-themecolor);
+}
+
+a.common-style:not(.reverse):not(.danger):not(.white):hover,
+button.common-style:not(.reverse):not(.danger):not(.white):hover {
     color: var(--Hovertextcolor);
     background-color: var(--Hoverbackground);
     border-color: var(--Hoverbackground);
 }
 
-a.common-style:hover,
-button.common-style:hover {
+a.common-style.white,
+button.common-style.white {
+    color: var(--Textcolor);
+    background-color: var(--Controlbackground);
+    border-color: var(--Controlborder);
+}
+
+a.common-style.white:hover,
+button.common-style.white:hover {
     color: var(--Hovertextcolor);
-    background-color: var(--Hoverbackground);
-    border-color: var(--Hoverbackground);
+    background-color: var(--themecolor-50);
+    border-color: var(--themecolor-300);
+}
+
+a.common-style.reverse:hover,
+button.common-style.reverse:hover {
+    color: var(--Natural-white);
+    background-color: var(--themecolor-800);
+    border-color: var(--themecolor-800);
+}
+
+body.dark-mode a.common-style.reverse,
+body.dark-mode button.common-style.reverse {
+    background-color: var(--themecolor-950);
+    border-color: var(--themecolor-950);
+}
+
+body.dark-mode a.common-style.reverse:hover,
+body.dark-mode button.common-style.reverse:hover {
+    background-color: var(--themecolor-900);
+    border-color: var(--themecolor-900);
+}
+
+a.common-style.danger,
+button.common-style.danger {
+    color: var(--Natural-white);
+    background-color: var(--Red-700);
+    border-color: var(--Red-700);
+}
+
+a.common-style.danger:hover,
+button.common-style.danger:hover {
+    color: var(--Natural-white);
+    background-color: var(--Red-600);
+    border-color: var(--Red-600);
 }
 
 .page-control-style-back {
@@ -391,6 +494,12 @@ input[type="search"] {
     font-size: inherit;
     outline: none;
     padding: 0.5em;
+}
+
+input:not([type="checkbox"]):not([type="radio"]):not([type="file"]):focus,
+textarea:focus,
+select:focus {
+    border-color: var(--Natural-themecolor);
 }
 
 header.global-header {
@@ -901,6 +1010,7 @@ span.active-page {
     color: var(--Textcolor);
     font-size: 1.2rem;
     border-radius: 1.5rem;
+    corner-shape: superellipse(1.4);
 }
 
 span.active-page>span {
@@ -920,6 +1030,118 @@ footer {
     background-color: var(--Surfacecolor);
     border-top: var(--Framebordercolor) solid .1rem;
     box-shadow: 0 0 1rem 0 var(--Shadowcolor);
+}
+
+.footer__social-links {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 1.25rem;
+    margin: 1.5rem 0;
+}
+
+.footer__social-links a {
+    display: grid;
+    width: 2.75rem;
+    height: 2.75rem;
+    place-items: center;
+    border-radius: 50%;
+    corner-shape: round;
+    transition: background-color .2s ease;
+}
+
+.footer__social-links a:hover {
+    background-color: var(--Hoverbackground);
+}
+
+.footer__social-icon {
+    position: relative;
+    display: block;
+    width: 1.5rem;
+    height: 1.5rem;
+}
+
+.footer__social-icon-fallback {
+    display: grid;
+    width: 100%;
+    height: 100%;
+    place-items: center;
+    border: 1px solid currentColor;
+    border-radius: 50%;
+    color: var(--Textcolor);
+    font-size: .85rem;
+    font-weight: 700;
+    transition: transform .3s cubic-bezier(.2, .8, .2, 1.15);
+}
+
+.footer__social-icon-image {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+    opacity: 0;
+    transform: scale(1);
+    transition: opacity .24s ease, transform .3s cubic-bezier(.2, .8, .2, 1.15);
+}
+
+.footer__social-icon-image--light {
+    opacity: 1;
+}
+
+body.dark-mode .footer__social-icon-image--light {
+    opacity: 0;
+}
+
+body.dark-mode .footer__social-icon-image--dark {
+    opacity: 1;
+}
+
+.footer__social-links a:hover .footer__social-icon--has-hover .footer__social-icon-image--light,
+.footer__social-links a:hover .footer__social-icon--has-hover .footer__social-icon-image--dark,
+.footer__social-links a:focus-visible .footer__social-icon--has-hover .footer__social-icon-image--light,
+.footer__social-links a:focus-visible .footer__social-icon--has-hover .footer__social-icon-image--dark {
+    opacity: 0;
+}
+
+.footer__social-links a:hover .footer__social-icon--has-hover .footer__social-icon-image--hover,
+.footer__social-links a:focus-visible .footer__social-icon--has-hover .footer__social-icon-image--hover {
+    opacity: 1;
+}
+
+.footer__social-links a:hover .footer__social-icon-image,
+.footer__social-links a:focus-visible .footer__social-icon-image,
+.footer__social-links a:hover .footer__social-icon-fallback,
+.footer__social-links a:focus-visible .footer__social-icon-fallback {
+    transform: scale(1.12);
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .footer__social-icon-image,
+    .footer__social-icon-fallback,
+    .footer__social-links a {
+        transition: none;
+    }
+}
+
+.footer__links {
+    display: flex;
+    justify-content: flex-end;
+    flex-wrap: wrap;
+    gap: .5rem 1.25rem;
+    margin: 0 0 1rem;
+}
+
+.footer__links a {
+    color: var(--Subtlecolor);
+    font-size: .85rem;
+    text-decoration: none;
+    transition: color .2s ease;
+}
+
+.footer__links a:hover {
+    color: var(--Textcolor);
+    text-decoration: underline;
 }
 
 .footer__logo {
@@ -1045,6 +1267,7 @@ body.dark-mode .footer__copyright {
 
     .top-pickup__slide {
         border-radius: 1rem;
+        corner-shape: superellipse(1.4);
     }
 
     .footer__logo {
