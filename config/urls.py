@@ -9,6 +9,8 @@ urlpatterns = [
     path("admin/", admin.site.urls),
     path("ckeditor5/", include("django_ckeditor_5.urls")),
     path("accounts/", include("accounts.urls")),
+    path("equipment/", include("equipment.urls")),
+    path("roll/", include("roll.urls")),
     path("service-worker.js", config_views.service_worker, name="service_worker"),
     path("418/", error_views.teapot, name="teapot"),
     path("preview_400/", error_views.preview_400, name="preview_400"),

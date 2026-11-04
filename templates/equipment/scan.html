@@ -1,0 +1,23 @@
+{% extends "equipment/base.html" %}
+{% load static %}
+
+{% block title %}QR読み取り{% endblock %}
+{% block equipment_content %}
+<section class="equipment__section equipment__scan">
+    <h2>QRコード読み取り</h2>
+    <p>カメラを起動して備品のQRコードを枠内に映してください。QRコードには備品番号のみが記録され、読み取り後にこのアプリで備品を検索します。カメラが使えない場合は備品番号を入力してください。</p>
+    <div class="equipment__scan-frame">
+        <video id="equipment-camera" playsinline muted aria-label="QRコード読み取りカメラ"></video>
+        <p id="camera-message" role="status">カメラを起動しています…</p>
+    </div>
+    <button class="common-style white equipment__button" type="button" id="camera-retry">カメラを再起動</button>
+    <form method="get" action="{% url 'equipment:scan' %}" class="equipment__manual-search">
+        <label>備品番号<input name="q" autocomplete="off" required></label>
+        <button class="common-style reverse equipment__button" type="submit">検索</button>
+    </form>
+</section>
+{% endblock %}
+{% block extra_js %}
+{{ block.super }}
+<script src="{% static 'equipment/scan.js' %}?v=3" defer></script>
+{% endblock %}

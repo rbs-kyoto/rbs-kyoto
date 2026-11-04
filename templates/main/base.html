@@ -8,7 +8,7 @@
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-title" content="rbs京都">
     <meta name="apple-mobile-web-app-status-bar-style" content="default">
-    <title>{% block title %}{% endblock %}</title>
+    <title>{% block title %}{% endblock %}｜rbs京都</title>
     <link rel="manifest" href="{% static 'main/manifest.webmanifest' %}">
     <link rel="apple-touch-icon" href="{% static 'main/img/pwa-icon-180.png' %}">
     <meta
@@ -62,8 +62,12 @@
             <nav class="global-header__menu" aria-label="メインメニュー">
                 <a href="{% url 'main:about' %}">About</a>
                 <a href="{% url 'main:news_all' %}">News</a>
-                <a href="{% url 'manuals:manual_list' %}">Manual</a>
-                <a href="{% url 'video_archive:video_list' %}">Video Archive</a>
+                {% if user.is_staff %}
+                    <a href="{% url 'manuals:manual_list' %}">Manual</a>
+                    <a href="{% url 'video_archive:video_list' %}">Video Archive</a>
+                    <a href="{% url 'equipment:dashboard' %}">Equipment</a>
+                    <a href="{% url 'roll:list' %}">Roll</a>
+                {% endif %}
             </nav>
         </div>
         {% if user.is_authenticated %}
@@ -100,7 +104,30 @@
                 alt="rbs京都"
             >
         </div>
-        <div class="footer__copyright">© 2026 rbs-kyoto</div>
+        <nav class="footer__social-links" aria-label="公式SNS">
+            {% for social_link in footer_social_links %}
+            <a href="{{ social_link.url }}" aria-label="{{ social_link.label }}" target="_blank" rel="noopener noreferrer">
+                <span class="footer__social-icon{% if social_link.has_hover_icon %} footer__social-icon--has-hover{% endif %}" aria-hidden="true">
+                    {% if social_link.light_icon_url or social_link.dark_icon_url or social_link.hover_icon_url %}
+                    <img class="footer__social-icon-image footer__social-icon-image--light" src="{{ social_link.light_icon_url }}" alt="">
+                    <img class="footer__social-icon-image footer__social-icon-image--dark" src="{{ social_link.dark_icon_url }}" alt="">
+                    {% if social_link.has_hover_icon %}
+                    <img class="footer__social-icon-image footer__social-icon-image--hover" src="{{ social_link.hover_icon_url }}" alt="">
+                    {% endif %}
+                    {% else %}
+                    <span class="footer__social-icon-fallback">{{ social_link.label|slice:":1" }}</span>
+                    {% endif %}
+                </span>
+            </a>
+            {% endfor %}
+        </nav>
+        <nav class="footer__links" aria-label="サイト情報">
+            {% for page in footer_site_pages %}
+            <a href="{% url 'main:site_page' page.slug %}">{{ page.title }}</a>
+            {% endfor %}
+        </nav>
+        <div class="footer__copyright">© 2026 rbs-kyoto all rights reserved.</div>
+        </div>
     </footer>
 </body>
 </html>

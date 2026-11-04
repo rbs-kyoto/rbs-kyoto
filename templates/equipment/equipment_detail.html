@@ -1,0 +1,77 @@
+{% extends "equipment/base.html" %}
+
+{% block title %}{{ equipment.name }}{% endblock %}
+{% block equipment_content %}
+<section class="equipment__section">
+    <div class="equipment__section-heading">
+        <div><p class="equipment__eyebrow">{{ equipment.inventory_number }}</p><h2>{{ equipment.name }}</h2></div>
+        <div class="equipment__actions">
+            {% if equipment.is_active %}
+            <a class="common-style reverse equipment__button" href="{% url 'equipment:edit' equipment.pk %}">編集</a>
+            <a class="common-style white equipment__button" href="{% url 'equipment:qr' equipment.pk %}">QRコード</a>
+            <a class="common-style reverse equipment__button" href="{% url 'equipment:lending_register' %}?equipment={{ equipment.pk }}">貸出・持出</a>
+            {% endif %}
+        </div>
+    </div>
+    {% if not equipment.is_active %}<p class="equipment__alert">登録解除済み · {{ equipment.unregistered_at|date:"Y/m/d H:i" }} · {{ equipment.unregistration_reason }}</p>{% endif %}
+    <div class="equipment__detail-layout{% if equipment.image %} equipment__detail-layout--with-photo{% endif %}">
+        {% if equipment.image %}<img class="equipment__photo" src="{{ equipment.image.url }}" alt="{{ equipment.name }}">{% endif %}
+        <div class="equipment__detail-groups">
+            <section class="equipment__detail-group">
+                <h3>備品情報</h3>
+                <dl class="equipment__details">
+                    <dt>分類</dt><dd>{{ equipment.category.code }}：{{ equipment.category.name }}</dd>
+                    <dt>メーカー / 型番</dt><dd>{{ equipment.manufacturer|default:"—" }} / {{ equipment.model_number|default:"—" }}</dd>
+                    <dt>製造番号</dt><dd>{{ equipment.serial_number|default:"—" }}</dd>
+                    <dt>備品の状態</dt><dd>{{ equipment.get_condition_display }}</dd>
+                </dl>
+            </section>
+            <section class="equipment__detail-group">
+                <h3>在庫・管理情報</h3>
+                <dl class="equipment__details">
+                    <dt>保有数量</dt><dd>{{ equipment.quantity }}{{ equipment.unit }}</dd>
+                    <dt>保管数量</dt><dd>{{ equipment.stored_quantity }}{{ equipment.unit }}</dd>
+                    <dt>貸出可能数量</dt><dd>{{ equipment.available_quantity }}{{ equipment.unit }}</dd>
+                    <dt>利用状況</dt><dd>{{ equipment.usage_status }}</dd>
+                    <dt>管理担当者</dt><dd>{{ equipment.manager|default:"—" }}</dd>
+                    <dt>保管場所</dt><dd>{{ equipment.location|default:"—" }}</dd>
+                </dl>
+            </section>
+            <section class="equipment__detail-group">
+                <h3>購入・保証情報</h3>
+                <dl class="equipment__details">
+                    <dt>レシート番号</dt><dd>{{ equipment.receipt_number|default:"—" }}</dd>
+                    <dt>購入日・価格・購入先</dt><dd>{{ equipment.purchased_on|date:"Y/m/d"|default:"—" }} / {% if equipment.purchase_price is not None %}{{ equipment.purchase_price|floatformat:"0" }} {{ equipment.get_purchase_currency_display }}{% else %}—{% endif %} / {{ equipment.purchase_vendor|default:"—" }}</dd>
+                    <dt>保証期限</dt><dd>{{ equipment.warranty_expiry|date:"Y/m/d"|default:"—" }}</dd>
+                    <dt>法定耐用年数</dt><dd>{% if equipment.expected_lifespan_years %}{{ equipment.expected_lifespan_years }}年{% else %}—{% endif %}</dd>
+                    <dt>想定使用終了日</dt><dd>{% if equipment.purchased_on and equipment.expected_lifespan_years %}{{ equipment.expected_end_date|date:"Y/m/d" }}{% else %}—{% endif %}</dd>
+                </dl>
+            </section>
+            <section class="equipment__detail-group">
+                <h3>備考・登録情報</h3>
+                <dl class="equipment__details">
+                    <dt>備考</dt><dd>{{ equipment.notes|linebreaksbr|default:"—" }}</dd>
+                    <dt>登録者 / 登録日時</dt><dd>{{ equipment.created_by|default:"—" }} / {{ equipment.created_at|date:"Y/m/d H:i" }}</dd>
+                    <dt>最終更新者 / 更新日時</dt><dd>{{ equipment.last_modified_by|default:"—" }} / {{ equipment.updated_at|date:"Y/m/d H:i" }}</dd>
+                </dl>
+            </section>
+        </div>
+    </div>
+</section>
+
+<section class="equipment__section">
+    <div class="equipment__section-heading"><h2>利用中の記録</h2><a href="{% url 'equipment:history' equipment.pk %}">すべての履歴</a></div>
+    <ul class="equipment__cards">
+        {% for usage in current_usages %}
+        <li><a href="{% url 'equipment:usage_detail' usage.pk %}"><strong>{{ usage.get_usage_type_display }} · {{ usage.destination }}</strong><span>{{ usage.remaining_quantity }}{{ equipment.unit }} · {{ usage.status }}{% if usage.due_at %} · 返却予定 {{ usage.due_at|date:"Y/m/d H:i" }}{% endif %}</span></a></li>
+        {% empty %}<li class="equipment__empty">現在利用中の記録はありません。</li>{% endfor %}
+    </ul>
+    {% if equipment.is_active %}
+    <form method="post" action="{% url 'equipment:unregister' equipment.pk %}" class="equipment__inline-form" onsubmit="return confirm('この備品を登録解除しますか？履歴は削除されません。')">
+        {% csrf_token %}<label>登録解除理由<input name="reason" required maxlength="500"></label><button class="common-style danger equipment__button" type="submit">登録解除</button>
+    </form>
+    {% else %}
+    <form method="post" action="{% url 'equipment:reactivate' equipment.pk %}">{% csrf_token %}<button class="common-style reverse equipment__button" type="submit">再有効化</button></form>
+    {% endif %}
+</section>
+{% endblock %}

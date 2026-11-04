@@ -2,7 +2,7 @@
 {% load static %}
 {% load socialaccount %}
 
-{% block title %}ログイン｜rbs京都{% endblock %}
+{% block title %}ログイン{% endblock %}
 {% block description %}rbs京都のログインページです．{% endblock %}
 {% block extra_css %}<link rel="stylesheet" href="{% static 'main/css/login.css' %}">{% endblock %}
 
@@ -67,7 +67,7 @@
             </div>
             {% for provider in socialaccount_providers %}
             {% if provider.id == "google" %}
-            <a class="common-style login_with_google Google-font" href="{% provider_login_url 'google' %}">
+            <a class="common-style white login_with_google Google-font" href="{% provider_login_url 'google' %}">
                 <img class="login_with_google-logo" src="{% static 'main/img/Google.svg' %}" alt="Google">
                 Googleでログイン
             </a>

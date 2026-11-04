@@ -1,7 +1,7 @@
 {% extends "main/base.html" %}
 {% load static %}
 
-{% block title %}プロフィールを編集｜rbs京都{% endblock %}
+{% block title %}プロフィールを編集{% endblock %}
 {% block extra_css %}<link rel="stylesheet" href="{% static 'main/css/mypage.css' %}">{% endblock %}
 
 {% block content %}
@@ -54,7 +54,7 @@
                     <a class="page-control-style-back" href="{% url 'accounts:mypage' %}">
                         マイページへ
                     </a>
-                    <button class="common-style" type="submit">
+                    <button class="common-style reverse" type="submit">
                         保存する
                     </button>
                 </div>

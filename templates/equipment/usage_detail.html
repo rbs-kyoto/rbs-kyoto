@@ -1,0 +1,24 @@
+{% extends "equipment/base.html" %}
+
+{% block title %}貸出記録{% endblock %}
+{% block equipment_content %}
+<section class="equipment__section">
+    <div class="equipment__section-heading"><div><p class="equipment__eyebrow">{{ usage.get_usage_type_display }} · {{ usage.status }}</p><h2>{{ usage.equipment.inventory_number }} {{ usage.equipment.name }}</h2></div>
+        {% if usage.remaining_quantity %}<a class="common-style reverse equipment__button" href="{% url 'equipment:return' usage.pk %}">返却を記録</a>{% endif %}
+    </div>
+    <dl class="equipment__details">
+        <dt>貸出・持出先</dt><dd>{{ usage.destination }}</dd>
+        <dt>責任者 / 受取担当者</dt><dd>{{ usage.responsible_person|default:"—" }} / {{ usage.recipient|default:"—" }}</dd>
+        <dt>数量 / 未返却数量</dt><dd>{{ usage.quantity }}{{ usage.equipment.unit }} / {{ usage.remaining_quantity }}{{ usage.equipment.unit }}</dd>
+        <dt>開始日時 / 返却予定</dt><dd>{{ usage.started_at|date:"Y/m/d H:i" }} / {{ usage.due_at|date:"Y/m/d H:i"|default:"期限なし" }}</dd>
+        <dt>用途</dt><dd>{{ usage.purpose|default:"—" }}</dd>
+        <dt>備考</dt><dd>{{ usage.notes|linebreaksbr|default:"—" }}</dd>
+        <dt>登録者 / 登録日時</dt><dd>{{ usage.created_by|default:"—" }} / {{ usage.created_at|date:"Y/m/d H:i" }}</dd>
+    </dl>
+    <h3>返却履歴</h3>
+    <div class="equipment__table-wrap"><table><thead><tr><th>返却日時</th><th>数量</th><th>状態</th><th>確認者</th><th>処理者</th><th>詳細</th></tr></thead><tbody>
+        {% for returned in usage.returns.all %}<tr><td>{{ returned.returned_at|date:"Y/m/d H:i" }}</td><td>{{ returned.quantity }}{{ usage.equipment.unit }}</td><td>{{ returned.get_condition_display }}</td><td>{{ returned.confirmed_by|default:"—" }}</td><td>{{ returned.processed_by|default:"—" }}</td><td>{{ returned.condition_details|default:"—" }}</td></tr>
+        {% empty %}<tr><td colspan="6" class="equipment__empty">返却記録はありません。</td></tr>{% endfor %}
+    </tbody></table></div>
+</section>
+{% endblock %}
