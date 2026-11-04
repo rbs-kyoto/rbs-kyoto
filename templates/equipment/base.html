@@ -20,7 +20,6 @@
             <a href="{% url 'equipment:categories' %}">分類</a>
             <a href="{% url 'equipment:locations' %}">保管場所</a>
             <a href="{% url 'equipment:settings' %}">設定</a>
-            {% if user.is_staff %}<a href="{% url 'roll:list' %}">Roll 名簿</a>{% endif %}
         </nav>
     </header>
     {% if messages %}
