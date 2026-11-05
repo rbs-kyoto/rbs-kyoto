@@ -37,6 +37,12 @@ class WebPushSubscription(models.Model):
     endpoint = models.URLField(max_length=2048, unique=True)
     p256dh = models.CharField(max_length=200)
     auth = models.CharField(max_length=100)
+    equipment_reminders_enabled = models.BooleanField(
+        "返却予定通知", default=True
+    )
+    news_notifications_enabled = models.BooleanField(
+        "新着投稿通知", default=False
+    )
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 

@@ -117,6 +117,26 @@ class EquipmentDueReminderCommandTests(TestCase):
         WEBPUSH_VAPID_SUBJECT="mailto:admin@example.com",
     )
     @patch("equipment.management.commands.send_equipment_due_reminders.webpush")
+    def test_does_not_send_when_equipment_reminders_are_disabled(self, send_push):
+        self.create_usage_due_in(7)
+        self.subscription.equipment_reminders_enabled = False
+        self.subscription.save(update_fields=["equipment_reminders_enabled"])
+
+        with patch(
+            "equipment.management.commands.send_equipment_due_reminders.timezone.localdate",
+            return_value=self.today,
+        ):
+            call_command("send_equipment_due_reminders", stdout=StringIO())
+
+        send_push.assert_not_called()
+        self.assertFalse(EquipmentReminderDelivery.objects.exists())
+
+    @override_settings(
+        WEBPUSH_VAPID_PUBLIC_KEY="public",
+        WEBPUSH_VAPID_PRIVATE_KEY="private",
+        WEBPUSH_VAPID_SUBJECT="mailto:admin@example.com",
+    )
+    @patch("equipment.management.commands.send_equipment_due_reminders.webpush")
     def test_removes_expired_push_subscriptions(self, send_push):
         self.create_usage_due_in(7)
         response = Response()

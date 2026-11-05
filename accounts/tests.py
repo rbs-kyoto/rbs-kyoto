@@ -1,13 +1,21 @@
 import json
+import base64
+from types import SimpleNamespace
+from unittest.mock import patch
 
+from cryptography.hazmat.primitives import serialization
 from django.contrib import admin
 from django.contrib.auth import get_user_model
 from django.test import RequestFactory
-from django.test import TestCase
+from django.test import TestCase, override_settings
 from django.urls import reverse
+from py_vapid import Vapid
+from pywebpush import WebPushException
 
+from .push import PushConfigurationError, send_web_push
 from equipment.models import Category, Equipment, ReturnRecord, UsageRecord
 from roll.models import RosterEntry
+from .models import WebPushSubscription
 from .admin import (
     SuperuserGrantCredentialAdmin,
     SuperuserGrantCredentialAdminForm,
@@ -191,6 +199,8 @@ class MypageEquipmentTests(TestCase):
         self.assertEqual(response.status_code, 200)
         subscription = self.user.push_subscriptions.get()
         self.assertEqual(subscription.p256dh, "public-key")
+        self.assertFalse(subscription.equipment_reminders_enabled)
+        self.assertFalse(subscription.news_notifications_enabled)
 
     def test_push_subscription_rejects_non_push_service_endpoint(self):
         response = self.client.post(
@@ -226,3 +236,191 @@ class MypageEquipmentTests(TestCase):
         )
 
         self.assertEqual(response.status_code, 409)
+
+    def test_push_preferences_are_independent_and_get_confirmation_push(self):
+        subscription = WebPushSubscription.objects.create(
+            user=self.user,
+            endpoint="https://fcm.googleapis.com/fcm/send/preferences",
+            p256dh="public-key",
+            auth="auth-secret",
+        )
+        with patch("accounts.views.send_web_push", return_value=True) as send_push:
+            response = self.client.post(
+                reverse("accounts:push_subscription_preferences"),
+                data=json.dumps(
+                    {
+                        "endpoint": subscription.endpoint,
+                        "type": "news",
+                        "enabled": True,
+                    }
+                ),
+                content_type="application/json",
+            )
+
+        self.assertEqual(response.status_code, 200)
+        subscription.refresh_from_db()
+        self.assertTrue(subscription.equipment_reminders_enabled)
+        self.assertTrue(subscription.news_notifications_enabled)
+        send_push.assert_called_once_with(
+            subscription,
+            {
+                "title": "通知がオンになりました！",
+                "body": "早速確認してみましょう",
+                "url": reverse("accounts:mypage"),
+            },
+        )
+
+    def test_disabling_one_notification_does_not_change_the_other(self):
+        subscription = WebPushSubscription.objects.create(
+            user=self.user,
+            endpoint="https://fcm.googleapis.com/fcm/send/disable",
+            p256dh="public-key",
+            auth="auth-secret",
+            equipment_reminders_enabled=True,
+            news_notifications_enabled=True,
+        )
+
+        response = self.client.post(
+            reverse("accounts:push_subscription_preferences"),
+            data=json.dumps(
+                {
+                    "endpoint": subscription.endpoint,
+                    "type": "equipment",
+                    "enabled": False,
+                }
+            ),
+            content_type="application/json",
+        )
+
+        self.assertEqual(response.status_code, 200)
+        subscription.refresh_from_db()
+        self.assertFalse(subscription.equipment_reminders_enabled)
+        self.assertTrue(subscription.news_notifications_enabled)
+
+    def test_failed_confirmation_does_not_enable_notification(self):
+        subscription = WebPushSubscription.objects.create(
+            user=self.user,
+            endpoint="https://fcm.googleapis.com/fcm/send/failed",
+            p256dh="public-key",
+            auth="auth-secret",
+            equipment_reminders_enabled=False,
+        )
+        with patch(
+            "accounts.views.send_web_push",
+            side_effect=WebPushException("Push delivery failed"),
+        ):
+            response = self.client.post(
+                reverse("accounts:push_subscription_preferences"),
+                data=json.dumps(
+                    {
+                        "endpoint": subscription.endpoint,
+                        "type": "equipment",
+                        "enabled": True,
+                    }
+                ),
+                content_type="application/json",
+            )
+
+        self.assertEqual(response.status_code, 502)
+        subscription.refresh_from_db()
+        self.assertFalse(subscription.equipment_reminders_enabled)
+
+    @override_settings(
+        WEBPUSH_VAPID_PUBLIC_KEY="",
+        WEBPUSH_VAPID_PRIVATE_KEY="",
+        WEBPUSH_VAPID_SUBJECT="",
+    )
+    def test_confirmation_requires_vapid_configuration(self):
+        subscription = WebPushSubscription.objects.create(
+            user=self.user,
+            endpoint="https://fcm.googleapis.com/fcm/send/not-configured",
+            p256dh="public-key",
+            auth="auth-secret",
+            news_notifications_enabled=False,
+        )
+
+        response = self.client.post(
+            reverse("accounts:push_subscription_preferences"),
+            data=json.dumps(
+                {
+                    "endpoint": subscription.endpoint,
+                    "type": "news",
+                    "enabled": True,
+                }
+            ),
+            content_type="application/json",
+        )
+
+        self.assertEqual(response.status_code, 503)
+        subscription.refresh_from_db()
+        self.assertFalse(subscription.news_notifications_enabled)
+
+    def test_preferences_endpoint_only_exposes_current_users_subscription(self):
+        subscription = self.other_user.push_subscriptions.create(
+            endpoint="https://fcm.googleapis.com/fcm/send/private-preferences",
+            p256dh="public-key",
+            auth="auth-secret",
+        )
+
+        response = self.client.get(
+            reverse("accounts:push_subscription_preferences"),
+            {"endpoint": subscription.endpoint},
+        )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.json(), {"subscribed": False})
+
+
+class WebPushConfigurationTests(TestCase):
+    def setUp(self):
+        self.vapid_key = Vapid()
+        self.vapid_key.generate_keys()
+        public_key_bytes = self.vapid_key.public_key.public_bytes(
+            encoding=serialization.Encoding.X962,
+            format=serialization.PublicFormat.UncompressedPoint,
+        )
+        self.public_key = (
+            base64.urlsafe_b64encode(public_key_bytes).decode("ascii").rstrip("=")
+        )
+        self.private_key = self.vapid_key.private_pem().decode("utf-8")
+        self.subscription = SimpleNamespace(
+            endpoint="https://fcm.googleapis.com/fcm/send/test",
+            p256dh="p256dh",
+            auth="auth",
+        )
+
+    @override_settings(WEBPUSH_VAPID_SUBJECT="mailto:admin@example.com")
+    @patch("accounts.push.webpush")
+    def test_sends_with_matching_vapid_pem_keys(self, webpush_mock):
+        with override_settings(
+            WEBPUSH_VAPID_PUBLIC_KEY=self.public_key,
+            WEBPUSH_VAPID_PRIVATE_KEY=self.private_key,
+        ):
+            result = send_web_push(self.subscription, {"title": "test"})
+
+        self.assertTrue(result)
+        self.assertIsInstance(webpush_mock.call_args.kwargs["vapid_private_key"], Vapid)
+
+    @override_settings(
+        WEBPUSH_VAPID_PUBLIC_KEY="different-public-key",
+        WEBPUSH_VAPID_PRIVATE_KEY="UCUKEHn7Jd33QZx5lJFKBY4plOxGsJ6xJSOzE14jQlo",
+        WEBPUSH_VAPID_SUBJECT="mailto:admin@example.com",
+    )
+    @patch("accounts.push.webpush")
+    def test_rejects_mismatched_vapid_public_and_private_keys(self, webpush_mock):
+        with self.assertRaises(PushConfigurationError):
+            send_web_push(self.subscription, {"title": "test"})
+
+        webpush_mock.assert_not_called()
+
+    @override_settings(
+        WEBPUSH_VAPID_PUBLIC_KEY="a" * 87,
+        WEBPUSH_VAPID_PRIVATE_KEY="/missing/private-key.pem",
+        WEBPUSH_VAPID_SUBJECT="mailto:admin@example.com",
+    )
+    @patch("accounts.push.webpush")
+    def test_rejects_missing_vapid_private_key_file(self, webpush_mock):
+        with self.assertRaises(PushConfigurationError):
+            send_web_push(self.subscription, {"title": "test"})
+
+        webpush_mock.assert_not_called()

@@ -34,9 +34,9 @@ self.addEventListener("push", (event) => {
 
     event.waitUntil(
         self.registration.showNotification(payload.title || "rbs京都", {
-            body: payload.body || "返却予定のお知らせがあります。",
-            icon: "/static/main/img/pwa-icon-192.png",
-            badge: "/static/main/img/pwa-icon-72.png",
+            body: payload.body || "新しい通知があります。",
+            icon: "/static/main/img/pwa-icon__PWA_ICON_SUFFIX__-192.png",
+            badge: "/static/main/img/pwa-icon__PWA_ICON_SUFFIX__-72.png",
             data: { url: payload.url || "/" },
         }),
     );

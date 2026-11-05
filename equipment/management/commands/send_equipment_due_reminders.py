@@ -40,6 +40,7 @@ class Command(BaseCommand):
             UsageRecord.objects.filter(
                 due_at__date__lte=today + timedelta(days=7),
                 destination_entry__account__push_subscriptions__isnull=False,
+                destination_entry__account__push_subscriptions__equipment_reminders_enabled=True,
             )
             .select_related("equipment", "destination_entry__account")
             .prefetch_related(

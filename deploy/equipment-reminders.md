@@ -1,26 +1,9 @@
-# 備品返却予定のPush通知
+# Web Push通知
 
 返却期限通知を有効にするには、次の設定が必要です。
 
 1. HTTPSでサイトを公開する。
-2. アプリの仮想環境に入っている `vapid` コマンドでVAPID鍵を一度だけ生成する。秘密鍵は公開せず、アプリの実行ユーザーだけが読める場所に保管する。
-
-```sh
-mkdir -p /path/to/private/push-keys
-chmod 700 /path/to/private/push-keys
-cd /path/to/private/push-keys
-/path/to/venv/bin/vapid --gen
-```
-
-このコマンドは現在のディレクトリに `private_key.pem` と `public_key.pem` を作ります。ブラウザー用の公開鍵は次のコマンドで表示します。
-
-```sh
-/path/to/venv/bin/vapid \
-  --private-key /path/to/private/push-keys/private_key.pem \
-  --applicationServerKey
-```
-
-出力の `Application Server Key =` の後の値を `WEBPUSH_VAPID_PUBLIC_KEY` に設定します。秘密鍵ファイルはアプリの実行ユーザーが読み取れるようにし、Gitに追加しないでください。
+2. `vapid --gen --json` でVAPID鍵を一度だけ生成する。秘密鍵は公開せず、サーバーの環境変数に安全に設定する。
 3. アプリの環境に次の値を設定する。
    - `WEBPUSH_VAPID_PUBLIC_KEY`: 公開鍵
    - `WEBPUSH_VAPID_PRIVATE_KEY`: 秘密鍵または秘密鍵ファイルへのパス
@@ -32,14 +15,12 @@ cd /path/to/private/push-keys
 python manage.py send_equipment_due_reminders
 ```
 
-cronを使う場合、サーバーのタイムゾーンがUTCなら毎日0時に実行すると日本時間の9時です。サーバーのタイムゾーンを確認してから設定してください。
-
-```cron
-0 0 * * * cd /path/to/rbs-kyoto && /path/to/venv/bin/python manage.py send_equipment_due_reminders
-```
-
 本番ではアプリと同じ仮想環境・作業ディレクトリで実行してください。通知は、貸出・持出先に選ばれたRoll名簿のアカウントに紐付く端末へ、返却予定日の7日前・3日前・前日・当日、および期限超過後3日ごとに送信されます。期限未設定の記録は通知対象外です。全数量が返却されると通知を停止します。
 
-利用者はマイページの「返却予定の通知」から、端末ごとに通知を許可してください。iOSではホーム画面に追加したWebアプリで通知を許可する必要があります。端末で通知を停止すると、その端末の購読情報も削除されます。
+利用者はマイページの「通知設定」から、端末ごとに返却予定通知と新着投稿通知を個別に有効・無効にできます。有効化時は確認通知を送ります。iOSではホーム画面に追加したWebアプリで通知を許可する必要があります。2種類とも無効にしても端末のPush購読は維持されます。
+
+新着投稿通知は、公開状態で新規作成または下書きから公開されたNewsを対象とします。限定公開・非公開のNewsは通知されません。
 
 VAPID鍵を変更した場合は既存端末での再購読が必要です。秘密鍵はリポジトリに登録しないでください。
+
+開発環境で確認通知が届かない場合は、`WEBPUSH_VAPID_PRIVATE_KEY`が実在する秘密鍵または秘密鍵ファイルを指していること、公開鍵と秘密鍵が同じペアであることを確認してください。開発用の鍵ペアは本番用と分け、`.env`の変更後に開発サーバーを再起動してください。

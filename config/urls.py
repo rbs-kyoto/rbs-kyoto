@@ -11,6 +11,7 @@ urlpatterns = [
     path("accounts/", include("accounts.urls")),
     path("equipment/", include("equipment.urls")),
     path("roll/", include("roll.urls")),
+    path("manifest.webmanifest", config_views.web_manifest, name="web_manifest"),
     path("service-worker.js", config_views.service_worker, name="service_worker"),
     path("418/", error_views.teapot, name="teapot"),
     path("preview_400/", error_views.preview_400, name="preview_400"),

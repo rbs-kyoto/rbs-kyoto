@@ -1,4 +1,5 @@
 from django.db import models
+from django.core.exceptions import ValidationError
 from django.core.validators import FileExtensionValidator
 from django_ckeditor_5.fields import CKEditor5Field
 from django.utils.html import strip_tags
@@ -34,6 +35,47 @@ class Category(models.Model):
 
     def __str__(self):
         return self.name
+
+
+class HeaderLogoSchedule(models.Model):
+    image = models.FileField(
+        "ロゴ画像",
+        upload_to="header-logos/",
+        validators=[
+            FileExtensionValidator(
+                ["svg", "png", "apng", "gif", "webp", "jpg", "jpeg"]
+            )
+        ],
+    )
+    starts_on = models.DateField("開始日")
+    ends_on = models.DateField("終了日")
+
+    class Meta:
+        ordering = ["starts_on", "pk"]
+        verbose_name = "ヘッダーロゴ"
+        verbose_name_plural = "ヘッダーロゴ"
+
+    def __str__(self):
+        return f"{self.starts_on:%Y/%m/%d}〜{self.ends_on:%Y/%m/%d}"
+
+    def clean(self):
+        super().clean()
+        if self.starts_on and self.ends_on and self.starts_on > self.ends_on:
+            raise ValidationError({"ends_on": "終了日は開始日以降の日付を指定してください。"})
+
+        if not self.starts_on or not self.ends_on:
+            return
+
+        overlapping_schedules = type(self).objects.filter(
+            starts_on__lte=self.ends_on,
+            ends_on__gte=self.starts_on,
+        )
+        if self.pk:
+            overlapping_schedules = overlapping_schedules.exclude(pk=self.pk)
+        if overlapping_schedules.exists():
+            raise ValidationError(
+                {"starts_on": "既存のヘッダーロゴ設定と期間が重複しています。"}
+            )
 
 
 class News(models.Model):
