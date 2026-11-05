@@ -135,9 +135,49 @@
 }
 
 .mypage-push {
+    display: block;
+}
+
+.mypage-notification-settings {
     display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 1rem;
+}
+
+.mypage-notification-setting {
+    display: grid;
+    align-content: space-between;
     justify-items: start;
-    gap: .75rem;
+    gap: 1rem;
+    padding: 1.25rem;
+    border: .1rem solid var(--Bordercolor);
+    border-radius: .75rem;
+}
+
+.mypage-notification-setting h4,
+.mypage-notification-setting p {
+    margin: 0;
+}
+
+.mypage-notification-setting p {
+    margin-top: .5rem;
+    color: var(--Subtlecolor);
+    font-size: .9rem;
+}
+
+.mypage-notification-setting button:disabled {
+    cursor: wait;
+    opacity: .65;
+}
+
+.mypage-notification-setting [role="status"] {
+    font-size: .85rem;
+}
+
+@media (max-width: 600px) {
+    .mypage-notification-settings {
+        grid-template-columns: 1fr;
+    }
 }
 
 .error-preview-trigger {

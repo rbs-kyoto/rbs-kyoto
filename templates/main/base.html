@@ -9,8 +9,8 @@
     <meta name="apple-mobile-web-app-title" content="rbs京都">
     <meta name="apple-mobile-web-app-status-bar-style" content="default">
     <title>{% block title %}{% endblock %}｜rbs京都</title>
-    <link rel="manifest" href="{% static 'main/manifest.webmanifest' %}">
-    <link rel="apple-touch-icon" href="{% static 'main/img/pwa-icon-180.png' %}">
+    <link rel="manifest" href="{% url 'web_manifest' %}">
+    <link rel="apple-touch-icon" href="{{ pwa_icon_180_url }}">
     <meta
         name="description"
         content="{% block description %}{% endblock %}"
@@ -41,9 +41,9 @@
             <a class="global-header__nav__link" href="{% url 'main:index' %}">
                 <img
                     class="global-header-logo"
-                    src="{% static 'main/img/rbs.svg' %}"
-                    data-theme-light-src="{% static 'main/img/rbs.svg' %}"
-                    data-theme-dark-src="{% static 'main/img/rbs-dark.svg' %}"
+                    src="{{ header_logo_url }}"
+                    data-theme-light-src="{{ header_logo_url }}"
+                    data-theme-dark-src="{{ header_logo_dark_url }}"
                     alt="rbs"
                 >
             </a>

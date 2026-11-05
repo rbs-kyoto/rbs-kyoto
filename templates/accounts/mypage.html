@@ -66,19 +66,38 @@
         </section>
         <section class="mypage-card" aria-labelledby="mypage-push-heading">
             <div class="mypage-card__header">
-                <h3 id="mypage-push-heading">返却予定の通知</h3>
+                <h3 id="mypage-push-heading">通知設定</h3>
             </div>
-            <p>返却予定日の7日前・3日前・前日・当日と、期限超過後は3日ごとに通知します。</p>
+            <p>通知の種類ごとに有効・無効を設定できます。初めて有効にすると確認通知が届きます。</p>
             {% if webpush_public_key %}
             <form class="mypage-push" data-push-form>
                 {% csrf_token %}
-                <button class="page-control-style-forward" type="button" data-push-toggle>
-                    通知を有効にする
-                </button>
-                <span role="status" aria-live="polite" data-push-status></span>
+                <div class="mypage-notification-settings">
+                    <section class="mypage-notification-setting">
+                        <div>
+                            <h4>返却予定通知</h4>
+                            <p>返却予定日の7日前・3日前・前日・当日と、期限超過後は3日ごとに通知します。</p>
+                        </div>
+                        <button class="common-style reverse" type="button" data-notification-type="equipment">
+                            返却予定通知を有効にする
+                        </button>
+                        <span role="status" aria-live="polite" data-notification-status="equipment"></span>
+                    </section>
+                    <section class="mypage-notification-setting">
+                        <div>
+                            <h4>新着投稿通知</h4>
+                            <p>新しい公開お知らせが投稿されたときに通知します。</p>
+                        </div>
+                        <button class="common-style reverse" type="button" data-notification-type="news">
+                            新着投稿通知を有効にする
+                        </button>
+                        <span role="status" aria-live="polite" data-notification-status="news"></span>
+                    </section>
+                </div>
                 <span hidden data-push-public-key>{{ webpush_public_key }}</span>
                 <span hidden data-push-subscribe-url="{% url 'accounts:push_subscription' %}"></span>
                 <span hidden data-push-delete-url="{% url 'accounts:delete_push_subscription' %}"></span>
+                <span hidden data-push-preferences-url="{% url 'accounts:push_subscription_preferences' %}"></span>
             </form>
             {% else %}
             <p>通知機能は現在設定されていません。</p>
@@ -186,6 +205,6 @@
 <script src="{% static 'main/js/error_preview.js' %}"></script>
 {% endif %}
 {% if webpush_public_key %}
-<script src="{% static 'main/js/push_notifications.js' %}" defer></script>
+<script src="{% static 'main/js/push_notifications.js' %}?v=2" defer></script>
 {% endif %}
 {% endblock %}

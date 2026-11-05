@@ -3,7 +3,14 @@ from django import forms
 from django.core.exceptions import ValidationError
 from django.core.validators import URLValidator
 from urllib.parse import urljoin, urlsplit
-from .models import Category, FooterSocialLink, News, Pickup, SitePage
+from .models import (
+    Category,
+    FooterSocialLink,
+    HeaderLogoSchedule,
+    News,
+    Pickup,
+    SitePage,
+)
 
 
 class PickupAdminForm(forms.ModelForm):
@@ -46,6 +53,15 @@ class CategoryAdmin(admin.ModelAdmin):
     list_display = ("name", "order")
     list_editable = ("order",)
     ordering = ("order", "name")
+
+
+@admin.register(HeaderLogoSchedule)
+class HeaderLogoScheduleAdmin(admin.ModelAdmin):
+    list_display = ("starts_on", "ends_on", "image")
+    list_filter = ("starts_on", "ends_on")
+    ordering = ("starts_on",)
+    fields = ("starts_on", "ends_on", "image")
+
 
 @admin.register(News)
 class NewsAdmin(admin.ModelAdmin):

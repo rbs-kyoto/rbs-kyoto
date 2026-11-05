@@ -1,15 +1,19 @@
-from datetime import date
+from datetime import date, timedelta
 import json
 from pathlib import Path
+from unittest.mock import patch
 
 from django.conf import settings
 from django.contrib.auth import get_user_model
+from django.core.exceptions import ValidationError
 from django.core.files.uploadedfile import SimpleUploadedFile
-from django.test import TestCase
+from django.test import TestCase, override_settings
 from django.urls import reverse
+from django.utils import timezone
 
+from accounts.models import WebPushSubscription
 from .admin import PickupAdminForm
-from .models import FooterSocialLink, News, Pickup, SitePage
+from .models import FooterSocialLink, HeaderLogoSchedule, News, Pickup, SitePage
 
 
 class PickupLinkTests(TestCase):
@@ -209,6 +213,75 @@ class FooterAndSitePageTests(TestCase):
         self.assertNotContains(response, "alert(1)")
 
 
+class HeaderLogoScheduleTests(TestCase):
+    def test_scheduled_logo_is_used_for_the_header_during_its_period(self):
+        today = timezone.localdate()
+        logo = HeaderLogoSchedule.objects.create(
+            starts_on=today - timedelta(days=1),
+            ends_on=today + timedelta(days=1),
+            image=SimpleUploadedFile("campaign.gif", b"gif data", content_type="image/gif"),
+        )
+        self.addCleanup(logo.image.delete, save=False)
+
+        response = self.client.get(reverse("main:index"))
+
+        self.assertContains(response, f'src="{logo.image.url}"')
+        self.assertContains(response, f'data-theme-light-src="{logo.image.url}"')
+        self.assertContains(response, f'data-theme-dark-src="{logo.image.url}"')
+        self.assertNotContains(response, 'data-theme-dark-src="/static/main/img/rbs-dark.svg"')
+
+    def test_expired_scheduled_logo_is_not_used(self):
+        today = timezone.localdate()
+        logo = HeaderLogoSchedule.objects.create(
+            starts_on=today - timedelta(days=3),
+            ends_on=today - timedelta(days=1),
+            image=SimpleUploadedFile("expired.svg", b"<svg></svg>"),
+        )
+        self.addCleanup(logo.image.delete, save=False)
+
+        response = self.client.get(reverse("main:index"))
+
+        self.assertContains(response, 'data-theme-light-src="/static/main/img/rbs.svg"')
+        self.assertNotContains(response, logo.image.url)
+
+    def test_schedule_rejects_reversed_and_overlapping_periods(self):
+        today = timezone.localdate()
+        schedule = HeaderLogoSchedule(
+            starts_on=today,
+            ends_on=today - timedelta(days=1),
+            image="header-logos/logo.png",
+        )
+        with self.assertRaises(ValidationError):
+            schedule.clean()
+
+        existing = HeaderLogoSchedule.objects.create(
+            starts_on=today,
+            ends_on=today + timedelta(days=2),
+            image=SimpleUploadedFile("scheduled.svg", b"<svg></svg>"),
+        )
+        self.addCleanup(existing.image.delete, save=False)
+        overlap = HeaderLogoSchedule(
+            starts_on=today + timedelta(days=1),
+            ends_on=today + timedelta(days=3),
+            image="header-logos/overlap.png",
+        )
+        with self.assertRaises(ValidationError):
+            overlap.clean()
+
+    def test_schedule_accepts_animated_image_extensions(self):
+        schedule = HeaderLogoSchedule(
+            starts_on=timezone.localdate(),
+            ends_on=timezone.localdate(),
+            image=SimpleUploadedFile(
+                "animated.webp",
+                b"webp data",
+                content_type="image/webp",
+            ),
+        )
+
+        schedule.full_clean()
+
+
 class CanonicalHostTests(TestCase):
     def test_apex_google_login_redirects_to_www_and_preserves_query(self):
         response = self.client.get(
@@ -235,29 +308,44 @@ class ProgressiveWebAppTests(TestCase):
 
         self.assertContains(
             response,
-            '<link rel="manifest" href="/static/main/manifest.webmanifest">',
+            '<link rel="manifest" href="/manifest.webmanifest">',
         )
         self.assertContains(response, 'name="apple-mobile-web-app-capable" content="yes"')
+        icon_suffix = "-dev" if settings.DEBUG else ""
         self.assertContains(
             response,
-            '<link rel="apple-touch-icon" href="/static/main/img/pwa-icon-180.png">',
+            f'<link rel="apple-touch-icon" href="/static/main/img/pwa-icon{icon_suffix}-180.png">',
         )
 
-    def test_manifest_declares_standalone_app_and_install_icons(self):
-        manifest_path = Path(settings.BASE_DIR) / "static/main/manifest.webmanifest"
-        manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
-        icon_directory = Path(settings.BASE_DIR) / "static/main/img"
+    def test_manifest_and_service_worker_select_icons_for_each_environment(self):
+        for debug, suffix in ((True, "-dev"), (False, "")):
+            with self.subTest(debug=debug), override_settings(DEBUG=debug):
+                manifest_response = self.client.get(reverse("web_manifest"))
+                manifest = json.loads(manifest_response.content)
 
-        self.assertEqual(manifest["start_url"], "/")
-        self.assertEqual(manifest["scope"], "/")
-        self.assertEqual(manifest["display"], "standalone")
-        self.assertEqual(
-            {icon["src"].rsplit("/", 1)[-1] for icon in manifest["icons"]},
-            {path.name for path in icon_directory.glob("pwa-icon*")},
-        )
-        for icon in manifest["icons"]:
-            icon_path = Path(settings.BASE_DIR) / "static" / icon["src"].removeprefix("/static/")
-            self.assertTrue(icon_path.is_file(), icon_path)
+                self.assertEqual(manifest["start_url"], "/")
+                self.assertEqual(manifest["scope"], "/")
+                self.assertEqual(manifest["display"], "standalone")
+                self.assertTrue(
+                    all(
+                        f"pwa-icon{suffix}" in icon["src"]
+                        for icon in manifest["icons"]
+                    )
+                )
+                for icon in manifest["icons"]:
+                    icon_path = (
+                        Path(settings.BASE_DIR)
+                        / "static"
+                        / icon["src"].removeprefix("/static/")
+                    )
+                    self.assertTrue(icon_path.is_file(), icon_path)
+
+                worker_response = self.client.get(reverse("service_worker"))
+                self.assertContains(
+                    worker_response,
+                    f"/static/main/img/pwa-icon{suffix}-192.png",
+                )
+                self.assertNotContains(worker_response, "__PWA_ICON_SUFFIX__")
 
     def test_news_without_an_image_uses_the_pwa_icon(self):
         news = News.objects.create(
@@ -327,3 +415,66 @@ class NewsCreateTests(TestCase):
         response = self.client.get(self.url)
 
         self.assertTrue(response.context["form"]["is_active"].value())
+
+
+class NewsPushNotificationTests(TestCase):
+    def setUp(self):
+        user = get_user_model().objects.create_user(username="news-subscriber")
+        self.subscription = WebPushSubscription.objects.create(
+            user=user,
+            endpoint="https://fcm.googleapis.com/fcm/send/news-subscriber",
+            p256dh="public-key",
+            auth="auth-secret",
+            news_notifications_enabled=True,
+        )
+
+    @patch("main.signals.send_web_push")
+    def test_published_public_news_notifies_news_subscribers(self, send_push):
+        with self.captureOnCommitCallbacks(execute=True):
+            news = News.objects.create(
+                title="公演のお知らせ",
+                date=date(2026, 11, 5),
+                caption="<p>本文</p>",
+            )
+
+        send_push.assert_called_once_with(
+            self.subscription,
+            {
+                "title": "新しいお知らせが投稿されました",
+                "body": "公演のお知らせ",
+                "url": reverse("main:news_detail", args=[news.pk]),
+            },
+        )
+
+    @patch("main.signals.send_web_push")
+    def test_draft_and_internal_news_do_not_notify_subscribers(self, send_push):
+        with self.captureOnCommitCallbacks(execute=True):
+            News.objects.create(
+                title="下書き",
+                date=date(2026, 11, 5),
+                caption="<p>本文</p>",
+                is_active=False,
+            )
+            News.objects.create(
+                title="限定公開",
+                date=date(2026, 11, 5),
+                caption="<p>本文</p>",
+                is_internal=True,
+            )
+
+        send_push.assert_not_called()
+
+    @patch("main.signals.send_web_push")
+    def test_publishing_a_draft_notifies_once(self, send_push):
+        news = News.objects.create(
+            title="公開した記事",
+            date=date(2026, 11, 5),
+            caption="<p>本文</p>",
+            is_active=False,
+        )
+
+        with self.captureOnCommitCallbacks(execute=True):
+            news.is_active = True
+            news.save()
+
+        send_push.assert_called_once()
