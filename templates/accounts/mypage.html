@@ -42,6 +42,48 @@
                 {% endif %}
             </div>
         </section>
+        <section class="mypage-card" aria-labelledby="mypage-loans-heading">
+            <div class="mypage-card__header">
+                <h3 id="mypage-loans-heading">自分への貸出・持出</h3>
+            </div>
+            {% if not has_roster_entry %}
+            <p>Roll名簿とアカウントが連携されていないため、自分への貸出記録を表示できません。</p>
+            {% elif open_usages %}
+            <ul class="mypage-loans">
+                {% for usage in open_usages %}
+                <li class="mypage-loans__item">
+                    <a href="{% url 'equipment:usage_detail' usage.pk %}">
+                        <strong>{{ usage.equipment.inventory_number }} · {{ usage.equipment.name }}</strong>
+                        <span>{{ usage.get_usage_type_display }} · 未返却 {{ usage.remaining_quantity }}{{ usage.equipment.unit }}</span>
+                        <span>返却予定：{% if usage.due_at %}{{ usage.due_at|date:"Y年n月j日 H:i" }}{% else %}未設定{% endif %}</span>
+                    </a>
+                </li>
+                {% endfor %}
+            </ul>
+            {% else %}
+            <p>未返却の貸出・持出はありません。</p>
+            {% endif %}
+        </section>
+        <section class="mypage-card" aria-labelledby="mypage-push-heading">
+            <div class="mypage-card__header">
+                <h3 id="mypage-push-heading">返却予定の通知</h3>
+            </div>
+            <p>返却予定日の7日前・3日前・前日・当日と、期限超過後は3日ごとに通知します。</p>
+            {% if webpush_public_key %}
+            <form class="mypage-push" data-push-form>
+                {% csrf_token %}
+                <button class="page-control-style-forward" type="button" data-push-toggle>
+                    通知を有効にする
+                </button>
+                <span role="status" aria-live="polite" data-push-status></span>
+                <span hidden data-push-public-key>{{ webpush_public_key }}</span>
+                <span hidden data-push-subscribe-url="{% url 'accounts:push_subscription' %}"></span>
+                <span hidden data-push-delete-url="{% url 'accounts:delete_push_subscription' %}"></span>
+            </form>
+            {% else %}
+            <p>通知機能は現在設定されていません。</p>
+            {% endif %}
+        </section>
         <section class="mypage-card">
             <div class="mypage-card__header">
                 <h3>マニュアル</h3>
@@ -142,5 +184,8 @@
 {% block extra_js %}
 {% if user.is_superuser %}
 <script src="{% static 'main/js/error_preview.js' %}"></script>
+{% endif %}
+{% if webpush_public_key %}
+<script src="{% static 'main/js/push_notifications.js' %}" defer></script>
 {% endif %}
 {% endblock %}

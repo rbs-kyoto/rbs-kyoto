@@ -336,6 +336,14 @@ class UsageRecord(models.Model):
     )
     usage_type = models.CharField("区分", max_length=12, choices=UsageType.choices)
     destination = models.CharField("貸出・持出先", max_length=200)
+    destination_entry = models.ForeignKey(
+        "roll.RosterEntry",
+        verbose_name="名簿上の貸出・持出先",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="equipment_destinations",
+    )
     responsible_person = models.ForeignKey(
         "roll.RosterEntry",
         verbose_name="責任者",
@@ -446,6 +454,37 @@ class ReturnRecord(models.Model):
 
     def __str__(self):
         return f"{self.usage.equipment} - {self.quantity}{self.usage.equipment.unit}"
+
+
+class EquipmentReminderDelivery(models.Model):
+    subscription = models.ForeignKey(
+        "accounts.WebPushSubscription",
+        on_delete=models.CASCADE,
+        related_name="equipment_reminders",
+    )
+    usage = models.ForeignKey(
+        UsageRecord,
+        on_delete=models.CASCADE,
+        related_name="reminder_deliveries",
+    )
+    due_at_snapshot = models.DateTimeField()
+    days_until_due = models.IntegerField()
+    sent_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(
+                fields=[
+                    "subscription",
+                    "usage",
+                    "due_at_snapshot",
+                    "days_until_due",
+                ],
+                name="equipment_unique_reminder_delivery",
+            ),
+        ]
+        verbose_name = "返却期限通知履歴"
+        verbose_name_plural = "返却期限通知履歴"
 
 
 class EquipmentHistory(models.Model):

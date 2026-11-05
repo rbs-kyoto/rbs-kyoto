@@ -635,6 +635,11 @@ body.dark-mode .equipment__status--unregistered {
     color: #067647;
 }
 
+.equipment__help-text {
+    color: var(--Subtlecolor);
+    font-size: .85rem;
+}
+
 .equipment__scan {
     max-width: 760px;
     margin-inline: auto;

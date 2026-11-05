@@ -9,7 +9,7 @@
         {% csrf_token %}
         {% if form.non_field_errors %}<div class="equipment__errors">{{ form.non_field_errors }}</div>{% endif %}
         {% for field in form %}
-        <div class="equipment__field {% if field.errors %}equipment__field--error{% endif %}">{{ field.label_tag }}{{ field }}{% for error in field.errors %}<span class="equipment__error">{{ error }}</span>{% endfor %}</div>
+        <div class="equipment__field {% if field.errors %}equipment__field--error{% endif %}">{{ field.label_tag }}{{ field }}{% if field.help_text %}<small class="equipment__help-text">{{ field.help_text }}</small>{% endif %}{% for error in field.errors %}<span class="equipment__error">{{ error }}</span>{% endfor %}</div>
         {% endfor %}
         <div class="equipment__actions"><button class="common-style reverse equipment__button" type="submit">貸出を登録</button><a class="common-style white equipment__button" href="{% url 'equipment:lending' %}">キャンセル</a></div>
     </form>
