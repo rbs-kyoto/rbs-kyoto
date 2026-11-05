@@ -546,7 +546,7 @@ class EquipmentWorkflowTests(TestCase):
                     )
                     self.assertContains(
                         response,
-                        "QRコードは株式会社デンソーウェーブの登録商標です。",
+                        "※「QRコード」は株式会社デンソーウェーブの登録商標です。",
                     )
 
     def test_scanner_page_displays_qr_trademark_notice(self):
@@ -554,7 +554,7 @@ class EquipmentWorkflowTests(TestCase):
 
         self.assertContains(
             response,
-            "QRコードは株式会社デンソーウェーブの登録商標です。",
+            "※「QRコード」は株式会社デンソーウェーブの登録商標です。",
         )
 
     def test_equipment_detail_groups_information_and_uses_full_width_without_photo(self):
