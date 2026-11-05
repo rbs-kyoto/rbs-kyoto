@@ -4,9 +4,9 @@
 {% block equipment_content %}
 <section class="equipment__section equipment__qr">
     <h2>{{ equipment.inventory_number }} · {{ equipment.name }}</h2>
-    <p>QRコードには備品番号のみを記録し、読み取り後の検索・画面遷移はアプリ側で行います。</p>
+    <p>QRコードで備品番号を読み取り、詳細を表示します。</p>
     <img src="{% url 'equipment:qr_png' equipment.pk %}" alt="{{ equipment.inventory_number }}のQRコード">
-    <p>QRコードは株式会社デンソーウェーブの登録商標です。</p>
+    <p>※「QRコード」は株式会社デンソーウェーブの登録商標です。</p>
     <div class="equipment__actions">
         <a class="common-style white equipment__button" href="{% url 'equipment:qr_png' equipment.pk %}">PNGをダウンロード</a>
         <a class="common-style white equipment__button" href="{% url 'equipment:qr_svg' equipment.pk %}">SVGをダウンロード</a>
