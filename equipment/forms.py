@@ -94,12 +94,22 @@ class EquipmentForm(forms.ModelForm):
 
 
 class UsageRecordForm(forms.ModelForm):
+    destination_selection = forms.ChoiceField(
+        label="貸出・持出先",
+        choices=(),
+    )
+    other_destination = forms.CharField(
+        label="その他の貸出・持出先",
+        max_length=200,
+        required=False,
+        help_text="貸出・持出先で「その他」を選択した場合に入力してください。",
+    )
+
     class Meta:
         model = UsageRecord
         fields = [
             "equipment",
             "usage_type",
-            "destination",
             "responsible_person",
             "recipient",
             "quantity",
@@ -120,10 +130,38 @@ class UsageRecordForm(forms.ModelForm):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
+        self.order_fields(
+            [
+                "equipment",
+                "usage_type",
+                "destination_selection",
+                "other_destination",
+                "responsible_person",
+                "recipient",
+                "quantity",
+                "started_at",
+                "due_at",
+                "purpose",
+                "notes",
+            ]
+        )
         self.fields["equipment"].queryset = Equipment.objects.filter(is_active=True)
         self.fields["responsible_person"].queryset = RosterEntry.objects.exclude(
             entry_type=RosterEntry.EntryType.ORGANIZATION
         ).order_by("name")
+        destination_entries = RosterEntry.objects.order_by(
+            "entry_type",
+            "grade",
+            "homeroom",
+            "student_number",
+            "name_kana",
+            "name",
+        )
+        self.fields["destination_selection"].choices = [
+            ("", "---------"),
+            *[(str(entry.pk), str(entry)) for entry in destination_entries],
+            ("other", "その他"),
+        ]
         self.fields["due_at"].required = False
 
     def clean(self):
@@ -132,7 +170,33 @@ class UsageRecordForm(forms.ModelForm):
         due_at = cleaned_data.get("due_at")
         if started_at and due_at and due_at < started_at:
             self.add_error("due_at", "返却予定日時は開始日時以降を指定してください。")
+        selection = cleaned_data.get("destination_selection")
+        if selection == "other":
+            other_destination = cleaned_data.get("other_destination", "").strip()
+            if not other_destination:
+                self.add_error(
+                    "other_destination",
+                    "その他の貸出・持出先を入力してください。",
+                )
+            cleaned_data["destination_entry"] = None
+            cleaned_data["destination"] = other_destination
+        elif selection:
+            destination_entry = RosterEntry.objects.filter(pk=selection).first()
+            if destination_entry is None:
+                self.add_error("destination_selection", "名簿から貸出・持出先を選択してください。")
+            else:
+                cleaned_data["destination_entry"] = destination_entry
+                cleaned_data["destination"] = str(destination_entry)
         return cleaned_data
+
+    def save(self, commit=True):
+        usage = super().save(commit=False)
+        usage.destination_entry = self.cleaned_data.get("destination_entry")
+        usage.destination = self.cleaned_data["destination"]
+        if commit:
+            usage.save()
+            self.save_m2m()
+        return usage
 
 
 class ReturnRecordForm(forms.ModelForm):

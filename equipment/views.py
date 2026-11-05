@@ -121,6 +121,7 @@ def equipment_list(request):
             | Q(location__name__icontains=query)
             | Q(manager__name__icontains=query)
             | Q(usage_records__destination__icontains=query)
+            | Q(usage_records__destination_entry__name__icontains=query)
         ).distinct()
     if category:
         if category.isdigit():

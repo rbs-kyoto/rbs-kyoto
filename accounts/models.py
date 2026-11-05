@@ -1,3 +1,4 @@
+from django.conf import settings
 from django.db import models
 from django.contrib.auth.models import AbstractUser
 from django.contrib.auth.hashers import check_password, make_password
@@ -25,3 +26,23 @@ class SuperuserGrantCredential(models.Model):
 
     def check_password(self, raw_password):
         return check_password(raw_password, self.password_hash)
+
+
+class WebPushSubscription(models.Model):
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name="push_subscriptions",
+    )
+    endpoint = models.URLField(max_length=2048, unique=True)
+    p256dh = models.CharField(max_length=200)
+    auth = models.CharField(max_length=100)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        verbose_name = "Push通知購読"
+        verbose_name_plural = "Push通知購読"
+
+    def __str__(self):
+        return f"{self.user} - Push通知"

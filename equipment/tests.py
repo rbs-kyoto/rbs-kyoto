@@ -1,20 +1,136 @@
-from datetime import date
+import json
+from datetime import date, datetime, timedelta
+from io import StringIO
 from unittest.mock import patch
 
 import qrcode
 from django.contrib.auth import get_user_model
-from django.test import TestCase
+from django.core.management import call_command
+from django.test import TestCase, override_settings
 from django.urls import reverse
+from django.utils import timezone
+from pywebpush import WebPushException
+from requests import Response
 
 from .models import (
     Category,
     Equipment,
     EquipmentHistory,
+    EquipmentReminderDelivery,
     ReturnRecord,
     StorageLocation,
     UsageRecord,
 )
+from accounts.models import WebPushSubscription
 from roll.models import RosterEntry
+
+
+class EquipmentDueReminderCommandTests(TestCase):
+    def setUp(self):
+        self.user = get_user_model().objects.create_user(username="push-borrower")
+        self.entry = RosterEntry.objects.create(
+            name="通知先",
+            entry_type=RosterEntry.EntryType.STUDENT,
+            account=self.user,
+        )
+        self.equipment = Equipment.objects.create(
+            category=Category.objects.get(code="A"),
+            inventory_number="A-PUSH-1",
+            name="通知用マイク",
+            quantity=20,
+            unit="本",
+        )
+        self.subscription = WebPushSubscription.objects.create(
+            user=self.user,
+            endpoint="https://fcm.googleapis.com/fcm/send/push-borrower",
+            p256dh="public-key",
+            auth="auth-secret",
+        )
+        self.today = date(2026, 11, 5)
+
+    def create_usage_due_in(self, days):
+        due_date = self.today + timedelta(days=days)
+        due_at = timezone.make_aware(datetime.combine(due_date, datetime.min.time()))
+        return UsageRecord.objects.create(
+            equipment=self.equipment,
+            usage_type=UsageRecord.UsageType.LENDING,
+            destination=str(self.entry),
+            destination_entry=self.entry,
+            quantity=1,
+            due_at=due_at,
+        )
+
+    @override_settings(
+        WEBPUSH_VAPID_PUBLIC_KEY="public",
+        WEBPUSH_VAPID_PRIVATE_KEY="private",
+        WEBPUSH_VAPID_SUBJECT="mailto:admin@example.com",
+    )
+    @patch("equipment.management.commands.send_equipment_due_reminders.webpush")
+    def test_sends_each_requested_reminder_once(self, send_push):
+        for days in (7, 3, 1, 0, -3, -6):
+            self.create_usage_due_in(days)
+
+        with patch(
+            "equipment.management.commands.send_equipment_due_reminders.timezone.localdate",
+            return_value=self.today,
+        ):
+            output = StringIO()
+            call_command("send_equipment_due_reminders", stdout=output)
+            self.assertIn("Sent 6 equipment reminder(s).", output.getvalue())
+
+            call_command("send_equipment_due_reminders", stdout=StringIO())
+
+        self.assertEqual(send_push.call_count, 6)
+        self.assertEqual(EquipmentReminderDelivery.objects.count(), 6)
+        bodies = [
+            json.loads(call.kwargs["data"])["body"]
+            for call in send_push.call_args_list
+        ]
+        self.assertIn("「通知用マイク」の返却期限まであと7日です。 未返却：1本", bodies)
+        self.assertIn("「通知用マイク」の返却期限まであと3日です。 未返却：1本", bodies)
+        self.assertIn("「通知用マイク」の返却期限は本日です！ 未返却：1本", bodies)
+        self.assertIn("「通知用マイク」の返却期限を過ぎています！ 未返却：1本", bodies)
+
+    @override_settings(
+        WEBPUSH_VAPID_PUBLIC_KEY="public",
+        WEBPUSH_VAPID_PRIVATE_KEY="private",
+        WEBPUSH_VAPID_SUBJECT="mailto:admin@example.com",
+    )
+    @patch("equipment.management.commands.send_equipment_due_reminders.webpush")
+    def test_does_not_send_for_returned_usage_or_unscheduled_dates(self, send_push):
+        returned_usage = self.create_usage_due_in(7)
+        ReturnRecord.objects.create(usage=returned_usage, quantity=1)
+        self.create_usage_due_in(5)
+
+        with patch(
+            "equipment.management.commands.send_equipment_due_reminders.timezone.localdate",
+            return_value=self.today,
+        ):
+            call_command("send_equipment_due_reminders", stdout=StringIO())
+
+        send_push.assert_not_called()
+        self.assertFalse(EquipmentReminderDelivery.objects.exists())
+
+    @override_settings(
+        WEBPUSH_VAPID_PUBLIC_KEY="public",
+        WEBPUSH_VAPID_PRIVATE_KEY="private",
+        WEBPUSH_VAPID_SUBJECT="mailto:admin@example.com",
+    )
+    @patch("equipment.management.commands.send_equipment_due_reminders.webpush")
+    def test_removes_expired_push_subscriptions(self, send_push):
+        self.create_usage_due_in(7)
+        response = Response()
+        response.status_code = 410
+        send_push.side_effect = WebPushException("expired", response=response)
+
+        with patch(
+            "equipment.management.commands.send_equipment_due_reminders.timezone.localdate",
+            return_value=self.today,
+        ):
+            call_command("send_equipment_due_reminders", stdout=StringIO())
+
+        self.assertFalse(WebPushSubscription.objects.filter(pk=self.subscription.pk).exists())
+        self.assertFalse(EquipmentReminderDelivery.objects.exists())
 
 
 class EquipmentWorkflowTests(TestCase):
@@ -253,7 +369,8 @@ class EquipmentWorkflowTests(TestCase):
             {
                 "equipment": self.equipment.pk,
                 "usage_type": UsageRecord.UsageType.LENDING,
-                "destination": "放送室",
+                "destination_selection": "other",
+                "other_destination": "放送室",
                 "responsible_person": str(self.responsible_person.pk),
                 "recipient": "受取者",
                 "quantity": "6",
@@ -267,6 +384,86 @@ class EquipmentWorkflowTests(TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertFalse(UsageRecord.objects.exists())
         self.assertContains(response, "貸出可能数量を超えています")
+
+    def test_lending_destination_can_be_selected_from_roll(self):
+        response = self.client.post(
+            reverse("equipment:lending_register"),
+            {
+                "equipment": self.equipment.pk,
+                "usage_type": UsageRecord.UsageType.LENDING,
+                "destination_selection": str(self.responsible_person.pk),
+                "other_destination": "",
+                "responsible_person": str(self.responsible_person.pk),
+                "recipient": "受取者",
+                "quantity": "1",
+                "started_at": "2026-10-01T10:00",
+                "due_at": "",
+                "purpose": "収録",
+                "notes": "",
+            },
+        )
+
+        self.assertEqual(response.status_code, 302)
+        usage = UsageRecord.objects.get()
+        self.assertEqual(usage.destination_entry, self.responsible_person)
+        self.assertEqual(usage.destination, str(self.responsible_person))
+        self.assertRedirects(
+            response,
+            reverse("equipment:usage_detail", args=[usage.pk]),
+        )
+
+    def test_lending_destination_other_option_accepts_free_text(self):
+        response = self.client.post(
+            reverse("equipment:lending_register"),
+            {
+                "equipment": self.equipment.pk,
+                "usage_type": UsageRecord.UsageType.CARRY_OUT,
+                "destination_selection": "other",
+                "other_destination": "校外の収録会場",
+                "responsible_person": str(self.responsible_person.pk),
+                "recipient": "受取者",
+                "quantity": "1",
+                "started_at": "2026-10-01T10:00",
+                "due_at": "",
+                "purpose": "収録",
+                "notes": "",
+            },
+        )
+
+        self.assertEqual(response.status_code, 302)
+        usage = UsageRecord.objects.get()
+        self.assertIsNone(usage.destination_entry)
+        self.assertEqual(usage.destination, "校外の収録会場")
+
+    def test_lending_destination_other_option_requires_free_text(self):
+        response = self.client.post(
+            reverse("equipment:lending_register"),
+            {
+                "equipment": self.equipment.pk,
+                "usage_type": UsageRecord.UsageType.CARRY_OUT,
+                "destination_selection": "other",
+                "other_destination": "",
+                "responsible_person": str(self.responsible_person.pk),
+                "recipient": "",
+                "quantity": "1",
+                "started_at": "2026-10-01T10:00",
+                "due_at": "",
+                "purpose": "",
+                "notes": "",
+            },
+        )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertFalse(UsageRecord.objects.exists())
+        self.assertContains(response, "その他の貸出・持出先を入力してください")
+
+    def test_lending_form_lists_roster_destinations_and_other(self):
+        response = self.client.get(reverse("equipment:lending_register"))
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, f'value="{self.responsible_person.pk}"')
+        self.assertContains(response, f">{self.responsible_person}</option>")
+        self.assertContains(response, 'value="other">その他</option>')
 
     def test_partial_returns_update_available_quantity_without_overwriting_history(self):
         usage = UsageRecord.objects.create(

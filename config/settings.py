@@ -157,6 +157,10 @@ SOCIALACCOUNT_PROVIDERS = {
     },
 }
 
+WEBPUSH_VAPID_PUBLIC_KEY = os.getenv("WEBPUSH_VAPID_PUBLIC_KEY", "").strip()
+WEBPUSH_VAPID_PRIVATE_KEY = os.getenv("WEBPUSH_VAPID_PRIVATE_KEY", "").strip()
+WEBPUSH_VAPID_SUBJECT = os.getenv("WEBPUSH_VAPID_SUBJECT", "").strip()
+
 # Internationalization
 # https://docs.djangoproject.com/en/6.1/topics/i18n/
 
