@@ -11,7 +11,8 @@ from django.contrib.auth import get_user_model
 from django.core.management.base import BaseCommand
 from django.utils import timezone
 
-from schedule.models import Event
+from roll.models import RosterEntry
+from schedule.models import Assignment, Event
 
 DEMO_TITLES = ("【デモ】定例会", "【デモ】撮影", "【デモ】合宿")
 
@@ -20,14 +21,15 @@ class Command(BaseCommand):
     help = "プレビュー用の管理者ユーザーとデモ予定を作成する"
 
     def handle(self, *args, **options):
-        self._create_admin()
+        user = self._create_admin()
         self._create_events()
+        self._create_assignments(user)
 
     def _create_admin(self):
         password = os.getenv("PREVIEW_ADMIN_PASSWORD", "")
         if not password:
             self.stdout.write("PREVIEW_ADMIN_PASSWORD が未設定のため、ユーザーは作りません。")
-            return
+            return None
 
         username = os.getenv("PREVIEW_ADMIN_USERNAME", "preview")
         user, created = get_user_model().objects.get_or_create(
@@ -39,6 +41,7 @@ class Command(BaseCommand):
         user.is_staff = user.is_superuser = True
         user.save()
         self.stdout.write(f"管理者ユーザー '{username}' を{'作成' if created else '更新'}しました。")
+        return user
 
     def _create_events(self):
         if Event.objects.filter(title__in=DEMO_TITLES).exists():
@@ -71,3 +74,26 @@ class Command(BaseCommand):
             all_day=True,
         )
         self.stdout.write("デモ予定を作成しました。")
+
+    def _create_assignments(self, user):
+        """割当部員と出欠を試せるよう、名簿の部員を割り当てる(管理者本人も部員にする)。"""
+        event = Event.objects.filter(title=DEMO_TITLES[0]).first()
+        if event is None or event.assignments.exists():
+            return
+
+        event.ask_attendance = True
+        event.save(update_fields=["ask_attendance"])
+
+        members = [
+            ("【デモ】部員A", "司会", None),
+            ("【デモ】部員B", "音声", None),
+        ]
+        if user is not None:
+            members.insert(0, ("【デモ】プレビュー部員", "書記", user))
+
+        for name, role, account in members:
+            entry, _ = RosterEntry.objects.get_or_create(
+                name=name, defaults={"is_member": True, "account": account}
+            )
+            Assignment.objects.get_or_create(event=event, member=entry, defaults={"role": role})
+        self.stdout.write("デモの割当部員を作成しました(出欠はON)。")
