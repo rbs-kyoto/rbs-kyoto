@@ -305,3 +305,18 @@ class QRDesignForm(forms.ModelForm):
         if cleaned_data.get("border", 0) not in range(2, 11):
             self.add_error("border", "余白は2〜10の範囲で指定してください。")
         return cleaned_data
+
+
+class EquipmentImportForm(forms.Form):
+    csv_file = forms.FileField(
+        label="CSVファイル",
+        help_text="UTF-8またはShift-JIS形式、10MB以下。",
+    )
+
+    def clean_csv_file(self):
+        uploaded_file = self.cleaned_data["csv_file"]
+        if not uploaded_file.name.lower().endswith(".csv"):
+            raise forms.ValidationError("拡張子が.csvのファイルを選択してください。")
+        if uploaded_file.size > 10 * 1024 * 1024:
+            raise forms.ValidationError("CSVファイルは10MB以下にしてください。")
+        return uploaded_file

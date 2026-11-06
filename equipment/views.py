@@ -13,10 +13,13 @@ from django.urls import reverse
 from django.utils import timezone
 from qrcode.image.svg import SvgPathImage
 
+from accounts.decorators import staff_required
 from roll.models import RosterEntry
 
+from .csvio import EquipmentImportError, import_equipment_csv, write_export
 from .forms import (
     EquipmentForm,
+    EquipmentImportForm,
     QRDesignForm,
     ReturnRecordForm,
     StorageLocationForm,
@@ -163,41 +166,7 @@ def equipment_list(request):
     if request.GET.get("export") == "csv":
         response = HttpResponse(content_type="text/csv; charset=utf-8")
         response["Content-Disposition"] = 'attachment; filename="equipment.csv"'
-        response.write("\ufeff")
-        writer = csv.writer(response)
-        writer.writerow(
-            [
-                "備品番号",
-                "備品名",
-                "分類",
-                "メーカー",
-                "型番",
-                "保有数量",
-                "単位",
-                "利用状況",
-                "保管場所",
-                "管理担当者",
-                "登録日時",
-                "最終更新日時",
-            ]
-        )
-        for item in items:
-            writer.writerow(
-                [
-                    item.inventory_number,
-                    item.name,
-                    str(item.category),
-                    item.manufacturer or "",
-                    item.model_number,
-                    item.quantity,
-                    item.unit,
-                    item.usage_status,
-                    str(item.location or ""),
-                    item.manager,
-                    timezone.localtime(item.created_at).strftime("%Y-%m-%d %H:%M"),
-                    timezone.localtime(item.updated_at).strftime("%Y-%m-%d %H:%M"),
-                ]
-            )
+        write_export(response, items)
         return response
 
     page_size = request.GET.get("page_size", "25")
@@ -724,6 +693,30 @@ def location_edit(request, pk):
         request,
         "equipment/location_form.html",
         {"form": form, "location": location, "is_new": False},
+    )
+
+
+@login_required
+@staff_required
+def equipment_import(request):
+    result = None
+    error = None
+    if request.method == "POST":
+        form = EquipmentImportForm(request.POST, request.FILES)
+        if form.is_valid():
+            try:
+                count = import_equipment_csv(form.cleaned_data["csv_file"], request.user)
+            except (EquipmentImportError, csv.Error) as import_error:
+                error = str(import_error)
+            else:
+                result = f"{count}件の備品を登録しました。"
+                form = EquipmentImportForm()
+    else:
+        form = EquipmentImportForm()
+    return render(
+        request,
+        "equipment/import_csv.html",
+        {"form": form, "error": error, "result": result},
     )
 
 
