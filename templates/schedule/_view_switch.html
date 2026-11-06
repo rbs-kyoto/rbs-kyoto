@@ -1,0 +1,4 @@
+<nav class="schedule-switch" aria-label="表示の切り替え">
+    <a class="schedule-switch__link{% if active == 'month' %} is-active{% endif %}" href="{% url 'schedule:calendar' %}?year={{ month_year }}&month={{ month_month }}"{% if active == 'month' %} aria-current="page"{% endif %}>月</a>
+    <a class="schedule-switch__link{% if active == 'week' %} is-active{% endif %}" href="{% url 'schedule:week' %}?date={{ week_date|date:'Y-m-d' }}"{% if active == 'week' %} aria-current="page"{% endif %}>週</a>
+</nav>

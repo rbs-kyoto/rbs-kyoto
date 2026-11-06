@@ -16,7 +16,7 @@ from .push import PushConfigurationError, send_web_push
 from equipment.models import Category, Equipment, Loan, ReturnRecord
 from equipment.testing import make_usage
 from roll.models import RosterEntry
-from .models import WebPushSubscription
+from .models import NotificationHistory, WebPushSubscription
 from .admin import (
     SuperuserGrantCredentialAdmin,
     SuperuserGrantCredentialAdminForm,
@@ -425,3 +425,69 @@ class WebPushConfigurationTests(TestCase):
             send_web_push(self.subscription, {"title": "test"})
 
         webpush_mock.assert_not_called()
+
+
+class MypageNotificationHistoryTests(TestCase):
+    def setUp(self):
+        user_model = get_user_model()
+        self.user = user_model.objects.create_user(username="history-user")
+        self.other_user = user_model.objects.create_user(username="history-other")
+        self.client.force_login(self.user)
+
+    def test_empty_history_shows_placeholder(self):
+        response = self.client.get(reverse("accounts:mypage"))
+
+        self.assertContains(response, "送信済みの通知はまだありません。")
+
+    def test_shows_only_own_history_newest_first(self):
+        NotificationHistory.objects.create(
+            user=self.user,
+            kind=NotificationHistory.Kind.NEWS,
+            title="古い通知",
+            body="古い本文",
+            url="/news/1/",
+        )
+        NotificationHistory.objects.create(
+            user=self.user,
+            kind=NotificationHistory.Kind.EQUIPMENT,
+            title="新しい通知",
+            body="新しい本文",
+            url="/equipment/usages/1/",
+        )
+        NotificationHistory.objects.create(
+            user=self.other_user,
+            kind=NotificationHistory.Kind.NEWS,
+            title="他人の通知",
+        )
+
+        response = self.client.get(reverse("accounts:mypage"))
+
+        content = response.content.decode()
+        self.assertContains(response, 'href="/news/1/"')
+        self.assertNotContains(response, "他人の通知")
+        self.assertLess(content.index("新しい通知"), content.index("古い通知"))
+
+    def test_shows_at_most_twenty_entries(self):
+        for number in range(25):
+            NotificationHistory.objects.create(
+                user=self.user,
+                kind=NotificationHistory.Kind.NEWS,
+                title=f"通知{number:02d}",
+            )
+
+        response = self.client.get(reverse("accounts:mypage"))
+
+        self.assertEqual(len(response.context["notification_history"]), 20)
+        self.assertContains(response, "通知24")
+        self.assertNotContains(response, "通知04")
+
+    def test_escapes_notification_text(self):
+        NotificationHistory.objects.create(
+            user=self.user,
+            kind=NotificationHistory.Kind.NEWS,
+            title="<script>alert(1)</script>",
+        )
+
+        response = self.client.get(reverse("accounts:mypage"))
+
+        self.assertNotContains(response, "<script>alert(1)</script>")
