@@ -12,7 +12,7 @@ from .models import (
     UsageRecord,
 )
 from .numbering import generate_inventory_number
-from roll.models import RosterEntry
+from roll.models import Position, RosterEntry
 
 
 class EquipmentForm(forms.ModelForm):
@@ -56,9 +56,7 @@ class EquipmentForm(forms.ModelForm):
         super().__init__(*args, **kwargs)
         if not self.instance.pk:
             self.fields["category"].queryset = Category.objects.all()
-        self.fields["manager"].queryset = RosterEntry.objects.exclude(
-            entry_type=RosterEntry.EntryType.ORGANIZATION
-        ).order_by("name")
+        self.fields["manager"].queryset = Position.objects.filter(is_active=True)
         self.fields["location"].queryset = StorageLocation.objects.filter(
             is_active=True
         )

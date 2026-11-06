@@ -14,7 +14,7 @@ from django.utils import timezone
 from qrcode.image.svg import SvgPathImage
 
 from accounts.decorators import staff_required
-from roll.models import RosterEntry
+from roll.models import Position, RosterEntry
 
 from .csvio import EquipmentImportError, import_equipment_csv, write_export
 from .forms import (
@@ -205,9 +205,7 @@ def equipment_list(request):
             "categories": Category.objects.all(),
             "conditions": Equipment.Condition.choices,
             "locations": StorageLocation.objects.filter(is_active=True),
-            "managers": RosterEntry.objects.exclude(
-                entry_type=RosterEntry.EntryType.ORGANIZATION
-            ).order_by("name"),
+            "managers": Position.objects.filter(is_active=True),
         },
     )
 

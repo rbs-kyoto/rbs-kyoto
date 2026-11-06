@@ -9,7 +9,7 @@ from django.core.exceptions import ValidationError
 from django.db import IntegrityError, transaction
 from django.utils import timezone
 
-from roll.models import RosterEntry
+from roll.models import Position
 
 from .models import Category, Equipment, EquipmentHistory, Manufacturer, StorageLocation
 
@@ -26,7 +26,7 @@ EXPORT_HEADERS = [
     "レシート番号",
     "保有数量",
     "単位",
-    "管理担当者",
+    "管理担当役職",
     "保管場所",
     "購入日",
     "購入価格",
@@ -53,6 +53,7 @@ HEADER_ALIASES = {
     "保有数量": "quantity",
     "数量": "quantity",
     "単位": "unit",
+    "管理担当役職": "manager",
     "管理担当者": "manager",
     "保管場所": "location",
     "購入日": "purchased_on",
@@ -82,7 +83,7 @@ def export_row(item):
         item.receipt_number,
         item.quantity,
         item.unit,
-        str(item.manager) if item.manager else "",
+        item.manager.name if item.manager else "",
         str(item.location) if item.location else "",
         item.purchased_on.isoformat() if item.purchased_on else "",
         int(item.purchase_price) if item.purchase_price is not None else "",
@@ -169,15 +170,10 @@ class _Lookups:
             self.locations[_norm(str(location)).casefold()] = location
             if name_counts[location.name] == 1:
                 self.locations.setdefault(_norm(location.name).casefold(), location)
-        self.managers = {}
-        by_name = {}
-        people = RosterEntry.objects.exclude(
-            entry_type=RosterEntry.EntryType.ORGANIZATION
-        )
-        for entry in people:
-            self.managers[_norm(str(entry)).casefold()] = entry
-            by_name.setdefault(_norm(entry.name).casefold(), []).append(entry)
-        self.manager_names = by_name
+        self.positions = {
+            _norm(position.name).casefold(): position
+            for position in Position.objects.filter(is_active=True)
+        }
         self.currencies = {}
         for value, label in Equipment.Currency.choices:
             self.currencies[value.casefold()] = value
@@ -188,17 +184,10 @@ class _Lookups:
             self.conditions[label] = value
 
     def manager(self, text):
-        key = _norm(text).casefold()
-        if key in self.managers:
-            return self.managers[key]
-        matches = self.manager_names.get(key, [])
-        if len(matches) == 1:
-            return matches[0]
-        if len(matches) > 1:
-            raise ValueError(
-                f"管理担当者「{text}」は同名が複数います。「氏名（学年 組 番号）」の形式で指定してください"
-            )
-        raise ValueError(f"管理担当者「{text}」が名簿に見つかりません")
+        position = self.positions.get(_norm(text).casefold())
+        if position is None:
+            raise ValueError(f"管理担当役職「{text}」が役職に見つかりません")
+        return position
 
 
 def _parse_row(raw_row, lookups):
