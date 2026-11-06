@@ -1,0 +1,31 @@
+{% extends "main/base.html" %}
+{% load static %}
+
+{% block title %}{% if place %}場所を編集{% else %}場所を追加{% endif %}｜rbs京都{% endblock %}
+{% block extra_css %}<link rel="stylesheet" href="{% static 'main/css/places.css' %}">{% endblock %}
+
+{% block content %}
+<section class="places-section">
+    <h2 class="heading">{% if place %}場所を編集{% else %}場所を追加{% endif %}</h2>
+
+    <form class="places-form" method="post" novalidate>
+        {% csrf_token %}
+        {{ form.non_field_errors }}
+        {% for field in form %}
+        <div class="places-form__field{% if field.field.widget.input_type == 'checkbox' %} places-form__field--checkbox{% endif %}">
+            {% if field.field.widget.input_type == 'checkbox' %}
+            <label for="{{ field.id_for_label }}">{{ field }} {{ field.label }}</label>
+            {% else %}
+            <label for="{{ field.id_for_label }}">{{ field.label }}</label>
+            {{ field }}
+            {% endif %}
+            {% for error in field.errors %}<p class="places-form__error">{{ error }}</p>{% endfor %}
+        </div>
+        {% endfor %}
+        <div class="places-form__footer">
+            <a class="common-style" href="{% url 'places:list' %}">キャンセル</a>
+            <button class="common-style" type="submit">保存</button>
+        </div>
+    </form>
+</section>
+{% endblock %}

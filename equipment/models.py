@@ -38,38 +38,6 @@ class Category(models.Model):
         return f"{self.code}：{self.name}"
 
 
-class StorageLocation(models.Model):
-    name = models.CharField("保管場所名", max_length=100)
-    code = models.CharField("場所コード", max_length=30, blank=True)
-    parent = models.ForeignKey(
-        "self",
-        verbose_name="上位保管場所",
-        on_delete=models.PROTECT,
-        null=True,
-        blank=True,
-        related_name="children",
-    )
-    description = models.TextField("詳細", blank=True)
-    notes = models.TextField("備考", blank=True)
-    is_active = models.BooleanField("使用中", default=True)
-
-    class Meta:
-        ordering = ["name"]
-        verbose_name = "保管場所"
-        verbose_name_plural = "保管場所"
-        constraints = [
-            models.UniqueConstraint(
-                fields=["parent", "name"],
-                name="equipment_unique_sibling_location",
-            )
-        ]
-
-    def __str__(self):
-        if self.parent_id:
-            return f"{self.parent} / {self.name}"
-        return self.name
-
-
 class Manufacturer(models.Model):
     name = models.CharField("メーカー名", max_length=100, unique=True)
 
@@ -211,7 +179,7 @@ class Equipment(models.Model):
         related_name="managed_equipment",
     )
     location = models.ForeignKey(
-        StorageLocation,
+        "places.Place",
         verbose_name="保管場所",
         on_delete=models.SET_NULL,
         null=True,

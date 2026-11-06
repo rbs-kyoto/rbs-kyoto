@@ -1,0 +1,631 @@
+.schedule-section {
+    width: min(100%, 1100px);
+    margin: 0 auto;
+    padding: 1rem;
+}
+
+.schedule-nav {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    padding: .5rem 0 1rem;
+}
+
+.schedule-nav__title {
+    margin: 0;
+    font-size: 1.3rem;
+}
+
+.schedule-nav__link {
+    color: var(--Subtlecolor);
+    font-size: .9rem;
+    transition: color .3s;
+}
+
+.schedule-nav__link:hover {
+    color: var(--Textcolor);
+}
+
+.schedule-grid {
+    display: grid;
+    grid-template-columns: repeat(7, minmax(0, 1fr));
+    border-top: var(--Bordercolor) solid .1rem;
+    border-left: var(--Bordercolor) solid .1rem;
+}
+
+.schedule-grid__weekday {
+    padding: .4rem;
+    text-align: center;
+    font-size: .85rem;
+    color: var(--Subtlecolor);
+    border-right: var(--Bordercolor) solid .1rem;
+    border-bottom: var(--Bordercolor) solid .1rem;
+}
+
+.schedule-cell {
+    min-height: 6.5rem;
+    padding: .3rem;
+    border-right: var(--Bordercolor) solid .1rem;
+    border-bottom: var(--Bordercolor) solid .1rem;
+    min-width: 0;
+}
+
+.schedule-cell.is-other-month {
+    opacity: .45;
+}
+
+.schedule-cell.is-today {
+    background-color: color-mix(in srgb, var(--Textcolor) 10%, transparent);
+}
+
+.schedule-cell.is-today .schedule-cell__day {
+    font-weight: 700;
+    text-decoration: underline;
+}
+
+.schedule-cell__head {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.schedule-cell__day {
+    font-size: .85rem;
+    text-decoration: none;
+}
+
+a.schedule-cell__day:hover {
+    text-decoration: underline;
+}
+
+.schedule-cell__day.is-sat,
+.schedule-grid__weekday.is-sat {
+    color: #3b82f6;
+}
+
+.schedule-cell__day.is-sun,
+.schedule-grid__weekday.is-sun {
+    color: #ef4444;
+}
+
+.schedule-cell__add {
+    color: var(--Subtlecolor);
+    font-size: 1rem;
+    line-height: 1;
+    padding: 0 .3rem;
+    opacity: 0;
+    transition: opacity .2s;
+}
+
+.schedule-cell:hover .schedule-cell__add,
+.schedule-cell__add:focus {
+    opacity: 1;
+}
+
+.schedule-cell__events {
+    list-style: none;
+    margin: .2rem 0 0;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    gap: .15rem;
+}
+
+.schedule-event {
+    display: flex;
+    gap: .3rem;
+    align-items: baseline;
+    padding: .1rem .25rem;
+    border-radius: .2rem;
+    font-size: .75rem;
+    line-height: 1.3;
+    overflow: hidden;
+    transition: background-color .2s;
+}
+
+.schedule-event.is-block {
+    background-color: var(--Textcolor);
+    color: var(--Backgroundcolor);
+}
+
+.schedule-event:not(.is-block):hover {
+    background-color: var(--Hoverbackground);
+    color: var(--Hovertextcolor);
+}
+
+.schedule-event__time {
+    flex: 0 0 auto;
+    color: var(--Subtlecolor);
+}
+
+.schedule-event__title {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+/* 月/週の切り替え */
+.schedule-switch {
+    display: inline-flex;
+    border: var(--Bordercolor) solid .1rem;
+    border-radius: .3rem;
+    overflow: hidden;
+    margin: .5rem 0 0;
+}
+
+.schedule-switch__link {
+    padding: .3rem 1.1rem;
+    font-size: .9rem;
+    color: var(--Subtlecolor);
+    transition: background-color .2s, color .2s;
+}
+
+.schedule-switch__link.is-active {
+    background-color: var(--Textcolor);
+    color: var(--Backgroundcolor);
+}
+
+.schedule-nav__today {
+    margin: 0 0 1rem;
+    text-align: center;
+}
+
+/* 週表示 */
+.schedule-week {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    border-top: var(--Bordercolor) solid .1rem;
+}
+
+.schedule-week__day {
+    display: grid;
+    grid-template-columns: 6.5rem 1fr;
+    gap: .5rem 1rem;
+    padding: .8rem .5rem;
+    border-bottom: var(--Bordercolor) solid .1rem;
+}
+
+.schedule-week__day.is-today {
+    background-color: color-mix(in srgb, var(--Textcolor) 10%, transparent);
+}
+
+.schedule-week__head {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+}
+
+.schedule-week__date {
+    font-size: 1.05rem;
+    font-weight: 600;
+}
+
+.schedule-week__date small {
+    font-size: .8rem;
+    font-weight: 400;
+}
+
+.schedule-week__date.is-sat {
+    color: #3b82f6;
+}
+
+.schedule-week__date.is-sun {
+    color: #ef4444;
+}
+
+.schedule-week__add {
+    color: var(--Subtlecolor);
+    padding: 0 .4rem;
+}
+
+.schedule-week__events {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    gap: .35rem;
+    min-width: 0;
+}
+
+.schedule-week__event {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    gap: .1rem .7rem;
+    padding: .25rem .4rem;
+    border-radius: .2rem;
+    transition: background-color .2s;
+}
+
+.schedule-week__event:hover {
+    background-color: var(--Hoverbackground);
+    color: var(--Hovertextcolor);
+}
+
+.schedule-week__time {
+    flex: 0 0 3rem;
+    color: var(--Subtlecolor);
+    font-size: .85rem;
+}
+
+.schedule-week__title {
+    flex: 1 1 8rem;
+    min-width: 0;
+    overflow-wrap: anywhere;
+}
+
+.schedule-week__place {
+    color: var(--Subtlecolor);
+    font-size: .8rem;
+}
+
+.schedule-week__empty {
+    color: var(--Subtlecolor);
+    font-size: .85rem;
+    padding: .25rem .4rem;
+}
+
+/* 詳細 */
+.schedule-detail__list {
+    display: grid;
+    grid-template-columns: max-content 1fr;
+    gap: .8rem 1.5rem;
+    padding: 1rem;
+}
+
+.schedule-detail__list dt {
+    color: var(--Subtlecolor);
+}
+
+.schedule-detail__list dd {
+    margin: 0;
+}
+
+.schedule-detail__actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 1rem;
+    align-items: center;
+}
+
+.schedule-form__warning {
+    margin: 0;
+    padding: .6rem .9rem;
+    border: #ef4444 solid .1rem;
+    border-radius: .3rem;
+    color: #ef4444;
+    font-size: .85rem;
+}
+
+.schedule-form__warning[hidden] {
+    display: none;
+}
+
+.schedule-form__note a {
+    text-decoration: underline;
+}
+
+.schedule-place-warning {
+    margin: 0 1rem 1rem;
+}
+
+.schedule-place-warning a {
+    text-decoration: underline;
+}
+
+/* 割当部員・出欠 */
+.schedule-people {
+    padding: 1rem;
+    border-top: var(--Bordercolor) solid .1rem;
+}
+
+.schedule-people__heading {
+    margin: 0 0 .6rem;
+    font-size: 1.05rem;
+}
+
+.schedule-people__heading small {
+    font-weight: 400;
+    color: var(--Subtlecolor);
+}
+
+.schedule-people__summary {
+    display: flex;
+    flex-wrap: wrap;
+    gap: .3rem 1rem;
+    margin: 0 0 .8rem;
+    font-size: .85rem;
+    color: var(--Subtlecolor);
+}
+
+.schedule-people__list {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+}
+
+.schedule-people__item {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    gap: .2rem .8rem;
+    padding: .55rem 0;
+    border-bottom: var(--Bordercolor) solid .1rem;
+}
+
+.schedule-people__name {
+    font-weight: 600;
+}
+
+.schedule-people__role,
+.schedule-people__comment,
+.schedule-people__empty {
+    color: var(--Subtlecolor);
+    font-size: .85rem;
+}
+
+.schedule-status {
+    margin-left: auto;
+    padding: .05rem .6rem;
+    border-radius: 999px;
+    font-size: .8rem;
+    border: .1rem solid currentColor;
+}
+
+.schedule-status--attend { color: #16a34a; }
+.schedule-status--absent { color: #ef4444; }
+.schedule-status--undecided { color: #d97706; }
+.schedule-status--none { color: var(--Subtlecolor); }
+.schedule-status--ok { color: #16a34a; }
+.schedule-status--lent { color: #2563eb; }
+.schedule-status--returned { color: var(--Subtlecolor); }
+.schedule-status--conflict,
+.schedule-status--short,
+.schedule-status--unavailable { color: #ef4444; }
+
+.schedule-equipment {
+    border-top: 0;
+    padding-top: 0;
+}
+
+.schedule-equipment__item a {
+    text-decoration: underline;
+}
+
+.schedule-equipment__reason {
+    flex-basis: 100%;
+    color: #ef4444;
+    font-size: .8rem;
+}
+
+.schedule-equipment__lend {
+    text-decoration: none !important;
+    padding: .1rem .8rem;
+    border: var(--Bordercolor) solid .1rem;
+    border-radius: .3rem;
+    font-size: .85rem;
+}
+
+.schedule-equipment__problems {
+    margin-top: .8rem;
+    padding: .7rem 1rem;
+    border: #ef4444 solid .1rem;
+    border-radius: .3rem;
+    font-size: .85rem;
+}
+
+.schedule-equipment__problems p {
+    margin: 0 0 .3rem;
+    font-weight: 600;
+    color: #ef4444;
+}
+
+.schedule-equipment__problems ul {
+    margin: 0;
+    padding-left: 1.2rem;
+}
+
+.schedule-respond {
+    display: flex;
+    flex-direction: column;
+    gap: .8rem;
+    margin-top: 1.2rem;
+    padding: 1rem;
+    border: var(--Bordercolor) solid .1rem;
+    border-radius: .3rem;
+}
+
+.schedule-respond__question {
+    margin: 0;
+    font-weight: 600;
+}
+
+.schedule-respond__choices {
+    display: flex;
+    gap: .6rem;
+}
+
+.schedule-respond__choice {
+    flex: 1;
+    text-align: center;
+    padding: .6rem 0;
+    border: var(--Bordercolor) solid .1rem;
+    border-radius: .3rem;
+    cursor: pointer;
+}
+
+.schedule-respond__choice input {
+    position: absolute;
+    opacity: 0;
+    pointer-events: none;
+}
+
+.schedule-respond__choice:has(input:checked) {
+    background-color: var(--Textcolor);
+    color: var(--Backgroundcolor);
+    border-color: var(--Textcolor);
+}
+
+.schedule-respond__choice:has(input:focus-visible) {
+    outline: .15rem solid var(--Textcolor);
+    outline-offset: .1rem;
+}
+
+.schedule-respond__comment {
+    padding: .6rem;
+    border: var(--Bordercolor) solid .1rem;
+    border-radius: .2rem;
+    background-color: transparent;
+    color: var(--Textcolor);
+    font: inherit;
+}
+
+.schedule-assign {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: .8rem;
+    margin: 0;
+    padding: 1rem;
+    border: var(--Bordercolor) solid .1rem;
+    border-radius: .3rem;
+}
+
+.schedule-assign legend {
+    padding: 0 .4rem;
+}
+
+.schedule-assign__rows {
+    display: flex;
+    flex-direction: column;
+    gap: .6rem;
+    width: 100%;
+}
+
+.schedule-assign__row {
+    display: grid;
+    grid-template-columns: 1fr 1fr auto;
+    gap: .5rem;
+    align-items: center;
+}
+
+.schedule-assign__row select,
+.schedule-assign__row input[type="text"] {
+    min-width: 0;
+    padding: .55rem;
+    border: var(--Bordercolor) solid .1rem;
+    border-radius: .2rem;
+    background-color: transparent;
+    color: var(--Textcolor);
+    font: inherit;
+}
+
+.schedule-assign__row--equipment {
+    grid-template-columns: 1fr 6rem auto;
+}
+
+.schedule-assign__row--equipment input[type="number"] {
+    min-width: 0;
+    padding: .55rem;
+    border: var(--Bordercolor) solid .1rem;
+    border-radius: .2rem;
+    background-color: transparent;
+    color: var(--Textcolor);
+    font: inherit;
+}
+
+.schedule-assign__delete {
+    font-size: .85rem;
+    color: var(--Subtlecolor);
+}
+
+/* フォーム */
+.schedule-form {
+    display: flex;
+    flex-direction: column;
+    gap: 1.2rem;
+    padding: 1rem;
+    max-width: 640px;
+}
+
+.schedule-form__field {
+    display: flex;
+    flex-direction: column;
+    gap: .4rem;
+}
+
+.schedule-form__field input:not([type="checkbox"]),
+.schedule-form__field select,
+.schedule-form__field textarea {
+    padding: .6rem;
+    border: var(--Bordercolor) solid .1rem;
+    border-radius: .2rem;
+    background-color: transparent;
+    color: var(--Textcolor);
+    font: inherit;
+}
+
+.schedule-form__error {
+    margin: 0;
+    color: #ef4444;
+    font-size: .85rem;
+}
+
+.schedule-form__note {
+    margin: 0;
+    color: var(--Subtlecolor);
+    font-size: .85rem;
+}
+
+.schedule-form__footer {
+    display: flex;
+    gap: 1rem;
+}
+
+@media (max-width: 700px) {
+    .schedule-section {
+        padding-inline: .4rem;
+    }
+
+    .schedule-cell {
+        min-height: 5.5rem;
+        padding: .15rem .1rem;
+    }
+
+    .schedule-event {
+        padding: .05rem .1rem;
+        font-size: .56rem;
+        line-height: 1.2;
+    }
+
+    .schedule-event__time {
+        display: none;
+    }
+
+    .schedule-event__title {
+        display: -webkit-box;
+        -webkit-box-orient: vertical;
+        -webkit-line-clamp: 3;
+        line-clamp: 3;
+        white-space: normal;
+        overflow-wrap: anywhere;
+        word-break: break-all;
+    }
+
+    .schedule-cell__add {
+        display: none;
+    }
+
+    .schedule-week__day {
+        grid-template-columns: 1fr;
+    }
+
+    .schedule-assign__row,
+    .schedule-assign__row--equipment {
+        grid-template-columns: 1fr;
+    }
+}

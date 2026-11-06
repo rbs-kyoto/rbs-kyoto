@@ -10,11 +10,11 @@ from .models import (
     Manufacturer,
     QRDesign,
     ReturnRecord,
-    StorageLocation,
     UsageRecord,
 )
 from . import help_texts
 from .numbering import generate_inventory_number
+from places.models import Place
 from roll.models import Position, RosterEntry
 
 
@@ -100,8 +100,8 @@ class EquipmentForm(InfoTextMixin, forms.ModelForm):
                 image=model.image,
             )
         self.fields["manager"].queryset = Position.objects.filter(is_active=True)
-        self.fields["location"].queryset = StorageLocation.objects.filter(
-            is_active=True
+        self.fields["location"].queryset = Place.objects.filter(
+            is_active=True, is_storage=True
         )
         self.fields["location"].required = False
         self.order_fields([*self.Meta.fields, "new_manufacturer"])
@@ -315,7 +315,7 @@ class StorageLocationForm(InfoTextMixin, forms.ModelForm):
     info_texts = help_texts.LOCATION
 
     class Meta:
-        model = StorageLocation
+        model = Place
         fields = ["name", "code", "parent", "description", "notes", "is_active"]
         widgets = {
             "description": forms.Textarea(attrs={"rows": 3}),
@@ -324,7 +324,7 @@ class StorageLocationForm(InfoTextMixin, forms.ModelForm):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.fields["parent"].queryset = StorageLocation.objects.filter(is_active=True)
+        self.fields["parent"].queryset = Place.objects.filter(is_active=True)
         self.fields["parent"].required = False
         if self.instance.pk:
             self.fields["parent"].queryset = self.fields["parent"].queryset.exclude(

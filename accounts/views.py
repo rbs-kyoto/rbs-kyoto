@@ -19,7 +19,12 @@ from pywebpush import WebPushException
 from equipment.models import UsageRecord
 from roll.models import RosterEntry
 from .push import PushConfigurationError, send_web_push
-from .models import SuperuserGrantCredential, User, WebPushSubscription
+from .models import (
+    NotificationHistory,
+    SuperuserGrantCredential,
+    User,
+    WebPushSubscription,
+)
 
 
 def login_view(request):
@@ -64,6 +69,9 @@ def mypage(request):
             "has_roster_entry": RosterEntry.objects.filter(
                 account=request.user
             ).exists(),
+            "notification_history": NotificationHistory.objects.filter(
+                user=request.user
+            )[:20],
             "webpush_public_key": (
                 settings.WEBPUSH_VAPID_PUBLIC_KEY
                 if all(
@@ -139,6 +147,7 @@ def save_push_subscription(request):
             auth=auth,
             equipment_reminders_enabled=False,
             news_notifications_enabled=False,
+            schedule_reminders_enabled=False,
         )
     else:
         subscription.p256dh = p256dh
@@ -192,6 +201,7 @@ def push_subscription_preferences(request):
                     subscription.equipment_reminders_enabled
                 ),
                 "news_notifications_enabled": subscription.news_notifications_enabled,
+                "schedule_reminders_enabled": subscription.schedule_reminders_enabled,
             }
         )
 
@@ -208,6 +218,7 @@ def push_subscription_preferences(request):
     preference_fields = {
         "equipment": "equipment_reminders_enabled",
         "news": "news_notifications_enabled",
+        "schedule": "schedule_reminders_enabled",
     }
     if (
         not isinstance(endpoint, str)
