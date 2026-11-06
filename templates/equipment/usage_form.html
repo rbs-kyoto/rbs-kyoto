@@ -7,6 +7,11 @@
     <p class="equipment__muted">保管数量を超える貸出は登録できません。返却は返却処理画面から記録してください。</p>
     <form method="post" class="equipment__form">
         {% csrf_token %}
+        {% if schedule_link %}
+        <input type="hidden" name="schedule_item" value="{{ schedule_link.item }}">
+        <input type="hidden" name="schedule_date" value="{{ schedule_link.date }}">
+        <p class="equipment__muted">予定「{{ schedule_link.title }}」（{{ schedule_link.date }}）の機材として登録します。</p>
+        {% endif %}
         {% if form.non_field_errors %}<div class="equipment__errors">{{ form.non_field_errors }}</div>{% endif %}
         {% for field in form %}
         <div class="equipment__field {% if field.errors %}equipment__field--error{% endif %}">{{ field.label_tag }}{{ field }}{% if field.help_text %}<small class="equipment__help-text">{{ field.help_text }}</small>{% endif %}{% for error in field.errors %}<span class="equipment__error">{{ error }}</span>{% endfor %}</div>
