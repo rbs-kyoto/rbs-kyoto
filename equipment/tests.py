@@ -1152,3 +1152,82 @@ class EquipmentInfoButtonTests(TestCase):
         response = self.client.get(reverse("equipment:lending_register"))
         self.assertContains(response, "貸出：")
         self.assertContains(response, "持出：")
+
+
+class EquipmentEventTests(TestCase):
+    def setUp(self):
+        self.user = get_user_model().objects.create_user(
+            username="event-user", password="pw-123456", is_staff=True
+        )
+        self.client.force_login(self.user)
+        self.item = Equipment.objects.create(
+            category=Category.objects.get(code="A"),
+            inventory_number="A-26000001",
+            name="履歴確認",
+            quantity=2,
+        )
+
+    def test_record_event_stores_kind_and_defaults_field_name_to_label(self):
+        from .events import Kind, record_event
+
+        event = record_event(self.item, Kind.STATUS, self.user, old_value="正常", new_value="故障")
+        self.assertEqual(event.kind, "status")
+        self.assertEqual(event.field_name, "状態変更")
+        self.assertEqual((event.old_value, event.new_value), ("正常", "故障"))
+
+    def test_record_event_rejects_unknown_kind(self):
+        from .events import record_event
+
+        with self.assertRaises(ValueError):
+            record_event(self.item, "nonsense", self.user)
+
+    def test_workflow_records_one_kind_per_action(self):
+        self.client.post(
+            reverse("equipment:unregister", args=[self.item.pk]), {"reason": "不要"}
+        )
+        self.client.post(reverse("equipment:reactivate", args=[self.item.pk]))
+        kinds = list(
+            EquipmentHistory.objects.filter(equipment=self.item)
+            .order_by("pk")
+            .values_list("kind", flat=True)
+        )
+        self.assertEqual(kinds, ["unregister", "reactivate"])
+
+    def test_condition_change_is_a_status_event_and_other_changes_are_updates(self):
+        payload = {
+            "category": self.item.category.pk,
+            "name": "履歴確認2",
+            "quantity": "2",
+            "unit": "個",
+            "purchase_currency": Equipment.Currency.JPY,
+            "condition": Equipment.Condition.BROKEN,
+        }
+        self.client.post(reverse("equipment:edit", args=[self.item.pk]), payload)
+        by_field = dict(
+            EquipmentHistory.objects.filter(equipment=self.item).values_list(
+                "field_name", "kind"
+            )
+        )
+        self.assertEqual(by_field["備品の状態"], "status")
+        self.assertEqual(by_field["備品名"], "update")
+
+    def test_history_cannot_be_added_or_edited_in_admin(self):
+        from django.contrib import admin
+
+        model_admin = admin.site._registry[EquipmentHistory]
+        request = type("R", (), {"user": self.user})()
+        self.assertFalse(model_admin.has_add_permission(request))
+        self.assertFalse(model_admin.has_change_permission(request))
+
+    def test_legacy_history_rows_are_converted_by_field_name(self):
+        import importlib
+
+        migration = importlib.import_module("equipment.migrations.0014_history_kind")
+        convert = migration.kind_for_legacy_entry
+        self.assertEqual(convert("登録", ""), "register")
+        self.assertEqual(convert("貸出・持出", ""), "loan")
+        self.assertEqual(convert("返却", ""), "return")
+        self.assertEqual(convert("備品の状態", "故障"), "status")
+        self.assertEqual(convert("登録状態", "登録解除"), "unregister")
+        self.assertEqual(convert("登録状態", "管理中"), "reactivate")
+        self.assertEqual(convert("備品名", ""), "update")

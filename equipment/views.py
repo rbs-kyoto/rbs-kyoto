@@ -17,6 +17,7 @@ from accounts.decorators import staff_required
 from roll.models import Position, RosterEntry
 
 from .csvio import EquipmentImportError, import_equipment_csv, write_export
+from .events import Kind, record_event
 from .forms import (
     EquipmentForm,
     EquipmentImportForm,
@@ -28,7 +29,6 @@ from .forms import (
 from .models import (
     Category,
     Equipment,
-    EquipmentHistory,
     QRDesign,
     ReturnRecord,
     StorageLocation,
@@ -221,10 +221,10 @@ def equipment_create(request):
                     equipment.created_by = request.user
                     equipment.last_modified_by = request.user
                     equipment.save()
-                    EquipmentHistory.objects.create(
-                        equipment=equipment,
-                        changed_by=request.user,
-                        field_name="登録",
+                    record_event(
+                        equipment,
+                        Kind.REGISTER,
+                        request.user,
                         new_value=f"{equipment.inventory_number} {equipment.name}",
                     )
             except IntegrityError:
@@ -290,9 +290,10 @@ def equipment_edit(request, pk):
                 ):
                     changed_fields.append("manufacturer")
                 for field_name in changed_fields:
-                    EquipmentHistory.objects.create(
-                        equipment=updated_equipment,
-                        changed_by=request.user,
+                    record_event(
+                        updated_equipment,
+                        Kind.STATUS if field_name == "condition" else Kind.UPDATE,
+                        request.user,
                         field_name=updated_equipment._meta.get_field(
                             field_name
                         ).verbose_name,
@@ -376,9 +377,10 @@ def unregister_equipment(request, pk):
         equipment.unregistration_reason = reason
         equipment.last_modified_by = request.user
         equipment.save()
-        EquipmentHistory.objects.create(
-            equipment=equipment,
-            changed_by=request.user,
+        record_event(
+            equipment,
+            Kind.UNREGISTER,
+            request.user,
             field_name="登録状態",
             old_value="管理中",
             new_value="登録解除",
@@ -402,9 +404,10 @@ def reactivate_equipment(request, pk):
         equipment.unregistration_reason = ""
         equipment.last_modified_by = request.user
         equipment.save()
-        EquipmentHistory.objects.create(
-            equipment=equipment,
-            changed_by=request.user,
+        record_event(
+            equipment,
+            Kind.REACTIVATE,
+            request.user,
             field_name="登録状態",
             old_value="登録解除",
             new_value="管理中",
@@ -552,10 +555,10 @@ def usage_create(request):
                     usage.equipment = equipment
                     usage.created_by = request.user
                     usage.save()
-                    EquipmentHistory.objects.create(
-                        equipment=equipment,
-                        changed_by=request.user,
-                        field_name="貸出・持出",
+                    record_event(
+                        equipment,
+                        Kind.LOAN,
+                        request.user,
                         new_value=(
                             f"{usage.get_usage_type_display()} {usage.destination} "
                             f"{usage.quantity}{equipment.unit}"
@@ -612,10 +615,10 @@ def return_usage(request, pk):
                     returned.usage = usage
                     returned.processed_by = request.user
                     returned.save()
-                    EquipmentHistory.objects.create(
-                        equipment=usage.equipment,
-                        changed_by=request.user,
-                        field_name="返却",
+                    record_event(
+                        usage.equipment,
+                        Kind.RETURN,
+                        request.user,
                         new_value=(
                             f"{returned.quantity}{usage.equipment.unit} "
                             f"{returned.get_condition_display()}"
