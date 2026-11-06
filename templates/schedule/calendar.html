@@ -40,7 +40,7 @@
             <ul class="schedule-cell__events">
                 {% for occ in cell.occurrences %}
                 <li>
-                    <a class="schedule-event{% if occ.event.all_day or occ.first_day != occ.last_day %} is-block{% endif %}" href="{% url 'schedule:event_detail' occ.event.pk %}">
+                    <a class="schedule-event{% if occ.event.all_day or occ.first_day != occ.last_day %} is-block{% endif %}" href="{% url 'schedule:event_detail' occ.event.pk %}?date={{ occ.first_day|date:'Y-m-d' }}">
                         {% if not occ.event.all_day and occ.first_day == cell.date %}<span class="schedule-event__time">{{ occ.start|date:"H:i" }}</span>{% endif %}
                         <span class="schedule-event__title">{{ occ.event.title }}</span>
                     </a>

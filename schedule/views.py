@@ -2,13 +2,16 @@ import calendar
 from datetime import date, timedelta
 
 from django.contrib.auth.decorators import login_required, user_passes_test
+from django.core.exceptions import PermissionDenied
+from django.db import transaction
+from django.http import Http404
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
 from django.utils import timezone
 from django.views.decorators.http import require_POST
 
-from .forms import EventForm
-from .models import Event
+from .forms import AssignmentFormSet, AttendanceForm, EventForm
+from .models import Attendance, Event
 from .recurrence import expand
 
 staff_required = user_passes_test(lambda user: user.is_staff)
@@ -130,10 +133,121 @@ def calendar_week(request):
     )
 
 
+def _occurrence_date(event, raw):
+    """詳細ページで扱う「何日の回か」を決める。繰り返し予定は、実在する回だけを受け付ける。"""
+    try:
+        wanted = date.fromisoformat(raw or "")
+    except ValueError:
+        wanted = None
+
+    if wanted and expand([event], wanted, wanted):
+        return wanted
+
+    start_day = timezone.localtime(event.start).date()
+    if event.recurrence == Event.Recurrence.NONE:
+        return start_day
+    today = timezone.localdate()
+    upcoming = expand([event], today, today + timedelta(days=370))
+    return upcoming[0].first_day if upcoming else start_day
+
+
+def _my_assignment(user, event):
+    """ログイン中のユーザーの割当(名簿とアカウントが連携していて、割り当てられている場合のみ)。"""
+    entry = getattr(user, "roster_entry", None)
+    if entry is None:
+        return None
+    return event.assignments.filter(member=entry).first()
+
+
 @login_required
 def event_detail(request, pk):
     event = get_object_or_404(Event, pk=pk)
-    return render(request, "schedule/event_detail.html", {"event": event})
+    day = _occurrence_date(event, request.GET.get("date"))
+
+    assignments = list(event.assignments.select_related("member"))
+    responses = {
+        a.assignment_id: a
+        for a in Attendance.objects.filter(assignment__event=event, date=day)
+    }
+    rows = [
+        {"assignment": a, "attendance": responses.get(a.pk)} for a in assignments
+    ]
+
+    mine = _my_assignment(request.user, event) if event.ask_attendance else None
+    my_response = responses.get(mine.pk) if mine else None
+    form = None
+    if mine:
+        form = AttendanceForm(
+            initial={
+                "status": my_response.status if my_response else None,
+                "comment": my_response.comment if my_response else "",
+            }
+        )
+
+    summary = {label: 0 for _, label in Attendance.Status.choices}
+    for row in rows:
+        if row["attendance"]:
+            summary[row["attendance"].get_status_display()] += 1
+    summary["未回答"] = sum(1 for row in rows if not row["attendance"])
+
+    return render(
+        request,
+        "schedule/event_detail.html",
+        {
+            "event": event,
+            "day": day,
+            "rows": rows,
+            "summary": summary,
+            "can_respond": mine is not None,
+            "form": form,
+        },
+    )
+
+
+@login_required
+@require_POST
+def event_respond(request, pk):
+    event = get_object_or_404(Event, pk=pk)
+    if not event.ask_attendance:
+        raise Http404
+    mine = _my_assignment(request.user, event)
+    if mine is None:
+        raise PermissionDenied
+
+    try:
+        day = date.fromisoformat(request.POST.get("date", ""))
+    except ValueError:
+        raise Http404
+    if not expand([event], day, day):
+        raise Http404
+
+    form = AttendanceForm(request.POST)
+    if form.is_valid():
+        Attendance.objects.update_or_create(
+            assignment=mine,
+            date=day,
+            defaults={
+                "status": form.cleaned_data["status"],
+                "comment": form.cleaned_data["comment"].strip(),
+            },
+        )
+    return redirect(f"{reverse('schedule:event_detail', args=[event.pk])}?date={day.isoformat()}")
+
+
+def _handle_event_form(request, event, initial=None):
+    """予定と割当部員(フォームセット)をまとめて検証・保存する。保存できたら予定を返す。"""
+    form = EventForm(request.POST or None, instance=event, initial=initial)
+    formset = AssignmentFormSet(request.POST or None, instance=event)
+    if request.method == "POST" and form.is_valid() and formset.is_valid():
+        with transaction.atomic():
+            saved = form.save(commit=False)
+            if saved.created_by_id is None:
+                saved.created_by = request.user
+            saved.save()
+            formset.instance = saved
+            formset.save()
+        return form, formset, saved
+    return form, formset, None
 
 
 @login_required
@@ -143,31 +257,33 @@ def event_create(request):
     day = request.GET.get("date")
     if day:
         try:
-            parsed = date.fromisoformat(day)
-            initial["start"] = f"{parsed.isoformat()}T09:00"
+            initial["start"] = f"{date.fromisoformat(day).isoformat()}T09:00"
         except ValueError:
             pass
 
-    form = EventForm(request.POST or None, initial=initial)
-    if request.method == "POST" and form.is_valid():
-        event = form.save(commit=False)
-        event.created_by = request.user
-        event.save()
-        return redirect("schedule:event_detail", pk=event.pk)
-
-    return render(request, "schedule/event_form.html", {"form": form, "event": None})
+    event = Event()
+    form, formset, saved = _handle_event_form(request, event, initial)
+    if saved:
+        return redirect("schedule:event_detail", pk=saved.pk)
+    return render(
+        request,
+        "schedule/event_form.html",
+        {"form": form, "formset": formset, "event": None},
+    )
 
 
 @login_required
 @staff_required
 def event_edit(request, pk):
     event = get_object_or_404(Event, pk=pk)
-    form = EventForm(request.POST or None, instance=event)
-    if request.method == "POST" and form.is_valid():
-        form.save()
-        return redirect("schedule:event_detail", pk=event.pk)
-
-    return render(request, "schedule/event_form.html", {"form": form, "event": event})
+    form, formset, saved = _handle_event_form(request, event)
+    if saved:
+        return redirect("schedule:event_detail", pk=saved.pk)
+    return render(
+        request,
+        "schedule/event_form.html",
+        {"form": form, "formset": formset, "event": event},
+    )
 
 
 @login_required

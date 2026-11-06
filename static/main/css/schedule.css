@@ -292,6 +292,170 @@ a.schedule-cell__day:hover {
     align-items: center;
 }
 
+/* 割当部員・出欠 */
+.schedule-people {
+    padding: 1rem;
+    border-top: var(--Bordercolor) solid .1rem;
+}
+
+.schedule-people__heading {
+    margin: 0 0 .6rem;
+    font-size: 1.05rem;
+}
+
+.schedule-people__heading small {
+    font-weight: 400;
+    color: var(--Subtlecolor);
+}
+
+.schedule-people__summary {
+    display: flex;
+    flex-wrap: wrap;
+    gap: .3rem 1rem;
+    margin: 0 0 .8rem;
+    font-size: .85rem;
+    color: var(--Subtlecolor);
+}
+
+.schedule-people__list {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+}
+
+.schedule-people__item {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    gap: .2rem .8rem;
+    padding: .55rem 0;
+    border-bottom: var(--Bordercolor) solid .1rem;
+}
+
+.schedule-people__name {
+    font-weight: 600;
+}
+
+.schedule-people__role,
+.schedule-people__comment,
+.schedule-people__empty {
+    color: var(--Subtlecolor);
+    font-size: .85rem;
+}
+
+.schedule-status {
+    margin-left: auto;
+    padding: .05rem .6rem;
+    border-radius: 999px;
+    font-size: .8rem;
+    border: .1rem solid currentColor;
+}
+
+.schedule-status--attend { color: #16a34a; }
+.schedule-status--absent { color: #ef4444; }
+.schedule-status--undecided { color: #d97706; }
+.schedule-status--none { color: var(--Subtlecolor); }
+
+.schedule-respond {
+    display: flex;
+    flex-direction: column;
+    gap: .8rem;
+    margin-top: 1.2rem;
+    padding: 1rem;
+    border: var(--Bordercolor) solid .1rem;
+    border-radius: .3rem;
+}
+
+.schedule-respond__question {
+    margin: 0;
+    font-weight: 600;
+}
+
+.schedule-respond__choices {
+    display: flex;
+    gap: .6rem;
+}
+
+.schedule-respond__choice {
+    flex: 1;
+    text-align: center;
+    padding: .6rem 0;
+    border: var(--Bordercolor) solid .1rem;
+    border-radius: .3rem;
+    cursor: pointer;
+}
+
+.schedule-respond__choice input {
+    position: absolute;
+    opacity: 0;
+    pointer-events: none;
+}
+
+.schedule-respond__choice:has(input:checked) {
+    background-color: var(--Textcolor);
+    color: var(--Backgroundcolor);
+    border-color: var(--Textcolor);
+}
+
+.schedule-respond__choice:has(input:focus-visible) {
+    outline: .15rem solid var(--Textcolor);
+    outline-offset: .1rem;
+}
+
+.schedule-respond__comment {
+    padding: .6rem;
+    border: var(--Bordercolor) solid .1rem;
+    border-radius: .2rem;
+    background-color: transparent;
+    color: var(--Textcolor);
+    font: inherit;
+}
+
+.schedule-assign {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: .8rem;
+    margin: 0;
+    padding: 1rem;
+    border: var(--Bordercolor) solid .1rem;
+    border-radius: .3rem;
+}
+
+.schedule-assign legend {
+    padding: 0 .4rem;
+}
+
+.schedule-assign__rows {
+    display: flex;
+    flex-direction: column;
+    gap: .6rem;
+    width: 100%;
+}
+
+.schedule-assign__row {
+    display: grid;
+    grid-template-columns: 1fr 1fr auto;
+    gap: .5rem;
+    align-items: center;
+}
+
+.schedule-assign__row select,
+.schedule-assign__row input[type="text"] {
+    min-width: 0;
+    padding: .55rem;
+    border: var(--Bordercolor) solid .1rem;
+    border-radius: .2rem;
+    background-color: transparent;
+    color: var(--Textcolor);
+    font: inherit;
+}
+
+.schedule-assign__delete {
+    font-size: .85rem;
+    color: var(--Subtlecolor);
+}
+
 /* フォーム */
 .schedule-form {
     display: flex;
@@ -370,6 +534,10 @@ a.schedule-cell__day:hover {
     }
 
     .schedule-week__day {
+        grid-template-columns: 1fr;
+    }
+
+    .schedule-assign__row {
         grid-template-columns: 1fr;
     }
 }

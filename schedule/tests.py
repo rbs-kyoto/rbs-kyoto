@@ -5,12 +5,28 @@ from django.test import TestCase
 from django.urls import reverse
 from django.utils import timezone
 
-from .models import Event
+from roll.models import RosterEntry
+
+from .models import Assignment, Attendance, Event
 from .recurrence import expand
 
 
 def jst(*args):
     return timezone.make_aware(datetime(*args))
+
+
+def formset_data(rows=(), initial=0):
+    """割当部員フォームセットの POST データ。rows は (member_pk, role) の並び。"""
+    data = {
+        "assignments-TOTAL_FORMS": str(len(rows)),
+        "assignments-INITIAL_FORMS": str(initial),
+        "assignments-MIN_NUM_FORMS": "0",
+        "assignments-MAX_NUM_FORMS": "1000",
+    }
+    for i, (member, role) in enumerate(rows):
+        data[f"assignments-{i}-member"] = str(member)
+        data[f"assignments-{i}-role"] = role
+    return data
 
 
 class RecurrenceTests(TestCase):
@@ -107,6 +123,7 @@ class ScheduleViewTests(TestCase):
                 "end": "2026-11-04T17:30",
                 "recurrence": "weekly",
                 "recurrence_until": "2026-12-31",
+                **formset_data(),
             },
         )
         event = Event.objects.get(title="定例会")
@@ -122,6 +139,7 @@ class ScheduleViewTests(TestCase):
                 "start": "2026-11-04T16:00",
                 "end": "2026-11-04T15:00",
                 "recurrence": "none",
+                **formset_data(),
             },
         )
         self.assertEqual(response.status_code, 200)
@@ -131,7 +149,12 @@ class ScheduleViewTests(TestCase):
         self.client.force_login(self.staff)
         self.client.post(
             reverse("schedule:event_edit", args=[self.event.pk]),
-            {"title": "大会(改)", "start": "2026-11-10T10:00", "recurrence": "none"},
+            {
+                "title": "大会(改)",
+                "start": "2026-11-10T10:00",
+                "recurrence": "none",
+                **formset_data(initial=0),
+            },
         )
         self.event.refresh_from_db()
         self.assertEqual(self.event.title, "大会(改)")
@@ -199,3 +222,144 @@ class WeekViewTests(TestCase):
         self.client.force_login(self.member)
         response = self.client.get(reverse("schedule:calendar"), {"year": 2026, "month": 11})
         self.assertContains(response, reverse("schedule:week") + "?date=2026-11-04")
+
+
+class AssignmentTests(TestCase):
+    def setUp(self):
+        User = get_user_model()
+        self.staff = User.objects.create_user("staff", password="pw", is_staff=True)
+        self.alice_user = User.objects.create_user("alice", password="pw")
+        self.bob_user = User.objects.create_user("bob", password="pw")
+        self.outsider_user = User.objects.create_user("outsider", password="pw")
+        self.alice = RosterEntry.objects.create(name="Alice", is_member=True, account=self.alice_user)
+        self.bob = RosterEntry.objects.create(name="Bob", is_member=True, account=self.bob_user)
+        self.nonmember = RosterEntry.objects.create(name="Teacher", is_member=False)
+        RosterEntry.objects.create(name="Outsider", is_member=True, account=self.outsider_user)
+
+    def create_event(self, **extra):
+        self.client.force_login(self.staff)
+        data = {
+            "title": "撮影",
+            "start": "2026-11-10T13:00",
+            "recurrence": "none",
+            "ask_attendance": "on",
+            **formset_data([(self.alice.pk, "カメラ"), (self.bob.pk, "音声")]),
+            **extra,
+        }
+        response = self.client.post(reverse("schedule:event_create"), data)
+        return Event.objects.get(title=data["title"]), response
+
+    def test_staff_assigns_members_with_roles(self):
+        event, response = self.create_event()
+        self.assertRedirects(response, reverse("schedule:event_detail", args=[event.pk]))
+        roles = {a.member.name: a.role for a in event.assignments.all()}
+        self.assertEqual(roles, {"Alice": "カメラ", "Bob": "音声"})
+        self.assertTrue(event.ask_attendance)
+
+    def test_non_member_cannot_be_assigned(self):
+        self.client.force_login(self.staff)
+        response = self.client.post(
+            reverse("schedule:event_create"),
+            {
+                "title": "NG",
+                "start": "2026-11-10T13:00",
+                "recurrence": "none",
+                **formset_data([(self.nonmember.pk, "")]),
+            },
+        )
+        self.assertEqual(response.status_code, 200)
+        self.assertFalse(Event.objects.filter(title="NG").exists())
+
+    def test_same_member_twice_is_rejected(self):
+        self.client.force_login(self.staff)
+        response = self.client.post(
+            reverse("schedule:event_create"),
+            {
+                "title": "重複",
+                "start": "2026-11-10T13:00",
+                "recurrence": "none",
+                **formset_data([(self.alice.pk, "A"), (self.alice.pk, "B")]),
+            },
+        )
+        self.assertEqual(response.status_code, 200)
+        self.assertFalse(Event.objects.filter(title="重複").exists())
+
+    def test_detail_lists_assignees_to_logged_in_users(self):
+        event, _ = self.create_event()
+        self.client.force_login(self.outsider_user)
+        response = self.client.get(reverse("schedule:event_detail", args=[event.pk]))
+        self.assertContains(response, "Alice")
+        self.assertContains(response, "カメラ")
+        self.assertNotContains(response, 'name="status"')  # 割当外は回答フォームなし
+
+
+class AttendanceTests(AssignmentTests):
+    def respond(self, user, event, day="2026-11-10", status="attend", comment=""):
+        self.client.force_login(user)
+        return self.client.post(
+            reverse("schedule:event_respond", args=[event.pk]),
+            {"date": day, "status": status, "comment": comment},
+        )
+
+    def test_assigned_member_can_respond_and_change(self):
+        event, _ = self.create_event()
+        response = self.respond(self.alice_user, event, comment="少し遅れます")
+        self.assertEqual(response.status_code, 302)
+        record = Attendance.objects.get()
+        self.assertEqual((record.status, record.comment), ("attend", "少し遅れます"))
+
+        self.respond(self.alice_user, event, status="absent")
+        self.assertEqual(Attendance.objects.count(), 1)
+        self.assertEqual(Attendance.objects.get().status, "absent")
+
+    def test_form_shown_only_to_assigned_member(self):
+        event, _ = self.create_event()
+        self.client.force_login(self.alice_user)
+        url = reverse("schedule:event_detail", args=[event.pk])
+        self.assertContains(self.client.get(url), 'name="status"')
+        self.client.force_login(self.outsider_user)
+        self.assertNotContains(self.client.get(url), 'name="status"')
+
+    def test_unassigned_user_and_staff_cannot_respond(self):
+        event, _ = self.create_event()
+        self.assertEqual(self.respond(self.outsider_user, event).status_code, 403)
+        self.assertEqual(self.respond(self.staff, event).status_code, 403)
+        self.assertEqual(Attendance.objects.count(), 0)
+
+    def test_cannot_respond_when_attendance_is_off(self):
+        event, _ = self.create_event(title="出欠なし", ask_attendance="")
+        self.assertEqual(self.respond(self.alice_user, event).status_code, 404)
+
+    def test_invalid_status_is_not_saved(self):
+        event, _ = self.create_event()
+        self.respond(self.alice_user, event, status="maybe")
+        self.assertEqual(Attendance.objects.count(), 0)
+
+    def test_date_must_be_a_real_occurrence(self):
+        event, _ = self.create_event()
+        self.assertEqual(self.respond(self.alice_user, event, day="2026-11-11").status_code, 404)
+
+    def test_recurring_event_is_answered_per_date(self):
+        event, _ = self.create_event(
+            title="定例会", start="2026-11-04T16:00", recurrence="weekly"
+        )
+        self.respond(self.alice_user, event, day="2026-11-04", status="attend")
+        self.respond(self.alice_user, event, day="2026-11-11", status="absent")
+        self.assertEqual(
+            {(a.date.isoformat(), a.status) for a in Attendance.objects.all()},
+            {("2026-11-04", "attend"), ("2026-11-11", "absent")},
+        )
+        self.client.force_login(self.bob_user)
+        url = reverse("schedule:event_detail", args=[event.pk])
+        response = self.client.get(url, {"date": "2026-11-11"})
+        self.assertEqual(response.context["summary"]["欠席"], 1)
+        self.assertEqual(response.context["summary"]["未回答"], 1)
+        self.assertEqual(self.client.get(url, {"date": "2026-11-04"}).context["summary"]["出席"], 1)
+
+    def test_deleting_event_removes_assignments_and_responses(self):
+        event, _ = self.create_event()
+        self.respond(self.alice_user, event)
+        self.client.force_login(self.staff)
+        self.client.post(reverse("schedule:event_delete", args=[event.pk]))
+        self.assertEqual(Assignment.objects.count(), 0)
+        self.assertEqual(Attendance.objects.count(), 0)

@@ -24,6 +24,7 @@ class Event(models.Model):
         default=Recurrence.NONE,
     )
     recurrence_until = models.DateField("繰り返しの終了日", null=True, blank=True)
+    ask_attendance = models.BooleanField("出欠を取る", default=False)
     created_by = models.ForeignKey(
         settings.AUTH_USER_MODEL,
         verbose_name="作成者",
@@ -48,3 +49,68 @@ class Event(models.Model):
         if self.end and self.end > self.start:
             return self.end - self.start
         return timedelta(0)
+
+
+class Assignment(models.Model):
+    """予定に割り当てた部員(繰り返し予定では、全回に共通)。"""
+
+    event = models.ForeignKey(
+        Event,
+        verbose_name="予定",
+        on_delete=models.CASCADE,
+        related_name="assignments",
+    )
+    member = models.ForeignKey(
+        "roll.RosterEntry",
+        verbose_name="部員",
+        on_delete=models.CASCADE,
+        related_name="schedule_assignments",
+        limit_choices_to={"is_member": True},
+    )
+    role = models.CharField("役割", max_length=100, blank=True)
+
+    class Meta:
+        ordering = ["id"]
+        verbose_name = "割当部員"
+        verbose_name_plural = "割当部員"
+        constraints = [
+            models.UniqueConstraint(
+                fields=["event", "member"], name="schedule_assignment_unique_member"
+            ),
+        ]
+
+    def __str__(self):
+        return f"{self.event} - {self.member.name}"
+
+
+class Attendance(models.Model):
+    """割り当てられた部員の出欠。繰り返し予定は日付ごとに回答する。"""
+
+    class Status(models.TextChoices):
+        ATTEND = "attend", "出席"
+        ABSENT = "absent", "欠席"
+        UNDECIDED = "undecided", "未定"
+
+    assignment = models.ForeignKey(
+        Assignment,
+        verbose_name="割当",
+        on_delete=models.CASCADE,
+        related_name="attendances",
+    )
+    date = models.DateField("対象日")
+    status = models.CharField("出欠", max_length=10, choices=Status.choices)
+    comment = models.CharField("コメント", max_length=200, blank=True)
+    responded_at = models.DateTimeField("回答日時", auto_now=True)
+
+    class Meta:
+        ordering = ["date", "assignment_id"]
+        verbose_name = "出欠"
+        verbose_name_plural = "出欠"
+        constraints = [
+            models.UniqueConstraint(
+                fields=["assignment", "date"], name="schedule_attendance_unique_per_date"
+            ),
+        ]
+
+    def __str__(self):
+        return f"{self.assignment} {self.date} {self.get_status_display()}"

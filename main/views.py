@@ -19,6 +19,11 @@ APPS = [
         "url_name": "video_archive:video_list",
     },
     {
+        "title": "Schedule",
+        "description": "部活の予定・担当・出欠",
+        "url_name": "schedule:calendar",
+    },
+    {
         "title": "Equipment",
         "description": "機材・備品の管理",
         "url_name": "equipment:dashboard",
