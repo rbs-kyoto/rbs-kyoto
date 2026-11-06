@@ -1,6 +1,12 @@
+import json
+from json import JSONDecodeError
+from urllib.parse import urlsplit
+
 from django.contrib.auth import authenticate, login, logout, update_session_auth_hash
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.password_validation import validate_password
+from django.conf import settings
+from django.db import IntegrityError
 from django.http import JsonResponse
 from django.core.exceptions import ValidationError
 from django.views.decorators.http import require_POST
@@ -9,7 +15,11 @@ from django.urls import reverse
 from django.contrib import messages
 from allauth.socialaccount.models import SocialAccount, SocialLogin
 from allauth.account.utils import perform_login
-from .models import SuperuserGrantCredential, User
+from pywebpush import WebPushException
+from equipment.models import UsageRecord
+from roll.models import RosterEntry
+from .push import PushConfigurationError, send_web_push
+from .models import SuperuserGrantCredential, User, WebPushSubscription
 
 
 def login_view(request):
@@ -39,7 +49,218 @@ def login_view(request):
 
 @login_required
 def mypage(request):
-    return render(request, "accounts/mypage.html")
+    usages = (
+        UsageRecord.objects.filter(destination_entry__account=request.user)
+        .select_related("equipment", "destination_entry")
+        .prefetch_related("returns")
+        .order_by("due_at", "started_at", "pk")
+    )
+    open_usages = [usage for usage in usages if usage.remaining_quantity]
+    return render(
+        request,
+        "accounts/mypage.html",
+        {
+            "open_usages": open_usages,
+            "has_roster_entry": RosterEntry.objects.filter(
+                account=request.user
+            ).exists(),
+            "webpush_public_key": (
+                settings.WEBPUSH_VAPID_PUBLIC_KEY
+                if all(
+                    (
+                        settings.WEBPUSH_VAPID_PUBLIC_KEY,
+                        settings.WEBPUSH_VAPID_PRIVATE_KEY,
+                        settings.WEBPUSH_VAPID_SUBJECT,
+                    )
+                )
+                else ""
+            ),
+        },
+    )
+
+
+def _is_supported_push_endpoint(endpoint):
+    try:
+        parsed = urlsplit(endpoint)
+        hostname = parsed.hostname
+    except ValueError:
+        return False
+    if (
+        parsed.scheme != "https"
+        or not hostname
+        or parsed.username
+        or parsed.password
+    ):
+        return False
+    host = hostname.lower().rstrip(".")
+    return host in {
+        "fcm.googleapis.com",
+        "updates.push.services.mozilla.com",
+        "web.push.apple.com",
+    } or host.endswith(".notify.windows.com")
+
+
+@login_required
+@require_POST
+def save_push_subscription(request):
+    try:
+        payload = json.loads(request.body)
+    except (JSONDecodeError, UnicodeDecodeError):
+        return JsonResponse({"error": "通知設定を読み取れませんでした。"}, status=400)
+
+    endpoint = payload.get("endpoint") if isinstance(payload, dict) else None
+    keys = payload.get("keys") if isinstance(payload, dict) else None
+    p256dh = keys.get("p256dh") if isinstance(keys, dict) else None
+    auth = keys.get("auth") if isinstance(keys, dict) else None
+    if (
+        not isinstance(endpoint, str)
+        or len(endpoint) > 2048
+        or not _is_supported_push_endpoint(endpoint)
+        or not isinstance(p256dh, str)
+        or not p256dh
+        or len(p256dh) > 200
+        or not isinstance(auth, str)
+        or not auth
+        or len(auth) > 100
+    ):
+        return JsonResponse({"error": "通知設定の内容が正しくありません。"}, status=400)
+
+    subscription = WebPushSubscription.objects.filter(endpoint=endpoint).first()
+    if subscription and subscription.user_id != request.user.pk:
+        return JsonResponse(
+            {"error": "この端末の通知設定は別のアカウントに登録されています。"},
+            status=409,
+        )
+    if subscription is None:
+        subscription = WebPushSubscription(
+            user=request.user,
+            endpoint=endpoint,
+            p256dh=p256dh,
+            auth=auth,
+            equipment_reminders_enabled=False,
+            news_notifications_enabled=False,
+        )
+    else:
+        subscription.p256dh = p256dh
+        subscription.auth = auth
+    try:
+        subscription.save()
+    except IntegrityError:
+        return JsonResponse(
+            {"error": "この端末の通知設定を保存できませんでした。再度お試しください。"},
+            status=409,
+        )
+    return JsonResponse({"ok": True})
+
+
+@login_required
+@require_POST
+def delete_push_subscription(request):
+    try:
+        payload = json.loads(request.body)
+    except (JSONDecodeError, UnicodeDecodeError):
+        return JsonResponse({"error": "通知設定を読み取れませんでした。"}, status=400)
+
+    endpoint = payload.get("endpoint") if isinstance(payload, dict) else None
+    if not isinstance(endpoint, str) or len(endpoint) > 2048:
+        return JsonResponse({"error": "通知設定の内容が正しくありません。"}, status=400)
+    WebPushSubscription.objects.filter(
+        user=request.user,
+        endpoint=endpoint,
+    ).delete()
+    return JsonResponse({"ok": True})
+
+
+@login_required
+def push_subscription_preferences(request):
+    endpoint = request.GET.get("endpoint", "")
+    if request.method == "GET":
+        if not endpoint or len(endpoint) > 2048:
+            return JsonResponse(
+                {"error": "端末の通知設定を確認できませんでした。"}, status=400
+            )
+        subscription = WebPushSubscription.objects.filter(
+            user=request.user,
+            endpoint=endpoint,
+        ).first()
+        if subscription is None:
+            return JsonResponse({"subscribed": False})
+        return JsonResponse(
+            {
+                "subscribed": True,
+                "equipment_reminders_enabled": (
+                    subscription.equipment_reminders_enabled
+                ),
+                "news_notifications_enabled": subscription.news_notifications_enabled,
+            }
+        )
+
+    if request.method != "POST":
+        return JsonResponse({"error": "許可されていない操作です。"}, status=405)
+    try:
+        payload = json.loads(request.body)
+    except (JSONDecodeError, UnicodeDecodeError):
+        return JsonResponse({"error": "通知設定を読み取れませんでした。"}, status=400)
+
+    endpoint = payload.get("endpoint") if isinstance(payload, dict) else None
+    notification_type = payload.get("type") if isinstance(payload, dict) else None
+    enabled = payload.get("enabled") if isinstance(payload, dict) else None
+    preference_fields = {
+        "equipment": "equipment_reminders_enabled",
+        "news": "news_notifications_enabled",
+    }
+    if (
+        not isinstance(endpoint, str)
+        or len(endpoint) > 2048
+        or not isinstance(notification_type, str)
+        or notification_type not in preference_fields
+        or not isinstance(enabled, bool)
+    ):
+        return JsonResponse({"error": "通知設定の内容が正しくありません。"}, status=400)
+
+    subscription = WebPushSubscription.objects.filter(
+        user=request.user,
+        endpoint=endpoint,
+    ).first()
+    if subscription is None:
+        return JsonResponse(
+            {"error": "この端末の通知設定が見つかりません。"}, status=404
+        )
+
+    field_name = preference_fields[notification_type]
+    if enabled:
+        try:
+            delivered = send_web_push(
+                subscription,
+                {
+                    "title": "通知がオンになりました！",
+                    "body": "早速確認してみましょう",
+                    "url": reverse("accounts:mypage"),
+                },
+            )
+        except PushConfigurationError:
+            return JsonResponse(
+                {
+                    "error": (
+                        "Push通知のVAPID鍵設定を確認してください。"
+                        "開発環境の秘密鍵ファイルが見つからないか、公開鍵と一致していません。"
+                    )
+                },
+                status=503,
+            )
+        except WebPushException:
+            return JsonResponse(
+                {"error": "確認通知を送信できませんでした。時間をおいて再度お試しください。"},
+                status=502,
+            )
+        if not delivered:
+            return JsonResponse(
+                {"error": "この端末の通知購読が期限切れです。再度有効にしてください。"},
+                status=410,
+            )
+    setattr(subscription, field_name, enabled)
+    subscription.save(update_fields=[field_name, "updated_at"])
+    return JsonResponse({"ok": True, "enabled": enabled})
 
 
 @login_required

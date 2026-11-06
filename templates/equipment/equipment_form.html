@@ -1,0 +1,61 @@
+{% extends "equipment/base.html" %}
+
+{% block title %}{% if is_new %}備品登録{% else %}備品編集{% endif %}{% endblock %}
+{% block equipment_content %}
+<section class="equipment__section equipment__form-section">
+    <h2>{% if is_new %}備品登録{% else %}備品情報の編集{% endif %}</h2>
+    {% if not is_new %}<p class="equipment__muted">備品番号：{{ equipment.inventory_number }}（既存の備品番号は編集されません）</p>{% else %}<p class="equipment__muted">分類と購入日をもとに、備品番号を「分類記号-621＋購入日（未入力時は登録日）＋英字」で自動付番します（各日25件まで）。</p>{% endif %}
+    <form method="post" enctype="multipart/form-data" class="equipment__form">
+        {% csrf_token %}
+        {% if form.non_field_errors %}<div class="equipment__errors">{{ form.non_field_errors }}</div>{% endif %}
+
+        <section class="equipment__form-group" aria-labelledby="equipment-identification-heading">
+            <h3 class="equipment__form-group-title" id="equipment-identification-heading">備品の基本情報</h3>
+            {% include "equipment/_form_field.html" with field=form.category %}
+            {% include "equipment/_form_field.html" with field=form.name %}
+            {% include "equipment/_form_field.html" with field=form.manufacturer %}
+            {% include "equipment/_form_field.html" with field=form.model_number %}
+            {% include "equipment/_form_field.html" with field=form.serial_number %}
+        </section>
+
+        <section class="equipment__form-group" aria-labelledby="equipment-stock-heading">
+            <h3 class="equipment__form-group-title" id="equipment-stock-heading">数量・状態</h3>
+            <div class="equipment__field-pair">
+                {% include "equipment/_form_field.html" with field=form.quantity %}
+                {% include "equipment/_form_field.html" with field=form.unit %}
+            </div>
+            {% include "equipment/_form_field.html" with field=form.condition %}
+        </section>
+
+        <section class="equipment__form-group" aria-labelledby="equipment-management-heading">
+            <h3 class="equipment__form-group-title" id="equipment-management-heading">管理情報</h3>
+            {% include "equipment/_form_field.html" with field=form.manager %}
+            {% include "equipment/_form_field.html" with field=form.location %}
+        </section>
+
+        <section class="equipment__form-group" aria-labelledby="equipment-purchase-heading">
+            <h3 class="equipment__form-group-title" id="equipment-purchase-heading">購入・保証情報</h3>
+            {% include "equipment/_form_field.html" with field=form.purchased_on %}
+            <div class="equipment__field-pair">
+                {% include "equipment/_form_field.html" with field=form.purchase_price %}
+                {% include "equipment/_form_field.html" with field=form.purchase_currency %}
+            </div>
+            {% include "equipment/_form_field.html" with field=form.purchase_vendor %}
+            {% include "equipment/_form_field.html" with field=form.receipt_number %}
+            {% include "equipment/_form_field.html" with field=form.warranty_expiry %}
+            {% include "equipment/_form_field.html" with field=form.expected_lifespan_years %}
+        </section>
+
+        <section class="equipment__form-group" aria-labelledby="equipment-notes-heading">
+            <h3 class="equipment__form-group-title" id="equipment-notes-heading">備考・画像</h3>
+            {% include "equipment/_form_field.html" with field=form.notes %}
+            {% include "equipment/_form_field.html" with field=form.image %}
+        </section>
+
+        <div class="equipment__actions">
+            <button class="common-style reverse equipment__button" type="submit">保存</button>
+            <a class="common-style white equipment__button" href="{% if equipment %}{% url 'equipment:detail' equipment.pk %}{% else %}{% url 'equipment:list' %}{% endif %}">キャンセル</a>
+        </div>
+    </form>
+</section>
+{% endblock %}

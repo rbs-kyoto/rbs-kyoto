@@ -22,6 +22,44 @@ self.addEventListener("activate", (event) => {
     );
 });
 
+self.addEventListener("push", (event) => {
+    let payload = {};
+    if (event.data) {
+        try {
+            payload = event.data.json();
+        } catch {
+            payload = { body: event.data.text() };
+        }
+    }
+
+    event.waitUntil(
+        self.registration.showNotification(payload.title || "rbs京都", {
+            body: payload.body || "新しい通知があります。",
+            icon: "/static/main/img/pwa-icon__PWA_ICON_SUFFIX__-192.png",
+            badge: "/static/main/img/pwa-icon__PWA_ICON_SUFFIX__-72.png",
+            data: { url: payload.url || "/" },
+        }),
+    );
+});
+
+self.addEventListener("notificationclick", (event) => {
+    event.notification.close();
+    const target = new URL(event.notification.data?.url || "/", self.location.origin);
+    if (target.origin !== self.location.origin) {
+        return;
+    }
+    event.waitUntil(
+        self.clients.matchAll({ type: "window", includeUncontrolled: true })
+            .then((clients) => {
+                const client = clients.find((windowClient) => "focus" in windowClient);
+                if (client) {
+                    return client.navigate(target.href).then(() => client.focus());
+                }
+                return self.clients.openWindow(target.href);
+            }),
+    );
+});
+
 self.addEventListener("fetch", (event) => {
     if (event.request.mode !== "navigate"
         || new URL(event.request.url).origin !== self.location.origin) {

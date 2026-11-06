@@ -11,6 +11,7 @@ constantly==23.10.4
 cryptography==50.0.2
 daphne==4.2.3
 Django==6.1.2
+pywebpush==2.3.0
 django-allauth==65.20.1
 django-ckeditor-5==0.2.20
 hyperlink==21.0.0
@@ -24,6 +25,7 @@ pycparser==3.12
 PyJWT==2.15.1
 pyOpenSSL==26.4.0
 python-dotenv==1.2.4
+qrcode==8.2
 requests==2.34.2
 service-identity==26.1.0
 sqlparse==0.6.0

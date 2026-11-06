@@ -38,6 +38,7 @@ body.dark-mode .video-archive__group-title {
     gap: 1.5rem;
     padding: 1.25rem 1rem;
     border-radius: .2rem;
+    corner-shape: superellipse(1.4);
     border-bottom: var(--Bordercolor) solid .1rem;
     transition: all .3s;
 }
@@ -75,6 +76,7 @@ a.video-archive__item:hover .video-archive__link {
     display: inline-block;
     padding: .2rem .65rem;
     border-radius: .35rem;
+    corner-shape: superellipse(1.4);
     background: var(--themecolor-100);
     color: var(--Natural-themecolor);
     font-size: .75rem;
@@ -206,6 +208,7 @@ body.dark-mode a.video-archive__item:hover .video-archive__badge {
     width: 4.5rem;
     height: 4.5rem;
     border-radius: 50%;
+    corner-shape: round;
     background: var(--themecolor-700);
     color: var(--Natural-white);
     font-family: "Material Symbols Rounded";

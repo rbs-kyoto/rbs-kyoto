@@ -1,0 +1,16 @@
+{% extends "equipment/base.html" %}
+
+{% block title %}{{ equipment.inventory_number }} QRコード{% endblock %}
+{% block equipment_content %}
+<section class="equipment__section equipment__qr">
+    <h2>{{ equipment.inventory_number }} · {{ equipment.name }}</h2>
+    <p>QRコードで備品番号を読み取り、詳細を表示します。</p>
+    <img src="{% url 'equipment:qr_png' equipment.pk %}" alt="{{ equipment.inventory_number }}のQRコード">
+    <p>※「QRコード」は株式会社デンソーウェーブの登録商標です。</p>
+    <div class="equipment__actions">
+        <a class="common-style white equipment__button" href="{% url 'equipment:qr_png' equipment.pk %}">PNGをダウンロード</a>
+        <a class="common-style white equipment__button" href="{% url 'equipment:qr_svg' equipment.pk %}">SVGをダウンロード</a>
+        <a class="common-style white equipment__button" href="{% url 'equipment:detail' equipment.pk %}">備品詳細へ</a>
+    </div>
+</section>
+{% endblock %}

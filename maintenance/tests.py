@@ -94,6 +94,18 @@ class MaintenanceSettingTests(TestCase):
         self.assertIn("main/css/error.css", content)
         self.assertIn('class="error-heading"', content)
 
+    def test_pwa_manifest_and_service_worker_are_available_during_maintenance(self):
+        self.setting.mode = MaintenanceSetting.Mode.EMERGENCY
+        self.setting.save()
+
+        manifest_response = self.client.get("/manifest.webmanifest")
+        worker_response = self.client.get("/service-worker.js")
+
+        self.assertEqual(manifest_response.status_code, 200)
+        self.assertEqual(manifest_response["Content-Type"], "application/manifest+json")
+        self.assertEqual(worker_response.status_code, 200)
+        self.assertEqual(worker_response["Content-Type"], "application/javascript")
+
     def test_admin_url_bypasses_maintenance_but_requires_django_admin_auth(self):
         self.setting.mode = MaintenanceSetting.Mode.EMERGENCY
         self.setting.save()

@@ -1,0 +1,70 @@
+{% extends "equipment/base.html" %}
+
+{% block title %}備品管理ダッシュボード{% endblock %}
+{% block equipment_content %}
+<section class="equipment__section">
+    <div class="equipment__section-heading">
+        <h2>管理状況</h2>
+        <a class="common-style reverse equipment__button" href="{% url 'equipment:register' %}">備品を登録</a>
+    </div>
+    <div class="equipment__metrics">
+        <article><span>登録種類数</span><strong>{{ equipment_type_count }}</strong></article>
+        <article><span>保有数量</span><strong>{{ equipment_quantity }}</strong></article>
+        <article><span>貸出中</span><strong>{{ lending_quantity }}</strong></article>
+        <article><span>持出中</span><strong>{{ carry_out_quantity }}</strong></article>
+        <article><span>保管中</span><strong>{{ stored_quantity }}</strong></article>
+        <article class="equipment__metric--warning"><span>期限超過</span><strong>{{ overdue_count }}</strong></article>
+    </div>
+</section>
+
+<section class="equipment__section">
+    <div class="equipment__section-heading"><h2>要確認の備品</h2></div>
+    {% if attention_equipment %}
+    <ul class="equipment__cards">
+        {% for item in attention_equipment %}
+        <li><a href="{% url 'equipment:detail' item.pk %}"><strong>{{ item.inventory_number }} {{ item.name }}</strong><span>{{ item.get_condition_display }}</span></a></li>
+        {% endfor %}
+    </ul>
+    {% else %}<p class="equipment__empty">確認が必要な備品はありません。</p>{% endif %}
+</section>
+
+<section class="equipment__section">
+    <div class="equipment__section-heading">
+        <h2>返却期限超過</h2>
+        <a href="{% url 'equipment:lending' %}?status=overdue">貸出一覧</a>
+    </div>
+    {% if overdue_usages %}
+    <div class="equipment__table-wrap"><table>
+        <thead><tr><th>備品</th><th>貸出先</th><th>未返却数量</th><th>返却予定</th></tr></thead>
+        <tbody>{% for usage in overdue_usages %}<tr>
+            <td><a href="{% url 'equipment:usage_detail' usage.pk %}">{{ usage.equipment.inventory_number }} {{ usage.equipment.name }}</a></td>
+            <td>{{ usage.destination }}</td><td>{{ usage.remaining_quantity }}{{ usage.equipment.unit }}</td><td>{{ usage.due_at|date:"Y/m/d H:i" }}</td>
+        </tr>{% endfor %}</tbody>
+    </table></div>
+    {% else %}<p class="equipment__empty">期限超過の記録はありません。</p>{% endif %}
+</section>
+
+<section class="equipment__section">
+    <div class="equipment__section-heading"><h2>最近登録された備品</h2><a href="{% url 'equipment:list' %}">一覧を見る</a></div>
+    <ul class="equipment__cards">
+        {% for item in recent_equipment %}
+        <li><a href="{% url 'equipment:detail' item.pk %}"><strong>{{ item.inventory_number }} {{ item.name }}</strong><span>{{ item.category.code }}：{{ item.category.name }} · {{ item.created_at|date:"Y/m/d" }}</span></a></li>
+        {% empty %}<li class="equipment__empty">備品はまだ登録されていません。</li>{% endfor %}
+    </ul>
+</section>
+
+<section class="equipment__section equipment__columns">
+    <div>
+        <h2>最近の貸出・持出</h2>
+        <ul class="equipment__simple-list">{% for usage in recent_usages %}
+            <li><a href="{% url 'equipment:usage_detail' usage.pk %}">{{ usage.equipment.inventory_number }} {{ usage.destination }}</a><span>{{ usage.started_at|date:"Y/m/d H:i" }}</span></li>
+        {% empty %}<li class="equipment__empty">履歴はありません。</li>{% endfor %}</ul>
+    </div>
+    <div>
+        <h2>最近の返却</h2>
+        <ul class="equipment__simple-list">{% for returned in recent_returns %}
+            <li><a href="{% url 'equipment:usage_detail' returned.usage_id %}">{{ returned.usage.equipment.inventory_number }} {{ returned.quantity }}{{ returned.usage.equipment.unit }}</a><span>{{ returned.returned_at|date:"Y/m/d H:i" }}</span></li>
+        {% empty %}<li class="equipment__empty">履歴はありません。</li>{% endfor %}</ul>
+    </div>
+</section>
+{% endblock %}

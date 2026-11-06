@@ -1,0 +1,36 @@
+{% extends "main/base.html" %}
+{% load static %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'equipment/equipment.css' %}">
+{% endblock %}
+
+{% block content %}
+<div class="equipment">
+    <header class="equipment__header">
+        <div>
+            <h1>Equipment</h1>
+        </div>
+        <nav class="equipment__nav" aria-label="備品管理メニュー">
+            <a href="{% url 'equipment:dashboard' %}">ダッシュボード</a>
+            <a href="{% url 'equipment:list' %}">備品一覧</a>
+            <a href="{% url 'equipment:register' %}">備品登録</a>
+            <a href="{% url 'equipment:lending' %}">貸出・持出</a>
+            <a href="{% url 'equipment:scan_camera' %}">QR読み取り</a>
+            <a href="{% url 'equipment:categories' %}">分類</a>
+            <a href="{% url 'equipment:locations' %}">保管場所</a>
+            <a href="{% url 'equipment:settings' %}">設定</a>
+        </nav>
+    </header>
+    {% if messages %}
+    <div class="equipment__messages" aria-live="polite">
+        {% for message in messages %}
+        <p class="equipment__message equipment__message--{{ message.tags }}">{{ message }}</p>
+        {% endfor %}
+    </div>
+    {% endif %}
+    <main class="equipment__content">
+        {% block equipment_content %}{% endblock %}
+    </main>
+</div>
+{% endblock %}
