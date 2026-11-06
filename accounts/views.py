@@ -139,6 +139,7 @@ def save_push_subscription(request):
             auth=auth,
             equipment_reminders_enabled=False,
             news_notifications_enabled=False,
+            schedule_reminders_enabled=False,
         )
     else:
         subscription.p256dh = p256dh
@@ -192,6 +193,7 @@ def push_subscription_preferences(request):
                     subscription.equipment_reminders_enabled
                 ),
                 "news_notifications_enabled": subscription.news_notifications_enabled,
+                "schedule_reminders_enabled": subscription.schedule_reminders_enabled,
             }
         )
 
@@ -208,6 +210,7 @@ def push_subscription_preferences(request):
     preference_fields = {
         "equipment": "equipment_reminders_enabled",
         "news": "news_notifications_enabled",
+        "schedule": "schedule_reminders_enabled",
     }
     if (
         not isinstance(endpoint, str)

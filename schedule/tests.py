@@ -1,14 +1,27 @@
 from datetime import date, datetime
+from io import StringIO
+from unittest import mock
 
 from django.contrib.auth import get_user_model
-from django.test import TestCase
+from django.core.management import call_command
+from django.core.management.base import CommandError
+from django.test import TestCase, override_settings
 from django.urls import reverse
 from django.utils import timezone
 
 from equipment.models import Category, Equipment, ReturnRecord, UsageRecord
 from roll.models import RosterEntry
 
-from .models import Assignment, Attendance, Event, EventEquipment, UsageLink
+from accounts.models import WebPushSubscription
+
+from .models import (
+    Assignment,
+    Attendance,
+    AttendanceReminderDelivery,
+    Event,
+    EventEquipment,
+    UsageLink,
+)
 from .recurrence import expand
 
 
@@ -567,3 +580,182 @@ class EquipmentLinkTests(TestCase):
         self.client.post(reverse("schedule:event_delete", args=[event.pk]))
         self.assertEqual(UsageLink.objects.count(), 0)
         self.assertEqual(UsageRecord.objects.count(), 1)
+
+
+SEND = "schedule.management.commands.send_attendance_reminders.send_web_push"
+NOW = timezone.make_aware(datetime(2026, 11, 10, 9, 0))
+
+
+class AttendanceReminderTests(TestCase):
+    """2026-11-10 09:00 に毎朝のコマンドを実行した想定。"""
+
+    def setUp(self):
+        User = get_user_model()
+        self.alice_user = User.objects.create_user("alice", password="pw")
+        self.bob_user = User.objects.create_user("bob", password="pw")
+        self.alice = RosterEntry.objects.create(name="Alice", is_member=True, account=self.alice_user)
+        self.bob = RosterEntry.objects.create(name="Bob", is_member=True, account=self.bob_user)
+        self.carol = RosterEntry.objects.create(name="Carol", is_member=True)  # アカウント未連携
+        self.alice_sub = self.subscribe(self.alice_user, "https://fcm.googleapis.com/a", enabled=True)
+        self.bob_sub = self.subscribe(self.bob_user, "https://fcm.googleapis.com/b", enabled=False)
+
+    def subscribe(self, user, endpoint, enabled):
+        return WebPushSubscription.objects.create(
+            user=user, endpoint=endpoint, p256dh="k", auth="a",
+            schedule_reminders_enabled=enabled,
+        )
+
+    def make_event(self, start, members=None, ask=True, **extra):
+        event = Event.objects.create(title=extra.pop("title", "撮影"), start=start, ask_attendance=ask, **extra)
+        for member in members or (self.alice, self.bob, self.carol):
+            Assignment.objects.create(event=event, member=member)
+        return event
+
+    def run_command(self, *args, send=None):
+        out = StringIO()
+        with mock.patch("django.utils.timezone.now", return_value=NOW), mock.patch(
+            SEND, side_effect=send or (lambda sub, payload: True)
+        ) as sender:
+            call_command("send_attendance_reminders", *args, stdout=out, stderr=StringIO())
+        return sender, out.getvalue()
+
+    def test_sends_only_to_unanswered_members_who_enabled_the_reminder(self):
+        event = self.make_event(jst(2026, 11, 13, 16))  # 3日前
+        sender, _ = self.run_command()
+        self.assertEqual(sender.call_count, 1)  # alice のみ(bob は無効、carol は連携なし)
+        subscription, payload = sender.call_args.args
+        self.assertEqual(subscription, self.alice_sub)
+        self.assertEqual(payload["title"], "出欠のお願い")
+        self.assertIn("撮影", payload["body"])
+        self.assertIn("11月13日(金) 16:00", payload["body"])
+        self.assertIn("あと3日", payload["body"])
+        self.assertEqual(payload["url"], f"/schedule/{event.pk}/?date=2026-11-13")
+
+    def test_answered_members_are_skipped(self):
+        event = self.make_event(jst(2026, 11, 13, 16))
+        Attendance.objects.create(
+            assignment=event.assignments.get(member=self.alice),
+            date=date(2026, 11, 13),
+            status="absent",
+        )
+        sender, _ = self.run_command()
+        self.assertEqual(sender.call_count, 0)
+
+    def test_only_three_days_one_day_and_same_day(self):
+        self.make_event(jst(2026, 11, 12, 16), title="2日後")
+        self.make_event(jst(2026, 11, 14, 16), title="4日後")
+        self.make_event(jst(2026, 11, 11, 16), title="前日")
+        self.make_event(jst(2026, 11, 10, 15), title="当日")
+        sender, _ = self.run_command()
+        titles = sorted(call.args[1]["body"].split("」")[0] for call in sender.call_args_list)
+        self.assertEqual(titles, ["「前日", "「当日"])
+        bodies = " ".join(call.args[1]["body"] for call in sender.call_args_list)
+        self.assertIn("本日", bodies)
+        self.assertIn("あと1日", bodies)
+
+    def test_events_that_already_ended_today_are_skipped(self):
+        self.make_event(jst(2026, 11, 10, 7), end=jst(2026, 11, 10, 8), title="終了済み")
+        sender, _ = self.run_command()
+        self.assertEqual(sender.call_count, 0)
+
+    def test_all_day_event_today_is_still_reminded(self):
+        self.make_event(jst(2026, 11, 10, 0), all_day=True, title="終日")
+        sender, _ = self.run_command()
+        self.assertEqual(sender.call_count, 1)
+        self.assertNotIn(":", sender.call_args.args[1]["body"].split("の出欠")[0].split("」")[1])
+
+    def test_events_without_attendance_are_ignored(self):
+        self.make_event(jst(2026, 11, 13, 16), ask=False)
+        sender, _ = self.run_command()
+        self.assertEqual(sender.call_count, 0)
+
+    def test_not_sent_twice_for_the_same_day_but_sent_for_the_next_stage(self):
+        self.make_event(jst(2026, 11, 13, 16))
+        self.run_command()
+        sender, _ = self.run_command()
+        self.assertEqual(sender.call_count, 0)  # 同じ3日前の分は二重送信しない
+        self.assertEqual(AttendanceReminderDelivery.objects.count(), 1)
+
+        later = timezone.make_aware(datetime(2026, 11, 12, 9, 0))  # 翌日=前日の段階
+        with mock.patch("django.utils.timezone.now", return_value=later), mock.patch(
+            SEND, return_value=True
+        ) as sender:
+            call_command("send_attendance_reminders", stdout=StringIO(), stderr=StringIO())
+        self.assertEqual(sender.call_count, 1)  # 11/12 から見て 11/13 は「前日」の段階なので送る
+        self.assertIn("あと1日", sender.call_args.args[1]["body"])
+        self.assertEqual(AttendanceReminderDelivery.objects.count(), 2)
+
+    def test_recurring_event_is_reminded_per_occurrence(self):
+        self.make_event(
+            jst(2026, 11, 3, 16), recurrence=Event.Recurrence.WEEKLY, title="定例会"
+        )  # 11/10(当日) と 11/17 だが、11/10 の16:00 はまだ先
+        sender, _ = self.run_command()
+        self.assertEqual(sender.call_count, 1)
+        self.assertEqual(sender.call_args.args[1]["url"].split("date=")[1], "2026-11-10")
+
+    def test_dead_subscription_does_not_record_a_delivery(self):
+        self.make_event(jst(2026, 11, 13, 16))
+        self.run_command(send=lambda sub, payload: False)
+        self.assertEqual(AttendanceReminderDelivery.objects.count(), 0)
+
+    def test_failures_are_reported_but_other_sends_continue(self):
+        from pywebpush import WebPushException
+
+        self.subscribe(self.bob_user, "https://fcm.googleapis.com/b2", enabled=True)
+        self.make_event(jst(2026, 11, 13, 16))
+
+        def flaky(subscription, payload):
+            if subscription.endpoint.endswith("/b2"):
+                raise WebPushException("boom")
+            return True
+
+        with self.assertRaises(CommandError):
+            self.run_command(send=flaky)
+        self.assertEqual(AttendanceReminderDelivery.objects.count(), 1)  # alice 分は記録済み
+
+    def test_configuration_error_stops_with_a_clear_message(self):
+        from accounts.push import PushConfigurationError
+
+        self.make_event(jst(2026, 11, 13, 16))
+
+        def broken(subscription, payload):
+            raise PushConfigurationError("not configured")
+
+        with self.assertRaisesMessage(CommandError, "Web Push の設定を確認してください"):
+            self.run_command(send=broken)
+
+    def test_dry_run_sends_nothing_and_records_nothing(self):
+        self.make_event(jst(2026, 11, 13, 16))
+        sender, output = self.run_command("--dry-run")
+        self.assertEqual(sender.call_count, 0)
+        self.assertEqual(AttendanceReminderDelivery.objects.count(), 0)
+        self.assertIn("[dry-run] Alice", output)
+
+    @override_settings(
+        WEBPUSH_VAPID_PUBLIC_KEY="pub",
+        WEBPUSH_VAPID_PRIVATE_KEY="priv",
+        WEBPUSH_VAPID_SUBJECT="mailto:admin@example.com",
+    )
+    def test_mypage_shows_the_new_notification_setting(self):
+        self.client.force_login(self.alice_user)
+        response = self.client.get(reverse("accounts:mypage"))
+        self.assertContains(response, "出欠リマインド通知")
+        self.assertContains(response, 'data-notification-type="schedule"')
+
+    def test_preference_is_exposed_and_toggleable_independently(self):
+        self.client.force_login(self.bob_user)
+        url = reverse("accounts:push_subscription_preferences")
+        response = self.client.get(url, {"endpoint": self.bob_sub.endpoint})
+        self.assertFalse(response.json()["schedule_reminders_enabled"])
+        equipment_before = response.json()["equipment_reminders_enabled"]
+
+        with mock.patch("accounts.views.send_web_push", return_value=True):
+            response = self.client.post(
+                url,
+                data='{"endpoint": "%s", "type": "schedule", "enabled": true}' % self.bob_sub.endpoint,
+                content_type="application/json",
+            )
+        self.assertEqual(response.status_code, 200)
+        self.bob_sub.refresh_from_db()
+        self.assertTrue(self.bob_sub.schedule_reminders_enabled)
+        self.assertEqual(self.bob_sub.equipment_reminders_enabled, equipment_before)
