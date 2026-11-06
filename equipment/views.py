@@ -6,7 +6,7 @@ from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.core.paginator import Paginator
 from django.db import IntegrityError, transaction
-from django.db.models import Count, F, Prefetch, Q, Sum
+from django.db.models import Count, Q, Sum
 from django.http import Http404, HttpResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
@@ -21,38 +21,34 @@ from .events import Kind, record_event
 from .forms import (
     EquipmentForm,
     EquipmentImportForm,
+    LoanForm,
     QRDesignForm,
     ReturnRecordForm,
     StorageLocationForm,
-    UsageRecordForm,
 )
 from .models import (
     Category,
     Equipment,
+    Loan,
+    LoanLine,
     QRDesign,
     ReturnRecord,
     StorageLocation,
-    UsageRecord,
 )
+from .services import LoanError, change_status, create_loan, record_return
 
 
 @login_required
 def dashboard(request):
-    active_equipment = Equipment.objects.filter(is_active=True).select_related(
-        "model__category"
-    ).prefetch_related(
-        Prefetch(
-            "usage_records",
-            queryset=UsageRecord.objects.prefetch_related("returns"),
-            to_attr="usage_cache",
-        )
+    active_equipment = (
+        Equipment.objects.filter(is_active=True)
+        .select_related("model__category")
+        .prefetch_related("loan_lines__returns")
     )
-    usages = UsageRecord.objects.filter(
-        quantity__gt=0,
-    ).select_related("equipment").prefetch_related("returns")
-    open_usages = [
-        usage for usage in usages if usage.remaining_quantity
-    ]
+    lines = LoanLine.objects.select_related("equipment__model", "loan").prefetch_related(
+        "returns"
+    )
+    open_usages = [line for line in lines if line.remaining_quantity]
     overdue_usages = [usage for usage in open_usages if usage.is_overdue]
     context = {
         "equipment_type_count": active_equipment.count(),
@@ -63,12 +59,12 @@ def dashboard(request):
         "lending_quantity": sum(
             usage.remaining_quantity
             for usage in open_usages
-            if usage.usage_type == UsageRecord.UsageType.LENDING
+            if usage.usage_type == Loan.UsageType.LENDING
         ),
         "carry_out_quantity": sum(
             usage.remaining_quantity
             for usage in open_usages
-            if usage.usage_type == UsageRecord.UsageType.CARRY_OUT
+            if usage.usage_type == Loan.UsageType.CARRY_OUT
         ),
         "stored_quantity": sum(
             equipment.stored_quantity for equipment in active_equipment
@@ -81,12 +77,13 @@ def dashboard(request):
                 Equipment.Condition.REPAIR,
                 Equipment.Condition.BROKEN,
                 Equipment.Condition.DISABLED,
+                Equipment.Condition.LOST,
             ]
         )[:10],
         "recent_equipment": active_equipment.order_by("-created_at")[:8],
-        "recent_usages": UsageRecord.objects.select_related("equipment")[:8],
+        "recent_usages": LoanLine.objects.select_related("equipment__model", "loan")[:8],
         "recent_returns": ReturnRecord.objects.select_related(
-            "usage__equipment", "processed_by"
+            "line__equipment__model", "line__loan", "processed_by"
         )[:8],
     }
     return render(request, "equipment/dashboard.html", context)
@@ -102,13 +99,7 @@ def equipment_list(request):
         "manager",
         "created_by",
         "last_modified_by",
-    ).prefetch_related(
-        Prefetch(
-            "usage_records",
-            queryset=UsageRecord.objects.prefetch_related("returns"),
-            to_attr="usage_cache",
-        )
-    )
+    ).prefetch_related("loan_lines__loan", "loan_lines__returns")
     query = request.GET.get("q", "").strip()
     category = request.GET.get("category", "").strip()
     condition = request.GET.get("condition", "").strip()
@@ -128,8 +119,8 @@ def equipment_list(request):
             | Q(qr_inventory_number__iexact=query)
             | Q(location__name__icontains=query)
             | Q(manager__name__icontains=query)
-            | Q(usage_records__destination__icontains=query)
-            | Q(usage_records__destination_entry__name__icontains=query)
+            | Q(loan_lines__loan__destination__icontains=query)
+            | Q(loan_lines__loan__destination_entry__name__icontains=query)
         ).distinct()
     if category:
         if category.isdigit():
@@ -151,16 +142,11 @@ def equipment_list(request):
 
     items = list(equipment)
     for item in items:
-        active_usages = [
-            usage for usage in item.usage_cache if usage.remaining_quantity
-        ]
-        if active_usages:
-            item.latest_usage = active_usages[0]
-        else:
-            item.latest_usage = next(
-                (usage for usage in item.usage_cache if not usage.remaining_quantity),
-                None,
-            )
+        lines = list(item.loan_lines.all())
+        item.latest_usage = next(
+            (line for line in lines if line.remaining_quantity),
+            lines[0] if lines else None,
+        )
     if usage_status:
         items = [item for item in items if item.usage_status == usage_status]
     if request.GET.get("export") == "csv":
@@ -267,6 +253,7 @@ def _display_value(equipment, field_name):
 @login_required
 def equipment_edit(request, pk):
     equipment = get_object_or_404(Equipment, pk=pk, is_active=True)
+    original_condition = equipment.condition
     original_values = {
         field: _display_value(equipment, field)
         for field in EquipmentForm.Meta.fields
@@ -274,15 +261,19 @@ def equipment_edit(request, pk):
     if request.method == "POST":
         form = EquipmentForm(request.POST, request.FILES, instance=equipment)
         if form.is_valid():
+            # The status goes through change_status below, never through the form.
             changed_fields = [
                 field
                 for field in form.changed_data
-                if field in EquipmentForm.Meta.fields
+                if field in EquipmentForm.Meta.fields and field != "condition"
             ]
+            new_condition = form.cleaned_data["condition"]
             with transaction.atomic():
                 updated_equipment = form.save(commit=False)
+                updated_equipment.condition = original_condition
                 updated_equipment.last_modified_by = request.user
                 updated_equipment.save()
+                change_status(updated_equipment, new_condition, request.user)
                 if (
                     "manufacturer" not in changed_fields
                     and _display_value(updated_equipment, "manufacturer")
@@ -292,7 +283,7 @@ def equipment_edit(request, pk):
                 for field_name in changed_fields:
                     record_event(
                         updated_equipment,
-                        Kind.STATUS if field_name == "condition" else Kind.UPDATE,
+                        Kind.UPDATE,
                         request.user,
                         field_name=form.fields[field_name].label,
                         old_value=original_values[field_name],
@@ -323,7 +314,7 @@ def equipment_detail(request, pk):
     )
     if not equipment.is_active and request.GET.get("show_archived") != "1":
         raise Http404
-    usages = equipment.usage_records.prefetch_related("returns").all()
+    usages = equipment.loan_lines.select_related("loan").prefetch_related("returns")
     current_usages = [usage for usage in usages if usage.remaining_quantity]
     return render(
         request,
@@ -345,7 +336,9 @@ def equipment_history(request, pk):
         {
             "equipment": equipment,
             "changes": equipment.history.select_related("changed_by"),
-            "usages": equipment.usage_records.prefetch_related("returns"),
+            "usages": equipment.loan_lines.select_related("loan").prefetch_related(
+                "returns"
+            ),
         },
     )
 
@@ -359,9 +352,9 @@ def unregister_equipment(request, pk):
             Equipment.objects.select_for_update(), pk=pk, is_active=True
         )
         open_usages = [
-            usage
-            for usage in equipment.usage_records.prefetch_related("returns")
-            if usage.remaining_quantity
+            line
+            for line in equipment.loan_lines.prefetch_related("returns")
+            if line.remaining_quantity
         ]
         if open_usages:
             messages.error(
@@ -496,13 +489,13 @@ def qr_download(request, pk, output_format="png"):
 
 @login_required
 def usage_list(request):
-    records = UsageRecord.objects.select_related("equipment", "created_by").prefetch_related(
-        "returns"
-    )
+    records = LoanLine.objects.select_related(
+        "equipment__model", "loan__created_by"
+    ).prefetch_related("returns")
     filter_type = request.GET.get("type", "")
     filter_status = request.GET.get("status", "")
-    if filter_type in UsageRecord.UsageType.values:
-        records = records.filter(usage_type=filter_type)
+    if filter_type in Loan.UsageType.values:
+        records = records.filter(loan__usage_type=filter_type)
     all_records = list(records)
     if filter_status == "open":
         all_records = [record for record in all_records if record.remaining_quantity]
@@ -517,7 +510,7 @@ def usage_list(request):
             "records": all_records,
             "selected_type": filter_type,
             "selected_status": filter_status,
-            "usage_types": UsageRecord.UsageType.choices,
+            "usage_types": Loan.UsageType.choices,
         },
     )
 
@@ -525,49 +518,19 @@ def usage_list(request):
 @login_required
 def usage_create(request):
     if request.method == "POST":
-        form = UsageRecordForm(request.POST)
+        form = LoanForm(request.POST)
         if form.is_valid():
-            equipment_id = form.cleaned_data["equipment"].pk
-            with transaction.atomic():
-                Equipment.objects.filter(pk=equipment_id).update(
-                    updated_at=F("updated_at")
+            try:
+                loan = create_loan(
+                    request.user,
+                    [(form.cleaned_data["equipment"].pk, form.cleaned_data["quantity"])],
+                    **form.loan_fields(),
                 )
-                equipment = get_object_or_404(
-                    Equipment.objects.select_for_update(),
-                    pk=equipment_id,
-                    is_active=True,
-                )
-                if equipment.condition in {
-                    Equipment.Condition.REPAIR,
-                    Equipment.Condition.BROKEN,
-                    Equipment.Condition.DISABLED,
-                }:
-                    form.add_error(
-                        "equipment",
-                        "修理中・故障・使用停止中の備品は貸出できません。",
-                    )
-                elif form.cleaned_data["quantity"] > equipment.available_quantity:
-                    form.add_error(
-                        "quantity",
-                        f"貸出可能数量を超えています（現在 {equipment.available_quantity}"
-                        f"{equipment.unit}）。",
-                    )
-                else:
-                    usage = form.save(commit=False)
-                    usage.equipment = equipment
-                    usage.created_by = request.user
-                    usage.save()
-                    record_event(
-                        equipment,
-                        Kind.LOAN,
-                        request.user,
-                        new_value=(
-                            f"{usage.get_usage_type_display()} {usage.destination} "
-                            f"{usage.quantity}{equipment.unit}"
-                        ),
-                    )
-                    messages.success(request, "貸出・持出を登録しました。")
-                    return redirect("equipment:usage_detail", pk=usage.pk)
+            except LoanError as error:
+                form.add_error(error.field, error.message)
+            else:
+                messages.success(request, "貸出・持出を登録しました。")
+                return redirect("equipment:usage_detail", pk=loan.pk)
     else:
         initial = {}
         equipment_id = request.GET.get("equipment", "")
@@ -575,66 +538,45 @@ def usage_create(request):
             pk=equipment_id, is_active=True
         ).exists():
             initial["equipment"] = equipment_id
-        form = UsageRecordForm(initial=initial)
+        form = LoanForm(initial=initial)
     return render(request, "equipment/usage_form.html", {"form": form})
 
 
 @login_required
 def usage_detail(request, pk):
-    usage = get_object_or_404(
-        UsageRecord.objects.select_related("equipment", "created_by").prefetch_related(
-            "returns__processed_by"
+    loan = get_object_or_404(
+        Loan.objects.select_related("created_by", "responsible_person").prefetch_related(
+            "lines__equipment__model", "lines__returns__processed_by"
         ),
         pk=pk,
     )
-    return render(request, "equipment/usage_detail.html", {"usage": usage})
+    return render(request, "equipment/usage_detail.html", {"loan": loan})
 
 
 @login_required
 def return_usage(request, pk):
-    usage = get_object_or_404(
-        UsageRecord.objects.select_related("equipment").prefetch_related("returns"),
+    line = get_object_or_404(
+        LoanLine.objects.select_related("equipment__model", "loan").prefetch_related(
+            "returns"
+        ),
         pk=pk,
     )
     if request.method == "POST":
         form = ReturnRecordForm(request.POST)
         if form.is_valid():
-            with transaction.atomic():
-                UsageRecord.objects.filter(pk=pk).update(quantity=F("quantity"))
-                usage = get_object_or_404(
-                    UsageRecord.objects.select_for_update().select_related("equipment"),
-                    pk=pk,
-                )
-                remaining = usage.remaining_quantity
-                if form.cleaned_data["quantity"] > remaining:
-                    form.add_error(
-                        "quantity",
-                        f"返却可能数量を超えています（残り {remaining}"
-                        f"{usage.equipment.unit}）。",
-                    )
-                else:
-                    returned = form.save(commit=False)
-                    returned.usage = usage
-                    returned.processed_by = request.user
-                    returned.save()
-                    record_event(
-                        usage.equipment,
-                        Kind.RETURN,
-                        request.user,
-                        new_value=(
-                            f"{returned.quantity}{usage.equipment.unit} "
-                            f"{returned.get_condition_display()}"
-                        ),
-                        reason=returned.condition_details,
-                    )
-                    messages.success(request, "返却を記録しました。")
-                    return redirect("equipment:usage_detail", pk=usage.pk)
+            try:
+                record_return(line.pk, request.user, form.save(commit=False))
+            except LoanError as error:
+                form.add_error(error.field, error.message)
+            else:
+                messages.success(request, "返却を記録しました。")
+                return redirect("equipment:usage_detail", pk=line.loan_id)
     else:
         form = ReturnRecordForm()
     return render(
         request,
         "equipment/return_form.html",
-        {"form": form, "usage": usage},
+        {"form": form, "usage": line},
     )
 
 

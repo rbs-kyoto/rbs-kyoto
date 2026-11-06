@@ -16,7 +16,7 @@
         <td>{{ usage.quantity }}{{ usage.equipment.unit }}<br><small>未返却 {{ usage.remaining_quantity }}{{ usage.equipment.unit }}</small></td>
         <td>{{ usage.started_at|date:"Y/m/d H:i" }}<br>{{ usage.due_at|date:"Y/m/d H:i"|default:"期限なし" }}</td>
         <td>{% if usage.is_overdue %}<span class="equipment__badge equipment__badge--warning">期限超過</span>{% else %}{{ usage.status }}{% endif %}</td>
-        <td><a href="{% url 'equipment:usage_detail' usage.pk %}">詳細</a></td>
+        <td><a href="{% url 'equipment:usage_detail' usage.loan_id %}">詳細</a></td>
     </tr>{% empty %}<tr><td colspan="6" class="equipment__empty">該当する記録はありません。</td></tr>{% endfor %}</tbody></table></div>
 </section>
 {% endblock %}

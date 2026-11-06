@@ -16,7 +16,7 @@ from django.contrib import messages
 from allauth.socialaccount.models import SocialAccount, SocialLogin
 from allauth.account.utils import perform_login
 from pywebpush import WebPushException
-from equipment.models import UsageRecord
+from equipment.models import LoanLine
 from roll.models import RosterEntry
 from .push import PushConfigurationError, send_web_push
 from .models import SuperuserGrantCredential, User, WebPushSubscription
@@ -50,10 +50,10 @@ def login_view(request):
 @login_required
 def mypage(request):
     usages = (
-        UsageRecord.objects.filter(destination_entry__account=request.user)
-        .select_related("equipment", "destination_entry")
+        LoanLine.objects.filter(loan__destination_entry__account=request.user)
+        .select_related("equipment__model", "loan__destination_entry")
         .prefetch_related("returns")
-        .order_by("due_at", "started_at", "pk")
+        .order_by("loan__due_at", "loan__started_at", "pk")
     )
     open_usages = [usage for usage in usages if usage.remaining_quantity]
     return render(

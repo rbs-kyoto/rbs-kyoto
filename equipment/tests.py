@@ -5,6 +5,7 @@ from unittest.mock import patch
 
 import qrcode
 from django.contrib.auth import get_user_model
+from django.core.exceptions import ValidationError
 from django.core.files.uploadedfile import SimpleUploadedFile
 from django.core.management import call_command
 from django.test import TestCase, override_settings
@@ -21,10 +22,12 @@ from .models import (
     EquipmentHistory,
     EquipmentReminderDelivery,
     Manufacturer,
+    Loan,
+    LoanLine,
     ReturnRecord,
     StorageLocation,
-    UsageRecord,
 )
+from .testing import make_usage
 from accounts.models import WebPushSubscription
 from roll.models import Position, RosterEntry
 
@@ -55,9 +58,9 @@ class EquipmentDueReminderCommandTests(TestCase):
     def create_usage_due_in(self, days):
         due_date = self.today + timedelta(days=days)
         due_at = timezone.make_aware(datetime.combine(due_date, datetime.min.time()))
-        return UsageRecord.objects.create(
+        return make_usage(
             equipment=self.equipment,
-            usage_type=UsageRecord.UsageType.LENDING,
+            usage_type=Loan.UsageType.LENDING,
             destination=str(self.entry),
             destination_entry=self.entry,
             quantity=1,
@@ -103,7 +106,7 @@ class EquipmentDueReminderCommandTests(TestCase):
     @patch("equipment.management.commands.send_equipment_due_reminders.webpush")
     def test_does_not_send_for_returned_usage_or_unscheduled_dates(self, send_push):
         returned_usage = self.create_usage_due_in(7)
-        ReturnRecord.objects.create(usage=returned_usage, quantity=1)
+        ReturnRecord.objects.create(line=returned_usage, quantity=1)
         self.create_usage_due_in(5)
 
         with patch(
@@ -218,14 +221,14 @@ class EquipmentWorkflowTests(TestCase):
             is_staff=True,
             is_superuser=True,
         )
-        usage = UsageRecord.objects.create(
+        usage = make_usage(
             equipment=self.equipment,
-            usage_type=UsageRecord.UsageType.LENDING,
+            usage_type=Loan.UsageType.LENDING,
             destination="テスト貸出先",
             quantity=1,
         )
         ReturnRecord.objects.create(
-            usage=usage,
+            line=usage,
             quantity=1,
         )
         EquipmentHistory.objects.create(
@@ -252,8 +255,8 @@ class EquipmentWorkflowTests(TestCase):
         )
         self.assertRedirects(response, reverse("admin:equipment_equipment_changelist"))
         self.assertFalse(Equipment.objects.filter(pk=self.equipment.pk).exists())
-        self.assertFalse(UsageRecord.objects.filter(pk=usage.pk).exists())
-        self.assertFalse(ReturnRecord.objects.filter(usage_id=usage.pk).exists())
+        self.assertFalse(LoanLine.objects.filter(pk=usage.pk).exists())
+        self.assertFalse(ReturnRecord.objects.filter(line_id=usage.pk).exists())
         self.assertFalse(
             EquipmentHistory.objects.filter(equipment_id=self.equipment.pk).exists()
         )
@@ -436,7 +439,7 @@ class EquipmentWorkflowTests(TestCase):
             reverse("equipment:lending_register"),
             {
                 "equipment": self.equipment.pk,
-                "usage_type": UsageRecord.UsageType.LENDING,
+                "usage_type": Loan.UsageType.LENDING,
                 "destination_selection": "other",
                 "other_destination": "放送室",
                 "responsible_person": str(self.responsible_person.pk),
@@ -450,7 +453,7 @@ class EquipmentWorkflowTests(TestCase):
         )
 
         self.assertEqual(response.status_code, 200)
-        self.assertFalse(UsageRecord.objects.exists())
+        self.assertFalse(Loan.objects.exists())
         self.assertContains(response, "貸出可能数量を超えています")
 
     def test_lending_destination_can_be_selected_from_roll(self):
@@ -458,7 +461,7 @@ class EquipmentWorkflowTests(TestCase):
             reverse("equipment:lending_register"),
             {
                 "equipment": self.equipment.pk,
-                "usage_type": UsageRecord.UsageType.LENDING,
+                "usage_type": Loan.UsageType.LENDING,
                 "destination_selection": str(self.responsible_person.pk),
                 "other_destination": "",
                 "responsible_person": str(self.responsible_person.pk),
@@ -472,7 +475,7 @@ class EquipmentWorkflowTests(TestCase):
         )
 
         self.assertEqual(response.status_code, 302)
-        usage = UsageRecord.objects.get()
+        usage = LoanLine.objects.get()
         self.assertEqual(usage.destination_entry, self.responsible_person)
         self.assertEqual(usage.destination, str(self.responsible_person))
         self.assertRedirects(
@@ -485,7 +488,7 @@ class EquipmentWorkflowTests(TestCase):
             reverse("equipment:lending_register"),
             {
                 "equipment": self.equipment.pk,
-                "usage_type": UsageRecord.UsageType.CARRY_OUT,
+                "usage_type": Loan.UsageType.CARRY_OUT,
                 "destination_selection": "other",
                 "other_destination": "校外の収録会場",
                 "responsible_person": str(self.responsible_person.pk),
@@ -499,7 +502,7 @@ class EquipmentWorkflowTests(TestCase):
         )
 
         self.assertEqual(response.status_code, 302)
-        usage = UsageRecord.objects.get()
+        usage = LoanLine.objects.get()
         self.assertIsNone(usage.destination_entry)
         self.assertEqual(usage.destination, "校外の収録会場")
 
@@ -508,7 +511,7 @@ class EquipmentWorkflowTests(TestCase):
             reverse("equipment:lending_register"),
             {
                 "equipment": self.equipment.pk,
-                "usage_type": UsageRecord.UsageType.CARRY_OUT,
+                "usage_type": Loan.UsageType.CARRY_OUT,
                 "destination_selection": "other",
                 "other_destination": "",
                 "responsible_person": str(self.responsible_person.pk),
@@ -522,7 +525,7 @@ class EquipmentWorkflowTests(TestCase):
         )
 
         self.assertEqual(response.status_code, 200)
-        self.assertFalse(UsageRecord.objects.exists())
+        self.assertFalse(Loan.objects.exists())
         self.assertContains(response, "その他の貸出・持出先を入力してください")
 
     def test_lending_form_lists_roster_destinations_and_other(self):
@@ -534,9 +537,9 @@ class EquipmentWorkflowTests(TestCase):
         self.assertContains(response, 'value="other">その他</option>')
 
     def test_partial_returns_update_available_quantity_without_overwriting_history(self):
-        usage = UsageRecord.objects.create(
+        usage = make_usage(
             equipment=self.equipment,
-            usage_type=UsageRecord.UsageType.LENDING,
+            usage_type=Loan.UsageType.LENDING,
             destination="学園祭",
             quantity=5,
             created_by=self.user,
@@ -574,23 +577,6 @@ class EquipmentWorkflowTests(TestCase):
         self.assertEqual(usage.remaining_quantity, 0)
         self.equipment.refresh_from_db()
         self.assertEqual(self.equipment.available_quantity, 5)
-
-    def test_damaged_return_is_not_counted_as_available_stock(self):
-        usage = UsageRecord.objects.create(
-            equipment=self.equipment,
-            usage_type=UsageRecord.UsageType.LENDING,
-            destination="収録",
-            quantity=2,
-            created_by=self.user,
-        )
-        ReturnRecord.objects.create(
-            usage=usage,
-            quantity=1,
-            condition=ReturnRecord.Condition.DAMAGED,
-            processed_by=self.user,
-        )
-        self.equipment.refresh_from_db()
-        self.assertEqual(self.equipment.available_quantity, 3)
 
     def test_unregister_is_soft_and_requires_a_reason(self):
         url = reverse("equipment:unregister", args=[self.equipment.pk])
@@ -887,9 +873,9 @@ class EquipmentWorkflowTests(TestCase):
         self.assertTrue(self.equipment.is_active)
 
     def test_unregistration_is_blocked_while_items_are_still_issued(self):
-        UsageRecord.objects.create(
+        make_usage(
             equipment=self.equipment,
-            usage_type=UsageRecord.UsageType.LENDING,
+            usage_type=Loan.UsageType.LENDING,
             destination="撮影",
             quantity=1,
             created_by=self.user,
@@ -1103,9 +1089,9 @@ class EquipmentInfoButtonTests(TestCase):
             name="説明確認",
             quantity=2,
         )
-        self.usage = UsageRecord.objects.create(
+        self.usage = make_usage(
             equipment=self.item,
-            usage_type=UsageRecord.UsageType.LENDING,
+            usage_type=Loan.UsageType.LENDING,
             destination="放送室",
             quantity=1,
         )
@@ -1117,7 +1103,7 @@ class EquipmentInfoButtonTests(TestCase):
             QRDesignForm,
             ReturnRecordForm,
             StorageLocationForm,
-            UsageRecordForm,
+            LoanForm,
         )
 
         for form_class in (
@@ -1126,7 +1112,7 @@ class EquipmentInfoButtonTests(TestCase):
             QRDesignForm,
             ReturnRecordForm,
             StorageLocationForm,
-            UsageRecordForm,
+            LoanForm,
         ):
             form = form_class()
             for name, field in form.fields.items():
@@ -1358,3 +1344,228 @@ class EquipmentModelSplitTests(TestCase):
         response = self.client.get(reverse("equipment:categories"))
         counts = {c.code: c.equipment_count for c in response.context["categories"]}
         self.assertEqual(counts["A"], 2)
+
+
+class StatusAndReturnTests(TestCase):
+    def setUp(self):
+        self.user = get_user_model().objects.create_user(
+            username="status-user", password="pw-123456", is_staff=True
+        )
+        self.client.force_login(self.user)
+        self.category = Category.objects.get(code="A")
+
+    def _item(self, quantity=1, **kwargs):
+        return Equipment.objects.create(
+            category=self.category,
+            name=kwargs.pop("name", "マイク"),
+            quantity=quantity,
+            unit="本",
+            **kwargs,
+        )
+
+    def _loan(self, item, quantity):
+        return make_usage(
+            equipment=item,
+            usage_type=Loan.UsageType.LENDING,
+            destination="放送室",
+            quantity=quantity,
+            created_by=self.user,
+        )
+
+    def _return(self, line, quantity, condition="normal", details=""):
+        return self.client.post(
+            reverse("equipment:return", args=[line.pk]),
+            {
+                "quantity": str(quantity),
+                "returned_at": "2026-10-02T10:00",
+                "confirmed_by": "確認者",
+                "condition": condition,
+                "condition_details": details,
+                "notes": "",
+            },
+        )
+
+    # --- status transitions
+    def test_change_status_follows_the_transition_table(self):
+        from .services import change_status
+
+        item = self._item()
+        change_status(item, Equipment.Condition.BROKEN, self.user)
+        item.refresh_from_db()
+        self.assertEqual(item.condition, "broken")
+        with self.assertRaises(ValidationError):
+            change_status(item, Equipment.Condition.NORMAL, self.user)
+        change_status(item, Equipment.Condition.REPAIR, self.user)
+        change_status(item, Equipment.Condition.NORMAL, self.user)
+        item.refresh_from_db()
+        self.assertEqual(item.condition, "normal")
+
+    def test_change_status_records_a_status_event_and_can_be_forced(self):
+        from .services import change_status
+
+        item = self._item()
+        change_status(item, Equipment.Condition.INSPECTION, self.user, reason="定期点検")
+        event = EquipmentHistory.objects.get(equipment=item, kind="status")
+        self.assertEqual((event.old_value, event.new_value), ("正常", "要点検"))
+        self.assertEqual(event.reason, "定期点検")
+        change_status(item, Equipment.Condition.LOST, self.user, force=True)
+        item.refresh_from_db()
+        self.assertEqual(item.condition, "lost")
+        self.assertFalse(change_status(item, Equipment.Condition.LOST, self.user))
+
+    def test_edit_form_only_offers_allowed_statuses(self):
+        item = self._item()
+        item.condition = Equipment.Condition.BROKEN
+        item.save()
+        response = self.client.get(reverse("equipment:edit", args=[item.pk]))
+        form = response.context["form"]
+        self.assertEqual(
+            {value for value, _ in form.fields["condition"].choices},
+            {"broken", "repair"},
+        )
+
+    def test_edit_rejects_a_status_that_is_not_allowed(self):
+        item = self._item()
+        item.condition = Equipment.Condition.BROKEN
+        item.save()
+        payload = {
+            "category": self.category.pk,
+            "name": "マイク",
+            "quantity": "1",
+            "unit": "本",
+            "purchase_currency": "JPY",
+            "condition": Equipment.Condition.NORMAL,
+        }
+        response = self.client.post(reverse("equipment:edit", args=[item.pk]), payload)
+        self.assertEqual(response.status_code, 200)
+        item.refresh_from_db()
+        self.assertEqual(item.condition, "broken")
+
+    def test_edit_applies_an_allowed_status_through_change_status(self):
+        item = self._item()
+        payload = {
+            "category": self.category.pk,
+            "name": "マイク",
+            "quantity": "1",
+            "unit": "本",
+            "purchase_currency": "JPY",
+            "condition": Equipment.Condition.DISABLED,
+        }
+        self.client.post(reverse("equipment:edit", args=[item.pk]), payload)
+        item.refresh_from_db()
+        self.assertEqual(item.condition, "disabled")
+        event = EquipmentHistory.objects.get(equipment=item, kind="status")
+        self.assertEqual(event.new_value, "使用停止")
+
+    # --- returns
+    def test_returning_everything_faulty_makes_the_item_broken(self):
+        item = self._item(quantity=2)
+        line = self._loan(item, 2)
+        self._return(line, 2, "faulty", "断線")
+        item.refresh_from_db()
+        self.assertEqual(item.condition, "broken")
+        self.assertEqual(item.available_quantity, 0)
+        self.assertEqual(Equipment.objects.count(), 1)
+
+    def test_partial_faulty_return_splits_those_units_into_their_own_item(self):
+        item = self._item(quantity=5)
+        line = self._loan(item, 3)
+        self._return(line, 3, "faulty", "1本が断線")  # all three came back faulty
+        item.refresh_from_db()
+        # Only 3 of 5 units are faulty: they get their own item.
+        self.assertEqual(item.quantity, 2)
+        self.assertEqual(item.condition, "normal")
+        broken = Equipment.objects.exclude(pk=item.pk).get()
+        self.assertEqual((broken.quantity, broken.condition), (3, "broken"))
+        self.assertEqual(broken.model_id, item.model_id)
+        self.assertNotEqual(broken.inventory_number, item.inventory_number)
+        self.assertTrue(
+            EquipmentHistory.objects.filter(
+                equipment=broken, kind="register", reason__contains=item.inventory_number
+            ).exists()
+        )
+        self.assertEqual(item.available_quantity, 2)
+
+    def test_missing_return_marks_units_lost_and_lost_can_be_found_again(self):
+        from .services import change_status
+
+        item = self._item(quantity=1)
+        line = self._loan(item, 1)
+        self._return(line, 1, "missing")
+        item.refresh_from_db()
+        self.assertEqual(item.condition, "lost")
+        change_status(item, Equipment.Condition.NORMAL, self.user)
+        item.refresh_from_db()
+        self.assertEqual(item.available_quantity, 1)
+
+    def test_return_for_inspection_keeps_the_item_lendable(self):
+        item = self._item(quantity=1)
+        line = self._loan(item, 1)
+        self._return(line, 1, "inspection")
+        item.refresh_from_db()
+        self.assertEqual(item.condition, "inspection")
+        self.assertEqual(item.available_quantity, 1)
+
+    def test_normal_return_changes_nothing_and_events_link_to_the_line(self):
+        item = self._item(quantity=2)
+        line = self._loan(item, 2)
+        self._return(line, 1)
+        item.refresh_from_db()
+        self.assertEqual(item.condition, "normal")
+        self.assertEqual(item.available_quantity, 1)
+        event = EquipmentHistory.objects.get(equipment=item, kind="return")
+        self.assertEqual(event.loan_line, line)
+
+    def test_return_above_remaining_quantity_is_rejected(self):
+        item = self._item(quantity=2)
+        line = self._loan(item, 1)
+        response = self._return(line, 2)
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "返却可能数量を超えています")
+        self.assertFalse(ReturnRecord.objects.exists())
+
+    def test_return_form_does_not_offer_the_legacy_damaged_choice(self):
+        item = self._item()
+        line = self._loan(item, 1)
+        response = self.client.get(reverse("equipment:return", args=[line.pk]))
+        values = {v for v, _ in response.context["form"].fields["condition"].choices}
+        self.assertEqual(values, {"normal", "inspection", "faulty", "missing"})
+
+    # --- loans
+    def test_create_loan_with_several_items_records_one_event_per_item(self):
+        from .services import create_loan
+
+        first, second = self._item(), self._item(name="ミキサー")
+        loan = create_loan(
+            self.user,
+            [(first.pk, 1), (second.pk, 1)],
+            usage_type=Loan.UsageType.CARRY_OUT,
+            destination="体育館",
+        )
+        self.assertEqual(loan.lines.count(), 2)
+        for item in (first, second):
+            event = EquipmentHistory.objects.get(equipment=item, kind="loan")
+            self.assertEqual(event.loan_line.loan, loan)
+
+    def test_create_loan_rejects_unlendable_duplicate_or_excess(self):
+        from .services import LoanError, create_loan
+
+        broken = self._item()
+        broken.condition = Equipment.Condition.BROKEN
+        broken.save()
+        ok = self._item(name="別のマイク", quantity=2)
+        fields = {"usage_type": Loan.UsageType.LENDING, "destination": "x"}
+        with self.assertRaises(LoanError):
+            create_loan(self.user, [(broken.pk, 1)], **fields)
+        with self.assertRaises(LoanError):
+            create_loan(self.user, [(ok.pk, 1), (ok.pk, 1)], **fields)
+        with self.assertRaises(LoanError):
+            create_loan(self.user, [(ok.pk, 3)], **fields)
+        self.assertFalse(Loan.objects.exists())
+
+    def test_deleting_an_item_removes_loans_left_without_lines(self):
+        item = self._item()
+        line = self._loan(item, 1)
+        loan_id = line.loan_id
+        item.delete()
+        self.assertFalse(Loan.objects.filter(pk=loan_id).exists())

@@ -2,6 +2,7 @@ from django.contrib import admin
 
 from .events import Kind, record_event
 from .forms import EquipmentForm, StorageLocationForm
+from .services import change_status
 from .models import (
     Category,
     Equipment,
@@ -9,9 +10,10 @@ from .models import (
     EquipmentModel,
     Manufacturer,
     QRDesign,
+    Loan,
+    LoanLine,
     ReturnRecord,
     StorageLocation,
-    UsageRecord,
 )
 
 
@@ -84,12 +86,15 @@ class EquipmentAdmin(admin.ModelAdmin):
         changed_fields = [
             field
             for field in form.changed_data
-            if field in EquipmentForm.Meta.fields
+            if field in EquipmentForm.Meta.fields and field != "condition"
         ]
+        new_condition = obj.condition
         if change:
             previous = Equipment.objects.get(pk=obj.pk)
             for field_name in changed_fields:
                 previous_values[field_name] = getattr(previous, field_name)
+            # The status goes through change_status so the rules always apply.
+            obj.condition = previous.condition
             obj.last_modified_by = request.user
         else:
             obj.created_by = request.user
@@ -108,12 +113,13 @@ class EquipmentAdmin(admin.ModelAdmin):
             new_value = getattr(obj, field_name)
             record_event(
                 obj,
-                Kind.STATUS if field_name == "condition" else Kind.UPDATE,
+                Kind.UPDATE,
                 request.user,
                 field_name=form.fields[field_name].label,
                 old_value=old_value,
                 new_value=new_value,
             )
+        change_status(obj, new_condition, request.user)
 
 @admin.register(StorageLocation)
 class StorageLocationAdmin(admin.ModelAdmin):
@@ -126,42 +132,37 @@ class StorageLocationAdmin(admin.ModelAdmin):
         return False
 
 
-class ReturnRecordInline(admin.TabularInline):
-    model = ReturnRecord
+class LoanLineInline(admin.TabularInline):
+    model = LoanLine
     extra = 0
     can_delete = False
-    readonly_fields = (
-        "quantity",
-        "returned_at",
-        "confirmed_by",
-        "condition",
-        "condition_details",
-        "processed_by",
-        "created_at",
-    )
+    readonly_fields = ("equipment", "quantity")
 
 
-@admin.register(UsageRecord)
-class UsageRecordAdmin(admin.ModelAdmin):
+@admin.register(Loan)
+class LoanAdmin(admin.ModelAdmin):
     list_display = (
-        "equipment",
-        "usage_type",
         "destination",
-        "quantity",
+        "usage_type",
         "started_at",
         "due_at",
         "created_by",
     )
     list_filter = ("usage_type",)
-    search_fields = ("equipment__inventory_number", "destination", "recipient")
+    search_fields = (
+        "lines__equipment__inventory_number",
+        "destination",
+        "recipient",
+    )
     readonly_fields = ("created_by", "created_at")
-    inlines = [ReturnRecordInline]
+    inlines = [LoanLineInline]
 
     def has_add_permission(self, request):
         return False
 
     def has_change_permission(self, request, obj=None):
         return False
+
 
 @admin.register(EquipmentHistory)
 class EquipmentHistoryAdmin(admin.ModelAdmin):
@@ -192,10 +193,10 @@ class EquipmentHistoryAdmin(admin.ModelAdmin):
 
 @admin.register(ReturnRecord)
 class ReturnRecordAdmin(admin.ModelAdmin):
-    list_display = ("usage", "quantity", "returned_at", "condition", "processed_by")
+    list_display = ("line", "quantity", "returned_at", "condition", "processed_by")
     list_filter = ("condition", "returned_at")
     readonly_fields = (
-        "usage",
+        "line",
         "quantity",
         "returned_at",
         "confirmed_by",
