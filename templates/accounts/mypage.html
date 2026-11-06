@@ -93,6 +93,16 @@
                         </button>
                         <span role="status" aria-live="polite" data-notification-status="news"></span>
                     </section>
+                    <section class="mypage-notification-setting">
+                        <div>
+                            <h4>出欠リマインド通知</h4>
+                            <p>割り当てられた予定のうち、出欠が未回答のものを、3日前・前日・当日の朝にお知らせします。回答すると通知は止まります。</p>
+                        </div>
+                        <button class="common-style reverse" type="button" data-notification-type="schedule">
+                            出欠リマインド通知を有効にする
+                        </button>
+                        <span role="status" aria-live="polite" data-notification-status="schedule"></span>
+                    </section>
                 </div>
                 <span hidden data-push-public-key>{{ webpush_public_key }}</span>
                 <span hidden data-push-subscribe-url="{% url 'accounts:push_subscription' %}"></span>

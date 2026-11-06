@@ -1,0 +1,158 @@
+{% extends "main/base.html" %}
+{% load static %}
+
+{% block title %}{{ event.title }}｜予定｜rbs京都{% endblock %}
+{% block extra_css %}<link rel="stylesheet" href="{% static 'main/css/schedule.css' %}">{% endblock %}
+
+{% block content %}
+
+<section class="schedule-section schedule-detail">
+    <h2 class="heading">{{ event.title }}</h2>
+
+    <dl class="schedule-detail__list">
+        <dt>日時</dt>
+        <dd>
+            {% if event.all_day %}
+                {{ event.start|date:"Y年n月j日" }}{% if event.end and event.end|date:"Ymd" != event.start|date:"Ymd" %} 〜 {{ event.end|date:"Y年n月j日" }}{% endif %}（終日）
+            {% else %}
+                {{ event.start|date:"Y年n月j日 H:i" }}{% if event.end %} 〜 {% if event.end|date:"Ymd" == event.start|date:"Ymd" %}{{ event.end|date:"H:i" }}{% else %}{{ event.end|date:"Y年n月j日 H:i" }}{% endif %}{% endif %}
+            {% endif %}
+        </dd>
+        {% if event.place %}
+        <dt>場所</dt>
+        <dd>{{ event.place }}</dd>
+        {% endif %}
+        {% if event.recurrence != "none" %}
+        <dt>繰り返し</dt>
+        <dd>{{ event.get_recurrence_display }}{% if event.recurrence_until %}（{{ event.recurrence_until|date:"Y年n月j日" }}まで）{% else %}（終了日なし）{% endif %}</dd>
+        {% endif %}
+        {% if event.description %}
+        <dt>メモ</dt>
+        <dd class="schedule-detail__memo">{{ event.description|linebreaksbr }}</dd>
+        {% endif %}
+    </dl>
+
+    {% if place_warnings or place_upcoming %}
+    <div class="schedule-equipment__problems schedule-place-warning" role="status">
+        {% if place_warnings %}
+        <p>この回は、同じ場所（{{ event.place }}）に重なる予定があります。</p>
+        <ul>
+            {% for use in place_warnings %}
+            <li><a href="{{ use.url }}">{{ use.title }}</a>（{{ use.start|date:"n月j日 H:i" }}〜{{ use.end|date:"H:i" }}{% if use.place != event.place %}・{{ use.place }}{% endif %}）</li>
+            {% endfor %}
+        </ul>
+        {% endif %}
+        {% if place_upcoming %}
+        <p>今後の回にも、場所が重なる予定があります。</p>
+        <ul>
+            {% for problem_day, uses in place_upcoming %}
+            <li>{{ problem_day|date:"n月j日" }}: {% for use in uses %}<a href="{{ use.url }}">{{ use.title }}</a>{% if not forloop.last %}、{% endif %}{% endfor %}</li>
+            {% endfor %}
+        </ul>
+        {% endif %}
+    </div>
+    {% endif %}
+
+    {% if rows or event.ask_attendance %}
+    <section class="schedule-people" aria-labelledby="people-heading">
+        <h3 class="schedule-people__heading" id="people-heading">
+            割当部員
+            {% if event.recurrence != "none" %}<small>（{{ day|date:"n月j日" }}の回）</small>{% endif %}
+        </h3>
+
+        {% if event.ask_attendance and rows %}
+        <p class="schedule-people__summary">
+            {% for label, count in summary.items %}<span>{{ label }} {{ count }}</span>{% endfor %}
+        </p>
+        {% endif %}
+
+        {% if rows %}
+        <ul class="schedule-people__list">
+            {% for row in rows %}
+            <li class="schedule-people__item">
+                <span class="schedule-people__name">{{ row.assignment.member.name }}</span>
+                {% if row.assignment.role %}<span class="schedule-people__role">{{ row.assignment.role }}</span>{% endif %}
+                {% if event.ask_attendance %}
+                    {% if row.attendance %}
+                    <span class="schedule-status schedule-status--{{ row.attendance.status }}">{{ row.attendance.get_status_display }}</span>
+                    {% if row.attendance.comment %}<span class="schedule-people__comment">{{ row.attendance.comment }}</span>{% endif %}
+                    {% else %}
+                    <span class="schedule-status schedule-status--none">未回答</span>
+                    {% endif %}
+                {% endif %}
+            </li>
+            {% endfor %}
+        </ul>
+        {% else %}
+        <p class="schedule-people__empty">割り当てられた部員はいません。</p>
+        {% endif %}
+
+        {% if can_respond %}
+        <form class="schedule-respond" method="post" action="{% url 'schedule:event_respond' event.pk %}">
+            {% csrf_token %}
+            <input type="hidden" name="date" value="{{ day|date:'Y-m-d' }}">
+            <p class="schedule-respond__question">{{ day|date:"n月j日" }}、出席しますか？</p>
+            <div class="schedule-respond__choices">
+                {% for value, label in form.fields.status.choices %}
+                <label class="schedule-respond__choice">
+                    <input type="radio" name="status" value="{{ value }}" required{% if form.initial.status == value %} checked{% endif %}>
+                    <span>{{ label }}</span>
+                </label>
+                {% endfor %}
+            </div>
+            <input class="schedule-respond__comment" type="text" name="comment" maxlength="200" placeholder="遅刻・早退など(任意)" value="{{ form.initial.comment }}">
+            <button class="common-style" type="submit">回答する</button>
+        </form>
+        {% endif %}
+    </section>
+    {% endif %}
+
+    {% if equipment_rows %}
+    <section class="schedule-people schedule-equipment" aria-labelledby="equipment-heading">
+        <h3 class="schedule-people__heading" id="equipment-heading">
+            使う機材
+            {% if event.recurrence != "none" %}<small>（{{ day|date:"n月j日" }}の回）</small>{% endif %}
+        </h3>
+        <ul class="schedule-people__list">
+            {% for row in equipment_rows %}
+            <li class="schedule-people__item schedule-equipment__item">
+                <span class="schedule-people__name">
+                    <a href="{% url 'equipment:detail' row.status.item.equipment.pk %}">{{ row.status.item.equipment.name }}</a>
+                </span>
+                <span class="schedule-people__role">{{ row.status.item.quantity }}{{ row.status.item.equipment.unit }}</span>
+                <span class="schedule-status schedule-status--{{ row.status.code }}">{{ row.status.label }}</span>
+                {% for reason in row.status.reasons %}
+                <span class="schedule-equipment__reason">{{ reason }}</span>
+                {% endfor %}
+                {% if user.is_staff and row.lending_url %}
+                <a class="schedule-equipment__lend" href="{{ row.lending_url }}">貸出登録</a>
+                {% endif %}
+            </li>
+            {% endfor %}
+        </ul>
+        {% if equipment_problems %}
+        <div class="schedule-equipment__problems" role="status">
+            <p>今後の回に、機材の競合や不足があります。</p>
+            <ul>
+                {% for problem_day, status in equipment_problems %}
+                <li>{{ problem_day|date:"n月j日" }} {{ status.item.equipment.name }}: {{ status.label }}</li>
+                {% endfor %}
+            </ul>
+        </div>
+        {% endif %}
+    </section>
+    {% endif %}
+
+    <div class="page_control schedule-detail__actions">
+        <a class="page-control-style-back" href="{% url 'schedule:calendar' %}?year={{ event.start|date:'Y' }}&month={{ event.start|date:'n' }}">カレンダーへ</a>
+        {% if user.is_staff %}
+        <a class="common-style" href="{% url 'schedule:event_edit' event.pk %}">編集</a>
+        <form method="post" action="{% url 'schedule:event_delete' event.pk %}" onsubmit="return confirm('この予定を削除しますか？{% if event.recurrence != 'none' %}\n繰り返し予定はすべて削除されます。{% endif %}');">
+            {% csrf_token %}
+            <button class="common-style reverse" type="submit">削除</button>
+        </form>
+        {% endif %}
+    </div>
+</section>
+
+{% endblock %}
