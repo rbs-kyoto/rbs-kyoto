@@ -7,7 +7,8 @@ from django.utils import timezone
 from pywebpush import WebPushException
 from requests import RequestException
 
-from accounts.push import PushConfigurationError, send_web_push
+from accounts.models import NotificationHistory
+from accounts.push import PushConfigurationError, record_notification, send_web_push
 from equipment.models import EquipmentReminderDelivery, UsageRecord
 
 
@@ -78,7 +79,9 @@ class Command(BaseCommand):
                 }
             )
 
-            subscriptions = usage.destination_entry.account.push_subscriptions.all()
+            account = usage.destination_entry.account
+            history_recorded = False
+            subscriptions = account.push_subscriptions.all()
             for subscription in subscriptions:
                 already_sent = EquipmentReminderDelivery.objects.filter(
                     subscription=subscription,
@@ -113,6 +116,11 @@ class Command(BaseCommand):
                     days_until_due=days_until_due,
                 )
                 sent_count += 1
+                if not history_recorded:
+                    record_notification(
+                        account.pk, NotificationHistory.Kind.EQUIPMENT, payload
+                    )
+                    history_recorded = True
 
         if failure_count:
             raise CommandError(

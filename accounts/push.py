@@ -7,6 +7,8 @@ from pywebpush import WebPushException, webpush
 from py_vapid import Vapid, VapidException
 from cryptography.hazmat.primitives import serialization
 
+from .models import NotificationHistory
+
 
 class PushConfigurationError(Exception):
     pass
@@ -81,3 +83,14 @@ def send_web_push(subscription, payload):
             return False
         raise
     return True
+
+
+def record_notification(user_id, kind, payload):
+    """Save a notification that was delivered to the user's history."""
+    return NotificationHistory.objects.create(
+        user_id=user_id,
+        kind=kind,
+        title=str(payload.get("title", ""))[:200],
+        body=str(payload.get("body", ""))[:500],
+        url=str(payload.get("url", ""))[:500],
+    )
