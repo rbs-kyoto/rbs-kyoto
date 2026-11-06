@@ -5,6 +5,7 @@ from django.db.models.signals import post_save, pre_save
 from django.dispatch import receiver
 from django.urls import reverse
 from pywebpush import WebPushException
+from requests import RequestException
 
 from accounts.models import WebPushSubscription
 from accounts.push import PushConfigurationError, send_web_push
@@ -66,7 +67,7 @@ def send_news_notifications(news_id):
                 "Could not send new-news notification: Web Push is not configured."
             )
             break
-        except WebPushException:
+        except (WebPushException, RequestException):
             logger.exception(
                 "Could not send new-news notification to subscription %s.",
                 subscription.pk,

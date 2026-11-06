@@ -65,7 +65,7 @@ class EquipmentDueReminderCommandTests(TestCase):
         WEBPUSH_VAPID_PRIVATE_KEY="private",
         WEBPUSH_VAPID_SUBJECT="mailto:admin@example.com",
     )
-    @patch("equipment.management.commands.send_equipment_due_reminders.webpush")
+    @patch("equipment.management.commands.send_equipment_due_reminders.send_web_push")
     def test_sends_each_requested_reminder_once(self, send_push):
         for days in (7, 3, 1, 0, -3, -6):
             self.create_usage_due_in(days)
@@ -83,7 +83,7 @@ class EquipmentDueReminderCommandTests(TestCase):
         self.assertEqual(send_push.call_count, 6)
         self.assertEqual(EquipmentReminderDelivery.objects.count(), 6)
         bodies = [
-            json.loads(call.kwargs["data"])["body"]
+            call.args[1]["body"]
             for call in send_push.call_args_list
         ]
         self.assertIn("「通知用マイク」の返却期限まであと7日です。 未返却：1本", bodies)
@@ -96,7 +96,7 @@ class EquipmentDueReminderCommandTests(TestCase):
         WEBPUSH_VAPID_PRIVATE_KEY="private",
         WEBPUSH_VAPID_SUBJECT="mailto:admin@example.com",
     )
-    @patch("equipment.management.commands.send_equipment_due_reminders.webpush")
+    @patch("equipment.management.commands.send_equipment_due_reminders.send_web_push")
     def test_does_not_send_for_returned_usage_or_unscheduled_dates(self, send_push):
         returned_usage = self.create_usage_due_in(7)
         ReturnRecord.objects.create(usage=returned_usage, quantity=1)
@@ -116,7 +116,7 @@ class EquipmentDueReminderCommandTests(TestCase):
         WEBPUSH_VAPID_PRIVATE_KEY="private",
         WEBPUSH_VAPID_SUBJECT="mailto:admin@example.com",
     )
-    @patch("equipment.management.commands.send_equipment_due_reminders.webpush")
+    @patch("equipment.management.commands.send_equipment_due_reminders.send_web_push")
     def test_does_not_send_when_equipment_reminders_are_disabled(self, send_push):
         self.create_usage_due_in(7)
         self.subscription.equipment_reminders_enabled = False
@@ -136,12 +136,15 @@ class EquipmentDueReminderCommandTests(TestCase):
         WEBPUSH_VAPID_PRIVATE_KEY="private",
         WEBPUSH_VAPID_SUBJECT="mailto:admin@example.com",
     )
-    @patch("equipment.management.commands.send_equipment_due_reminders.webpush")
+    @patch("equipment.management.commands.send_equipment_due_reminders.send_web_push")
     def test_removes_expired_push_subscriptions(self, send_push):
         self.create_usage_due_in(7)
-        response = Response()
-        response.status_code = 410
-        send_push.side_effect = WebPushException("expired", response=response)
+
+        def expire(subscription, payload):
+            subscription.delete()
+            return False
+
+        send_push.side_effect = expire
 
         with patch(
             "equipment.management.commands.send_equipment_due_reminders.timezone.localdate",
