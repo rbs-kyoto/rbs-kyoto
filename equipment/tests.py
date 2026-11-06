@@ -1087,3 +1087,68 @@ class EquipmentCsvIoTests(TestCase):
         self.assertEqual(copy.purchase_price, 5000)
         self.assertEqual(copy.condition, Equipment.Condition.REPAIR)
         self.assertEqual(copy.notes, "メモ, カンマ入り")
+
+
+class EquipmentInfoButtonTests(TestCase):
+    def setUp(self):
+        self.user = get_user_model().objects.create_user(
+            username="info-user", password="pw-123456", is_staff=True
+        )
+        self.client.force_login(self.user)
+        self.item = Equipment.objects.create(
+            category=Category.objects.get(code="A"),
+            inventory_number="A-26000001",
+            name="説明確認",
+            quantity=2,
+        )
+        self.usage = UsageRecord.objects.create(
+            equipment=self.item,
+            usage_type=UsageRecord.UsageType.LENDING,
+            destination="放送室",
+            quantity=1,
+        )
+
+    def test_every_field_of_every_form_has_an_explanation(self):
+        from .forms import (
+            EquipmentForm,
+            EquipmentImportForm,
+            QRDesignForm,
+            ReturnRecordForm,
+            StorageLocationForm,
+            UsageRecordForm,
+        )
+
+        for form_class in (
+            EquipmentForm,
+            EquipmentImportForm,
+            QRDesignForm,
+            ReturnRecordForm,
+            StorageLocationForm,
+            UsageRecordForm,
+        ):
+            form = form_class()
+            for name, field in form.fields.items():
+                with self.subTest(form=form_class.__name__, field=name):
+                    self.assertTrue(field.info_text)
+
+    def test_forms_render_toggle_button_and_hidden_note(self):
+        pages = [
+            (reverse("equipment:register"), "備品の種類による分類です"),
+            (reverse("equipment:lending_register"), "他の人や団体に貸して、相手が使う場合"),
+            (reverse("equipment:return", args=[self.usage.pk]), "今回返却する個数です"),
+            (reverse("equipment:location_register"), "保管場所の名前です"),
+            (reverse("equipment:settings"), "QRコードの色です"),
+            (reverse("equipment:import"), "CSVダウンロード"),
+        ]
+        for url, text in pages:
+            with self.subTest(url=url):
+                response = self.client.get(url)
+                self.assertContains(response, 'class="equipment__info-button"')
+                self.assertContains(response, 'aria-expanded="false"')
+                self.assertContains(response, text)
+                self.assertContains(response, "equipment/info.js")
+
+    def test_lending_explains_difference_between_lending_and_carry_out(self):
+        response = self.client.get(reverse("equipment:lending_register"))
+        self.assertContains(response, "貸出：")
+        self.assertContains(response, "持出：")

@@ -770,3 +770,42 @@ body.dark-mode .equipment__status--unregistered {
         grid-template-columns: minmax(0, 1fr);
     }
 }
+.equipment__label-row {
+    display: flex;
+    align-items: center;
+    gap: .4rem;
+}
+
+.equipment__info-button {
+    display: inline-flex;
+    width: 1.35rem;
+    height: 1.35rem;
+    flex: none;
+    align-items: center;
+    justify-content: center;
+    padding: 0;
+    color: var(--Textcolor);
+    border: 1px solid var(--Controlborder);
+    border-radius: 50%;
+    background: var(--Controlbackground);
+    font: italic 700 .8rem/1 serif;
+    cursor: pointer;
+    pointer-events: auto;
+}
+
+.equipment__info-button:hover,
+.equipment__info-button[aria-expanded="true"] {
+    border-color: var(--Natural-themecolor);
+}
+
+.equipment__info-text {
+    padding: .5rem .7rem;
+    border-left: 3px solid var(--Natural-themecolor);
+    background: var(--Controlbackground);
+    font-size: .875rem;
+    line-height: 1.6;
+}
+
+.equipment__info-text[hidden] {
+    display: none;
+}
