@@ -1,6 +1,6 @@
 from django.contrib import admin
 
-from .forms import EquipmentForm, StorageLocationForm
+from .forms import EquipmentForm
 from .models import (
     Category,
     Equipment,
@@ -8,7 +8,6 @@ from .models import (
     Manufacturer,
     QRDesign,
     ReturnRecord,
-    StorageLocation,
     UsageRecord,
 )
 
@@ -105,17 +104,6 @@ class EquipmentAdmin(admin.ModelAdmin):
                 old_value=str(old_value) if old_value is not None else "",
                 new_value=str(new_value) if new_value is not None else "",
             )
-
-@admin.register(StorageLocation)
-class StorageLocationAdmin(admin.ModelAdmin):
-    form = StorageLocationForm
-    list_display = ("name", "code", "parent", "is_active")
-    list_filter = ("is_active",)
-    search_fields = ("name", "code", "description")
-
-    def has_delete_permission(self, request, obj=None):
-        return False
-
 
 class ReturnRecordInline(admin.TabularInline):
     model = ReturnRecord

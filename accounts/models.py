@@ -43,6 +43,9 @@ class WebPushSubscription(models.Model):
     news_notifications_enabled = models.BooleanField(
         "新着投稿通知", default=False
     )
+    schedule_reminders_enabled = models.BooleanField(
+        "出欠リマインド通知", default=False
+    )
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 

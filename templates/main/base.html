@@ -68,6 +68,9 @@
                     <a href="{% url 'equipment:dashboard' %}">Equipment</a>
                     <a href="{% url 'roll:list' %}">Roll</a>
                 {% endif %}
+                {% if user.is_authenticated %}
+                    <a href="{% url 'schedule:calendar' %}">Schedule</a>
+                {% endif %}
             </nav>
         </div>
         {% if user.is_authenticated %}
