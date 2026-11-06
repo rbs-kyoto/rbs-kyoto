@@ -16,6 +16,8 @@
         {% endif %}
     </div>
 
+    {% include "schedule/_view_switch.html" with active="month" month_year=year month_month=month week_date=week_date %}
+
     <div class="schedule-nav">
         <a class="schedule-nav__link" href="?year={{ prev.year }}&month={{ prev.month }}" aria-label="前の月">&lt; 前の月</a>
         <h3 class="schedule-nav__title">{{ year }}年{{ month }}月</h3>
@@ -30,7 +32,7 @@
         {% for week in rows %}{% for cell in week %}
         <div class="schedule-cell{% if not cell.in_month %} is-other-month{% endif %}{% if cell.is_today %} is-today{% endif %}" role="gridcell">
             <div class="schedule-cell__head">
-                <span class="schedule-cell__day{% if forloop.counter == 6 %} is-sat{% elif forloop.counter == 7 %} is-sun{% endif %}">{{ cell.date.day }}</span>
+                <a class="schedule-cell__day{% if forloop.counter == 6 %} is-sat{% elif forloop.counter == 7 %} is-sun{% endif %}" href="{% url 'schedule:week' %}?date={{ cell.date|date:'Y-m-d' }}" aria-label="{{ cell.date|date:'n月j日' }}の週を見る">{{ cell.date.day }}</a>
                 {% if user.is_staff %}
                 <a class="schedule-cell__add" href="{% url 'schedule:event_create' %}?date={{ cell.date|date:'Y-m-d' }}" aria-label="{{ cell.date|date:'n月j日' }}に予定を追加">+</a>
                 {% endif %}

@@ -72,6 +72,11 @@
 
 .schedule-cell__day {
     font-size: .85rem;
+    text-decoration: none;
+}
+
+a.schedule-cell__day:hover {
+    text-decoration: underline;
 }
 
 .schedule-cell__day.is-sat,
@@ -141,6 +146,129 @@
     white-space: nowrap;
 }
 
+/* 月/週の切り替え */
+.schedule-switch {
+    display: inline-flex;
+    border: var(--Bordercolor) solid .1rem;
+    border-radius: .3rem;
+    overflow: hidden;
+    margin: .5rem 0 0;
+}
+
+.schedule-switch__link {
+    padding: .3rem 1.1rem;
+    font-size: .9rem;
+    color: var(--Subtlecolor);
+    transition: background-color .2s, color .2s;
+}
+
+.schedule-switch__link.is-active {
+    background-color: var(--Textcolor);
+    color: var(--Backgroundcolor);
+}
+
+.schedule-nav__today {
+    margin: 0 0 1rem;
+    text-align: center;
+}
+
+/* 週表示 */
+.schedule-week {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    border-top: var(--Bordercolor) solid .1rem;
+}
+
+.schedule-week__day {
+    display: grid;
+    grid-template-columns: 6.5rem 1fr;
+    gap: .5rem 1rem;
+    padding: .8rem .5rem;
+    border-bottom: var(--Bordercolor) solid .1rem;
+}
+
+.schedule-week__day.is-today {
+    background-color: color-mix(in srgb, var(--Textcolor) 10%, transparent);
+}
+
+.schedule-week__head {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+}
+
+.schedule-week__date {
+    font-size: 1.05rem;
+    font-weight: 600;
+}
+
+.schedule-week__date small {
+    font-size: .8rem;
+    font-weight: 400;
+}
+
+.schedule-week__date.is-sat {
+    color: #3b82f6;
+}
+
+.schedule-week__date.is-sun {
+    color: #ef4444;
+}
+
+.schedule-week__add {
+    color: var(--Subtlecolor);
+    padding: 0 .4rem;
+}
+
+.schedule-week__events {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    gap: .35rem;
+    min-width: 0;
+}
+
+.schedule-week__event {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    gap: .1rem .7rem;
+    padding: .25rem .4rem;
+    border-radius: .2rem;
+    transition: background-color .2s;
+}
+
+.schedule-week__event:hover {
+    background-color: var(--Hoverbackground);
+    color: var(--Hovertextcolor);
+}
+
+.schedule-week__time {
+    flex: 0 0 3rem;
+    color: var(--Subtlecolor);
+    font-size: .85rem;
+}
+
+.schedule-week__title {
+    flex: 1 1 8rem;
+    min-width: 0;
+    overflow-wrap: anywhere;
+}
+
+.schedule-week__place {
+    color: var(--Subtlecolor);
+    font-size: .8rem;
+}
+
+.schedule-week__empty {
+    color: var(--Subtlecolor);
+    font-size: .85rem;
+    padding: .25rem .4rem;
+}
+
 /* 詳細 */
 .schedule-detail__list {
     display: grid;
@@ -208,16 +336,40 @@
 }
 
 @media (max-width: 700px) {
+    .schedule-section {
+        padding-inline: .4rem;
+    }
+
     .schedule-cell {
-        min-height: 4.5rem;
-        padding: .15rem;
+        min-height: 5.5rem;
+        padding: .15rem .1rem;
+    }
+
+    .schedule-event {
+        padding: .05rem .1rem;
+        font-size: .56rem;
+        line-height: 1.2;
     }
 
     .schedule-event__time {
         display: none;
     }
 
+    .schedule-event__title {
+        display: -webkit-box;
+        -webkit-box-orient: vertical;
+        -webkit-line-clamp: 3;
+        line-clamp: 3;
+        white-space: normal;
+        overflow-wrap: anywhere;
+        word-break: break-all;
+    }
+
     .schedule-cell__add {
         display: none;
+    }
+
+    .schedule-week__day {
+        grid-template-columns: 1fr;
     }
 }
