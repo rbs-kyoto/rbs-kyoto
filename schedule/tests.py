@@ -5,9 +5,10 @@ from django.test import TestCase
 from django.urls import reverse
 from django.utils import timezone
 
+from equipment.models import Category, Equipment, ReturnRecord, UsageRecord
 from roll.models import RosterEntry
 
-from .models import Assignment, Attendance, Event
+from .models import Assignment, Attendance, Event, EventEquipment, UsageLink
 from .recurrence import expand
 
 
@@ -15,17 +16,27 @@ def jst(*args):
     return timezone.make_aware(datetime(*args))
 
 
-def formset_data(rows=(), initial=0):
-    """割当部員フォームセットの POST データ。rows は (member_pk, role) の並び。"""
+def formset_data(rows=(), initial=0, equipment=()):
+    """割当部員・使用機材フォームセットの POST データ。
+
+    rows は (member_pk, role)、equipment は (equipment_pk, quantity) の並び。
+    """
     data = {
         "assignments-TOTAL_FORMS": str(len(rows)),
         "assignments-INITIAL_FORMS": str(initial),
         "assignments-MIN_NUM_FORMS": "0",
         "assignments-MAX_NUM_FORMS": "1000",
+        "equipment_items-TOTAL_FORMS": str(len(equipment)),
+        "equipment_items-INITIAL_FORMS": "0",
+        "equipment_items-MIN_NUM_FORMS": "0",
+        "equipment_items-MAX_NUM_FORMS": "1000",
     }
     for i, (member, role) in enumerate(rows):
         data[f"assignments-{i}-member"] = str(member)
         data[f"assignments-{i}-role"] = role
+    for i, (item, quantity) in enumerate(equipment):
+        data[f"equipment_items-{i}-equipment"] = str(item)
+        data[f"equipment_items-{i}-quantity"] = str(quantity)
     return data
 
 
@@ -363,3 +374,196 @@ class AttendanceTests(AssignmentTests):
         self.client.post(reverse("schedule:event_delete", args=[event.pk]))
         self.assertEqual(Assignment.objects.count(), 0)
         self.assertEqual(Attendance.objects.count(), 0)
+
+
+class EquipmentLinkTests(TestCase):
+    def setUp(self):
+        User = get_user_model()
+        self.staff = User.objects.create_user("staff", password="pw", is_staff=True)
+        self.member = User.objects.create_user("member", password="pw")
+        category = Category.objects.get(code="A")
+        self.mic = Equipment.objects.create(
+            category=category, inventory_number="A-SCH-1", name="ワイヤレスマイク",
+            quantity=2, unit="本",
+        )
+        self.camera = Equipment.objects.create(
+            category=category, inventory_number="A-SCH-2", name="カメラ",
+            quantity=1, unit="台",
+        )
+
+    def make_event(self, title, start, quantity=1, equipment=None, end=None, **extra):
+        event = Event.objects.create(title=title, start=start, end=end, **extra)
+        EventEquipment.objects.create(
+            event=event, equipment=equipment or self.mic, quantity=quantity
+        )
+        return event
+
+    def status_of(self, event, day):
+        self.client.force_login(self.member)
+        response = self.client.get(
+            reverse("schedule:event_detail", args=[event.pk]), {"date": day}
+        )
+        return response, [row["status"] for row in response.context["equipment_rows"]]
+
+    def test_staff_attaches_equipment_to_event(self):
+        self.client.force_login(self.staff)
+        response = self.client.post(
+            reverse("schedule:event_create"),
+            {
+                "title": "撮影",
+                "start": "2026-11-10T13:00",
+                "end": "2026-11-10T16:00",
+                "recurrence": "none",
+                **formset_data(equipment=[(self.mic.pk, 2), (self.camera.pk, 1)]),
+            },
+        )
+        event = Event.objects.get(title="撮影")
+        self.assertRedirects(response, reverse("schedule:event_detail", args=[event.pk]))
+        self.assertEqual(
+            {(i.equipment.name, i.quantity) for i in event.equipment_items.all()},
+            {("ワイヤレスマイク", 2), ("カメラ", 1)},
+        )
+
+    def test_member_cannot_attach_equipment(self):
+        self.client.force_login(self.member)
+        response = self.client.post(reverse("schedule:event_create"), {"title": "x"})
+        self.assertEqual(response.status_code, 302)  # staff限定なのでログインへ
+        self.assertFalse(Event.objects.exists())
+
+    def test_planned_equipment_without_conflict_is_ok(self):
+        event = self.make_event("撮影", jst(2026, 11, 10, 13), end=jst(2026, 11, 10, 16))
+        response, statuses = self.status_of(event, "2026-11-10")
+        self.assertEqual([s.code for s in statuses], ["ok"])
+        self.assertContains(response, "予約OK")
+
+    def test_quantity_over_stock_is_short(self):
+        event = self.make_event("多すぎ", jst(2026, 11, 10, 13), quantity=3)
+        _, statuses = self.status_of(event, "2026-11-10")
+        self.assertEqual([s.code for s in statuses], ["short"])
+
+    def test_overlapping_events_conflict_but_can_be_saved(self):
+        self.make_event("A", jst(2026, 11, 10, 13), quantity=2, end=jst(2026, 11, 10, 16))
+        b = self.make_event("B", jst(2026, 11, 10, 15), quantity=1, end=jst(2026, 11, 10, 17))
+        response, statuses = self.status_of(b, "2026-11-10")
+        self.assertEqual([s.code for s in statuses], ["conflict"])
+        self.assertContains(response, "予定「A」が 2本 使用予定です")
+
+    def test_same_equipment_at_different_times_is_not_a_conflict(self):
+        self.make_event("A", jst(2026, 11, 10, 9), quantity=2, end=jst(2026, 11, 10, 11))
+        b = self.make_event("B", jst(2026, 11, 10, 15), quantity=2, end=jst(2026, 11, 10, 17))
+        _, statuses = self.status_of(b, "2026-11-10")
+        self.assertEqual([s.code for s in statuses], ["ok"])
+
+    def test_broken_equipment_is_unavailable(self):
+        self.mic.condition = Equipment.Condition.BROKEN
+        self.mic.save()
+        event = self.make_event("撮影", jst(2026, 11, 10, 13))
+        _, statuses = self.status_of(event, "2026-11-10")
+        self.assertEqual([s.code for s in statuses], ["unavailable"])
+
+    def test_outstanding_lending_outside_events_counts_as_conflict(self):
+        UsageRecord.objects.create(
+            equipment=self.camera, usage_type="lending", destination="他部活", quantity=1,
+            started_at=jst(2026, 11, 9, 10), due_at=jst(2026, 11, 12, 10),
+        )
+        event = self.make_event("撮影", jst(2026, 11, 10, 13), equipment=self.camera)
+        _, statuses = self.status_of(event, "2026-11-10")
+        self.assertEqual([s.code for s in statuses], ["conflict"])
+        self.assertIn("他部活", statuses[0].reasons[0])
+
+    def test_lending_button_prefills_equipment_form_for_staff_only(self):
+        event = self.make_event(
+            "撮影", jst(2026, 11, 10, 13), quantity=2, end=jst(2026, 11, 10, 16)
+        )
+        url = reverse("schedule:event_detail", args=[event.pk]) + "?date=2026-11-10"
+        self.client.force_login(self.member)
+        self.assertNotContains(self.client.get(url), "貸出登録")
+        self.client.force_login(self.staff)
+        response = self.client.get(url)
+        self.assertContains(response, "貸出登録")
+        link = response.context["equipment_rows"][0]["lending_url"]
+        self.assertIn(f"equipment={self.mic.pk}", link)
+        self.assertIn("quantity=2", link)
+        self.assertIn("started_at=2026-11-10T13%3A00", link)
+        self.assertIn("due_at=2026-11-10T16%3A00", link)
+
+        form_page = self.client.get(link)
+        form = form_page.context["form"]
+        self.assertEqual(form.initial["equipment"], str(self.mic.pk))
+        self.assertEqual(form.initial["quantity"], 2)
+        self.assertEqual(form.initial["purpose"], "撮影")
+        self.assertContains(form_page, 'name="schedule_item"')
+
+    def register_lending(self, user, event, day="2026-11-10", quantity=2):
+        item = event.equipment_items.get()
+        self.client.force_login(user)
+        return self.client.post(
+            reverse("equipment:lending_register"),
+            {
+                "equipment": item.equipment_id,
+                "usage_type": "lending",
+                "destination_selection": "other",
+                "other_destination": "放送部",
+                "quantity": quantity,
+                "started_at": "2026-11-10T13:00",
+                "due_at": "2026-11-10T16:00",
+                "schedule_item": item.pk,
+                "schedule_date": day,
+            },
+        )
+
+    def test_lending_registration_links_and_shows_lent_then_returned(self):
+        event = self.make_event(
+            "撮影", jst(2026, 11, 10, 13), quantity=2, end=jst(2026, 11, 10, 16)
+        )
+        response = self.register_lending(self.staff, event)
+        self.assertEqual(response.status_code, 302, getattr(response, "context", None) and response.context["form"].errors)
+        link = UsageLink.objects.get()
+        self.assertEqual(link.date.isoformat(), "2026-11-10")
+
+        _, statuses = self.status_of(event, "2026-11-10")
+        self.assertEqual((statuses[0].code, statuses[0].label), ("lent", "貸出中"))
+
+        ReturnRecord.objects.create(usage=link.usage, quantity=2)
+        _, statuses = self.status_of(event, "2026-11-10")
+        self.assertEqual([s.code for s in statuses], ["returned"])
+
+    def test_non_staff_lending_is_not_linked(self):
+        event = self.make_event("撮影", jst(2026, 11, 10, 13), quantity=2)
+        self.register_lending(self.member, event)
+        self.assertEqual(UsageRecord.objects.count(), 1)
+        self.assertEqual(UsageLink.objects.count(), 0)
+
+    def test_link_for_non_occurrence_date_is_ignored(self):
+        event = self.make_event("撮影", jst(2026, 11, 10, 13), quantity=2)
+        self.register_lending(self.staff, event, day="2026-11-20")
+        self.assertEqual(UsageLink.objects.count(), 0)
+
+    def test_recurring_event_lending_is_per_date(self):
+        event = self.make_event(
+            "定例会", jst(2026, 11, 4, 16), quantity=1,
+            recurrence=Event.Recurrence.WEEKLY, end=jst(2026, 11, 4, 17),
+        )
+        self.register_lending(self.staff, event, day="2026-11-04", quantity=1)
+        _, first = self.status_of(event, "2026-11-04")
+        _, second = self.status_of(event, "2026-11-11")
+        self.assertEqual([first[0].code, second[0].code], ["lent", "ok"])
+
+    def test_upcoming_problems_are_listed_for_recurring_events(self):
+        self.make_event("単発", jst(2026, 11, 11, 16), quantity=2, end=jst(2026, 11, 11, 17))
+        event = self.make_event(
+            "定例会", jst(2026, 11, 4, 16), quantity=1,
+            recurrence=Event.Recurrence.WEEKLY, end=jst(2026, 11, 4, 17),
+        )
+        response, _ = self.status_of(event, "2026-11-04")
+        problems = [(d.isoformat(), s.code) for d, s in response.context["equipment_problems"]]
+        self.assertEqual(problems, [("2026-11-11", "conflict")])
+        self.assertContains(response, "今後の回に、機材の競合や不足があります")
+
+    def test_deleting_event_keeps_usage_record(self):
+        event = self.make_event("撮影", jst(2026, 11, 10, 13), quantity=2)
+        self.register_lending(self.staff, event)
+        self.client.force_login(self.staff)
+        self.client.post(reverse("schedule:event_delete", args=[event.pk]))
+        self.assertEqual(UsageLink.objects.count(), 0)
+        self.assertEqual(UsageRecord.objects.count(), 1)

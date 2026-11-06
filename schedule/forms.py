@@ -2,9 +2,10 @@ from django import forms
 from django.forms import inlineformset_factory
 from django.utils import timezone
 
+from equipment.models import Equipment
 from roll.models import RosterEntry
 
-from .models import Assignment, Attendance, Event
+from .models import Assignment, Attendance, Event, EventEquipment
 
 DATETIME_INPUT = "%Y-%m-%dT%H:%M"
 
@@ -89,6 +90,27 @@ AssignmentFormSet = inlineformset_factory(
     Assignment,
     form=AssignmentForm,
     extra=3,
+    can_delete=True,
+)
+
+
+class EventEquipmentForm(forms.ModelForm):
+    class Meta:
+        model = EventEquipment
+        fields = ["equipment", "quantity"]
+        widgets = {"quantity": forms.NumberInput(attrs={"min": 1, "placeholder": "数量"})}
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields["equipment"].queryset = Equipment.objects.filter(is_active=True)
+        self.fields["equipment"].empty_label = "機材を選択"
+
+
+EventEquipmentFormSet = inlineformset_factory(
+    Event,
+    EventEquipment,
+    form=EventEquipmentForm,
+    extra=2,
     can_delete=True,
 )
 

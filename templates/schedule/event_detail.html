@@ -86,6 +86,42 @@
     </section>
     {% endif %}
 
+    {% if equipment_rows %}
+    <section class="schedule-people schedule-equipment" aria-labelledby="equipment-heading">
+        <h3 class="schedule-people__heading" id="equipment-heading">
+            使う機材
+            {% if event.recurrence != "none" %}<small>（{{ day|date:"n月j日" }}の回）</small>{% endif %}
+        </h3>
+        <ul class="schedule-people__list">
+            {% for row in equipment_rows %}
+            <li class="schedule-people__item schedule-equipment__item">
+                <span class="schedule-people__name">
+                    <a href="{% url 'equipment:detail' row.status.item.equipment.pk %}">{{ row.status.item.equipment.name }}</a>
+                </span>
+                <span class="schedule-people__role">{{ row.status.item.quantity }}{{ row.status.item.equipment.unit }}</span>
+                <span class="schedule-status schedule-status--{{ row.status.code }}">{{ row.status.label }}</span>
+                {% for reason in row.status.reasons %}
+                <span class="schedule-equipment__reason">{{ reason }}</span>
+                {% endfor %}
+                {% if user.is_staff and row.lending_url %}
+                <a class="schedule-equipment__lend" href="{{ row.lending_url }}">貸出登録</a>
+                {% endif %}
+            </li>
+            {% endfor %}
+        </ul>
+        {% if equipment_problems %}
+        <div class="schedule-equipment__problems" role="status">
+            <p>今後の回に、機材の競合や不足があります。</p>
+            <ul>
+                {% for problem_day, status in equipment_problems %}
+                <li>{{ problem_day|date:"n月j日" }} {{ status.item.equipment.name }}: {{ status.label }}</li>
+                {% endfor %}
+            </ul>
+        </div>
+        {% endif %}
+    </section>
+    {% endif %}
+
     <div class="page_control schedule-detail__actions">
         <a class="page-control-style-back" href="{% url 'schedule:calendar' %}?year={{ event.start|date:'Y' }}&month={{ event.start|date:'n' }}">カレンダーへ</a>
         {% if user.is_staff %}

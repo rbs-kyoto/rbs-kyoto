@@ -8,9 +8,16 @@ from django.http import Http404
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
 from django.utils import timezone
+from django.utils.http import urlencode
 from django.views.decorators.http import require_POST
 
-from .forms import AssignmentFormSet, AttendanceForm, EventForm
+from .equipment_status import event_statuses, upcoming_problems
+from .forms import (
+    AssignmentFormSet,
+    AttendanceForm,
+    EventEquipmentFormSet,
+    EventForm,
+)
 from .models import Attendance, Event
 from .recurrence import expand
 
@@ -159,6 +166,21 @@ def _my_assignment(user, event):
     return event.assignments.filter(member=entry).first()
 
 
+def _lending_url(item, occurrence, day):
+    """機材アプリの貸出登録画面を、この予定の内容入りで開くURL。"""
+    params = {
+        "equipment": item.equipment_id,
+        "quantity": item.quantity,
+        "started_at": occurrence.start.strftime("%Y-%m-%dT%H:%M"),
+        "purpose": item.event.title,
+        "schedule_item": item.pk,
+        "schedule_date": day.isoformat(),
+    }
+    if item.event.end:
+        params["due_at"] = occurrence.end.strftime("%Y-%m-%dT%H:%M")
+    return f"{reverse('equipment:lending_register')}?{urlencode(params)}"
+
+
 @login_required
 def event_detail(request, pk):
     event = get_object_or_404(Event, pk=pk)
@@ -184,6 +206,26 @@ def event_detail(request, pk):
             }
         )
 
+    occurrence = next(
+        (o for o in expand([event], day, day) if o.first_day == day), None
+    ) or next(iter(expand([event], day, day)), None)
+    equipment_rows = []
+    for status in event_statuses(event, occurrence) if occurrence else []:
+        equipment_rows.append(
+            {
+                "status": status,
+                "lending_url": _lending_url(status.item, occurrence, day)
+                if status.can_register_lending
+                else None,
+            }
+        )
+    # 表示中の回の問題は機材ごとのバッジで分かるので、それ以外の今後の回だけを警告にまとめる
+    equipment_problems = [
+        (problem_day, status)
+        for problem_day, status in upcoming_problems(event, day)
+        if problem_day != day
+    ]
+
     summary = {label: 0 for _, label in Attendance.Status.choices}
     for row in rows:
         if row["attendance"]:
@@ -200,6 +242,8 @@ def event_detail(request, pk):
             "summary": summary,
             "can_respond": mine is not None,
             "form": form,
+            "equipment_rows": equipment_rows,
+            "equipment_problems": equipment_problems,
         },
     )
 
@@ -238,7 +282,13 @@ def _handle_event_form(request, event, initial=None):
     """予定と割当部員(フォームセット)をまとめて検証・保存する。保存できたら予定を返す。"""
     form = EventForm(request.POST or None, instance=event, initial=initial)
     formset = AssignmentFormSet(request.POST or None, instance=event)
-    if request.method == "POST" and form.is_valid() and formset.is_valid():
+    equipment_formset = EventEquipmentFormSet(request.POST or None, instance=event)
+    if (
+        request.method == "POST"
+        and form.is_valid()
+        and formset.is_valid()
+        and equipment_formset.is_valid()
+    ):
         with transaction.atomic():
             saved = form.save(commit=False)
             if saved.created_by_id is None:
@@ -246,8 +296,10 @@ def _handle_event_form(request, event, initial=None):
             saved.save()
             formset.instance = saved
             formset.save()
-        return form, formset, saved
-    return form, formset, None
+            equipment_formset.instance = saved
+            equipment_formset.save()
+        return form, formset, equipment_formset, saved
+    return form, formset, equipment_formset, None
 
 
 @login_required
@@ -262,13 +314,18 @@ def event_create(request):
             pass
 
     event = Event()
-    form, formset, saved = _handle_event_form(request, event, initial)
+    form, formset, equipment_formset, saved = _handle_event_form(request, event, initial)
     if saved:
         return redirect("schedule:event_detail", pk=saved.pk)
     return render(
         request,
         "schedule/event_form.html",
-        {"form": form, "formset": formset, "event": None},
+        {
+            "form": form,
+            "formset": formset,
+            "equipment_formset": equipment_formset,
+            "event": None,
+        },
     )
 
 
@@ -276,13 +333,18 @@ def event_create(request):
 @staff_required
 def event_edit(request, pk):
     event = get_object_or_404(Event, pk=pk)
-    form, formset, saved = _handle_event_form(request, event)
+    form, formset, equipment_formset, saved = _handle_event_form(request, event)
     if saved:
         return redirect("schedule:event_detail", pk=saved.pk)
     return render(
         request,
         "schedule/event_form.html",
-        {"form": form, "formset": formset, "event": event},
+        {
+            "form": form,
+            "formset": formset,
+            "equipment_formset": equipment_formset,
+            "event": event,
+        },
     )
 
 
