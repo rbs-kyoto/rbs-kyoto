@@ -1,6 +1,7 @@
 from datetime import timedelta
 
 from django.conf import settings
+from django.core.validators import MinValueValidator
 from django.db import models
 
 
@@ -114,3 +115,62 @@ class Attendance(models.Model):
 
     def __str__(self):
         return f"{self.assignment} {self.date} {self.get_status_display()}"
+
+
+class EventEquipment(models.Model):
+    """予定で使う機材と数量(繰り返し予定では、全回に共通)。"""
+
+    event = models.ForeignKey(
+        Event,
+        verbose_name="予定",
+        on_delete=models.CASCADE,
+        related_name="equipment_items",
+    )
+    equipment = models.ForeignKey(
+        "equipment.Equipment",
+        verbose_name="機材",
+        on_delete=models.CASCADE,
+        related_name="schedule_items",
+    )
+    quantity = models.PositiveIntegerField(
+        "数量", default=1, validators=[MinValueValidator(1)]
+    )
+
+    class Meta:
+        ordering = ["id"]
+        verbose_name = "使用機材"
+        verbose_name_plural = "使用機材"
+        constraints = [
+            models.UniqueConstraint(
+                fields=["event", "equipment"], name="schedule_event_equipment_unique"
+            ),
+        ]
+
+    def __str__(self):
+        return f"{self.event} - {self.equipment.name} x{self.quantity}"
+
+
+class UsageLink(models.Model):
+    """予定の機材と、機材アプリの貸出・持出記録(その回の分)を結ぶ。"""
+
+    item = models.ForeignKey(
+        EventEquipment,
+        verbose_name="使用機材",
+        on_delete=models.CASCADE,
+        related_name="usage_links",
+    )
+    date = models.DateField("対象日")
+    usage = models.OneToOneField(
+        "equipment.UsageRecord",
+        verbose_name="貸出・持出記録",
+        on_delete=models.CASCADE,
+        related_name="schedule_link",
+    )
+
+    class Meta:
+        ordering = ["date", "id"]
+        verbose_name = "貸出記録の紐付け"
+        verbose_name_plural = "貸出記録の紐付け"
+
+    def __str__(self):
+        return f"{self.item} {self.date}"

@@ -1,4 +1,5 @@
 import csv
+from datetime import datetime
 from io import BytesIO
 
 import qrcode
@@ -581,6 +582,9 @@ def usage_create(request):
                             f"{usage.quantity}{equipment.unit}"
                         ),
                     )
+                    from schedule.linking import link_usage
+
+                    link_usage(request.user, usage, request.POST)
                     messages.success(request, "貸出・持出を登録しました。")
                     return redirect("equipment:usage_detail", pk=usage.pk)
     else:
@@ -590,8 +594,35 @@ def usage_create(request):
             pk=equipment_id, is_active=True
         ).exists():
             initial["equipment"] = equipment_id
+        # 予定の詳細から開いたときの、内容入りのプリセット(任意)
+        quantity = request.GET.get("quantity", "")
+        if quantity.isdigit() and int(quantity) >= 1:
+            initial["quantity"] = int(quantity)
+        for key in ("started_at", "due_at"):
+            raw = request.GET.get(key, "")
+            try:
+                datetime.strptime(raw, "%Y-%m-%dT%H:%M")
+            except ValueError:
+                continue
+            initial[key] = raw
+        if request.GET.get("purpose"):
+            initial["purpose"] = request.GET["purpose"][:250]
         form = UsageRecordForm(initial=initial)
-    return render(request, "equipment/usage_form.html", {"form": form})
+
+    from schedule.linking import parse_link_params
+
+    source = request.POST if request.method == "POST" else request.GET
+    link = parse_link_params(source)
+    schedule_link = (
+        {"item": link[0].pk, "date": link[1].isoformat(), "title": link[0].event.title}
+        if link
+        else None
+    )
+    return render(
+        request,
+        "equipment/usage_form.html",
+        {"form": form, "schedule_link": schedule_link},
+    )
 
 
 @login_required

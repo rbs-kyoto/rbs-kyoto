@@ -25,11 +25,11 @@
         </div>
         {% endfor %}
 
-        <fieldset class="schedule-assign">
+        <fieldset class="schedule-assign" data-formset="{{ formset.prefix }}">
             <legend>割当部員</legend>
             {{ formset.management_form }}
             {{ formset.non_form_errors }}
-            <div class="schedule-assign__rows" id="assign-rows" data-prefix="{{ formset.prefix }}">
+            <div class="schedule-assign__rows" data-rows>
                 {% for f in formset %}
                 <div class="schedule-assign__row">
                     {{ f.id }}
@@ -44,14 +44,43 @@
                 </div>
                 {% endfor %}
             </div>
-            <template id="assign-empty">
+            <template data-empty>
                 <div class="schedule-assign__row">
                     {{ formset.empty_form.member }}
                     {{ formset.empty_form.role }}
                 </div>
             </template>
-            <button class="common-style" type="button" id="assign-add">+ 部員を追加</button>
+            <button class="common-style" type="button" data-add>+ 部員を追加</button>
             <p class="schedule-form__note">放送部員として名簿に登録されている人から選べます。出欠を取る場合、回答できるのは、アカウントが名簿と連携している割当部員だけです。</p>
+        </fieldset>
+
+        <fieldset class="schedule-assign" data-formset="{{ equipment_formset.prefix }}">
+            <legend>使う機材</legend>
+            {{ equipment_formset.management_form }}
+            {{ equipment_formset.non_form_errors }}
+            <div class="schedule-assign__rows" data-rows>
+                {% for f in equipment_formset %}
+                <div class="schedule-assign__row schedule-assign__row--equipment">
+                    {{ f.id }}
+                    {{ f.equipment }}
+                    {{ f.quantity }}
+                    {% if f.instance.pk %}
+                    <label class="schedule-assign__delete">{{ f.DELETE }} 外す</label>
+                    {% endif %}
+                    {% for error in f.equipment.errors %}<p class="schedule-form__error">{{ error }}</p>{% endfor %}
+                    {% for error in f.quantity.errors %}<p class="schedule-form__error">{{ error }}</p>{% endfor %}
+                    {% for error in f.non_field_errors %}<p class="schedule-form__error">{{ error }}</p>{% endfor %}
+                </div>
+                {% endfor %}
+            </div>
+            <template data-empty>
+                <div class="schedule-assign__row schedule-assign__row--equipment">
+                    {{ equipment_formset.empty_form.equipment }}
+                    {{ equipment_formset.empty_form.quantity }}
+                </div>
+            </template>
+            <button class="common-style" type="button" data-add>+ 機材を追加</button>
+            <p class="schedule-form__note">機材アプリに登録済みの機材から選べます。予定の詳細で、予約できているか(他の予定との競合や在庫)が表示されます。同じ機材が競合しても保存はできます。</p>
         </fieldset>
 
         {% if event and event.recurrence != "none" %}
@@ -67,18 +96,20 @@
 
 <script>
 (function () {
-    const rows = document.getElementById("assign-rows");
-    const tpl = document.getElementById("assign-empty");
-    const addButton = document.getElementById("assign-add");
-    if (!rows || !tpl || !addButton) return;
-    const prefix = rows.dataset.prefix;
-    const total = document.getElementById("id_" + prefix + "-TOTAL_FORMS");
-    addButton.addEventListener("click", function () {
-        const index = parseInt(total.value, 10);
-        const wrapper = document.createElement("div");
-        wrapper.innerHTML = tpl.innerHTML.replace(/__prefix__/g, index);
-        rows.appendChild(wrapper.firstElementChild);
-        total.value = index + 1;
+    document.querySelectorAll("[data-formset]").forEach(function (box) {
+        const prefix = box.dataset.formset;
+        const rows = box.querySelector("[data-rows]");
+        const tpl = box.querySelector("template[data-empty]");
+        const addButton = box.querySelector("[data-add]");
+        const total = document.getElementById("id_" + prefix + "-TOTAL_FORMS");
+        if (!rows || !tpl || !addButton || !total) return;
+        addButton.addEventListener("click", function () {
+            const index = parseInt(total.value, 10);
+            const wrapper = document.createElement("div");
+            wrapper.innerHTML = tpl.innerHTML.replace(/__prefix__/g, index);
+            rows.appendChild(wrapper.firstElementChild);
+            total.value = index + 1;
+        });
     });
 })();
 </script>
