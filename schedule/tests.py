@@ -139,3 +139,63 @@ class ScheduleViewTests(TestCase):
         response = self.client.post(reverse("schedule:event_delete", args=[self.event.pk]))
         self.assertEqual(response.status_code, 302)
         self.assertFalse(Event.objects.filter(pk=self.event.pk).exists())
+
+
+class WeekViewTests(TestCase):
+    def setUp(self):
+        self.member = get_user_model().objects.create_user("member", password="pw")
+        Event.objects.create(
+            title="定例会",
+            start=jst(2026, 11, 4, 16, 0),
+            recurrence=Event.Recurrence.WEEKLY,
+        )
+        Event.objects.create(
+            title="合宿",
+            start=jst(2026, 11, 6, 0, 0),
+            end=jst(2026, 11, 8, 0, 0),
+            all_day=True,
+        )
+
+    def get_week(self, **params):
+        self.client.force_login(self.member)
+        return self.client.get(reverse("schedule:week"), params)
+
+    def test_login_required(self):
+        response = self.client.get(reverse("schedule:week"))
+        self.assertEqual(response.status_code, 302)
+
+    def test_week_starts_on_monday_and_lists_seven_days(self):
+        response = self.get_week(date="2026-11-05")  # 木曜
+        days = response.context["days"]
+        self.assertEqual(len(days), 7)
+        self.assertEqual(days[0]["date"], date(2026, 11, 2))
+        self.assertEqual(days[6]["date"], date(2026, 11, 8))
+
+    def test_recurring_and_multi_day_events_are_placed(self):
+        response = self.get_week(date="2026-11-05")
+        by_date = {d["date"]: [o.event.title for o in d["occurrences"]] for d in response.context["days"]}
+        self.assertEqual(by_date[date(2026, 11, 4)], ["定例会"])
+        for day in (6, 7, 8):
+            self.assertEqual(by_date[date(2026, 11, day)], ["合宿"])
+        self.assertEqual(by_date[date(2026, 11, 3)], [])
+
+    def test_recurring_event_appears_in_later_week(self):
+        response = self.get_week(date="2026-11-18")
+        titles = [o.event.title for d in response.context["days"] for o in d["occurrences"]]
+        self.assertEqual(titles, ["定例会"])
+
+    def test_prev_and_next_week(self):
+        response = self.get_week(date="2026-11-05")
+        self.assertEqual(response.context["prev_date"], date(2026, 10, 26))
+        self.assertEqual(response.context["next_date"], date(2026, 11, 9))
+
+    def test_invalid_date_falls_back_to_today(self):
+        response = self.get_week(date="not-a-date")
+        self.assertEqual(response.status_code, 200)
+        today = timezone.localdate()
+        self.assertIn(today, [d["date"] for d in response.context["days"]])
+
+    def test_month_view_links_to_week(self):
+        self.client.force_login(self.member)
+        response = self.client.get(reverse("schedule:calendar"), {"year": 2026, "month": 11})
+        self.assertContains(response, reverse("schedule:week") + "?date=2026-11-04")

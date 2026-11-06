@@ -32,6 +32,19 @@ def _shift_month(year, month, delta):
     return index // 12, index % 12 + 1
 
 
+def _occurrences_by_day(range_start, range_end):
+    """期間内の予定を {日付: [出現, ...]} にまとめる(複数日の予定は各日に入る)。"""
+    # 繰り返し予定は開始が期間より前でも出現しうるので、開始が期間終端以前のものを対象にする
+    candidates = Event.objects.filter(start__date__lte=range_end)
+    by_day = {}
+    for occ in expand(candidates, range_start, range_end):
+        day = max(occ.first_day, range_start)
+        while day <= min(occ.last_day, range_end):
+            by_day.setdefault(day, []).append(occ)
+            day += timedelta(days=1)
+    return by_day
+
+
 @login_required
 def calendar_month(request):
     year, month = _month_param(request)
@@ -40,16 +53,7 @@ def calendar_month(request):
     weeks = calendar.Calendar(firstweekday=0).monthdatescalendar(year, month)
     grid_start, grid_end = weeks[0][0], weeks[-1][-1]
 
-    # 繰り返し予定は開始がグリッドより前でも出現しうるので、開始がグリッド終端以前のものを対象にする
-    candidates = Event.objects.filter(start__date__lte=grid_end)
-    occurrences = expand(candidates, grid_start, grid_end)
-
-    by_day = {}
-    for occ in occurrences:
-        day = max(occ.first_day, grid_start)
-        while day <= min(occ.last_day, grid_end):
-            by_day.setdefault(day, []).append(occ)
-            day += timedelta(days=1)
+    by_day = _occurrences_by_day(grid_start, grid_end)
 
     rows = [
         [
@@ -75,8 +79,53 @@ def calendar_month(request):
             "month": month,
             "weekdays": WEEKDAYS,
             "rows": rows,
+            "week_date": today if (today.year, today.month) == (year, month) else date(year, month, 1),
             "prev": {"year": prev_year, "month": prev_month},
             "next": {"year": next_year, "month": next_month},
+        },
+    )
+
+
+def _date_param(request):
+    try:
+        return date.fromisoformat(request.GET.get("date", ""))
+    except ValueError:
+        return timezone.localdate()
+
+
+@login_required
+def calendar_week(request):
+    """指定した日を含む週(月曜始まり)を、日ごとに縦に並べて表示する。"""
+    today = timezone.localdate()
+    base = _date_param(request)
+    week_start = base - timedelta(days=base.weekday())
+    week_end = week_start + timedelta(days=6)
+
+    by_day = _occurrences_by_day(week_start, week_end)
+    days = []
+    for i in range(7):
+        day = week_start + timedelta(days=i)
+        days.append(
+            {
+                "date": day,
+                "weekday": WEEKDAYS[i],
+                "is_today": day == today,
+                "is_sat": i == 5,
+                "is_sun": i == 6,
+                "occurrences": by_day.get(day, []),
+            }
+        )
+
+    return render(
+        request,
+        "schedule/week.html",
+        {
+            "days": days,
+            "week_start": week_start,
+            "week_end": week_end,
+            "prev_date": week_start - timedelta(days=7),
+            "next_date": week_start + timedelta(days=7),
+            "today": today,
         },
     )
 
