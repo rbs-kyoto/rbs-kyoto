@@ -11,8 +11,9 @@ from django.contrib.auth import get_user_model
 from django.core.management.base import BaseCommand
 from django.utils import timezone
 
+from equipment.models import Category, Equipment
 from roll.models import RosterEntry
-from schedule.models import Assignment, Event
+from schedule.models import Assignment, Event, EventEquipment
 
 DEMO_TITLES = ("【デモ】定例会", "【デモ】撮影", "【デモ】合宿")
 
@@ -24,6 +25,7 @@ class Command(BaseCommand):
         user = self._create_admin()
         self._create_events()
         self._create_assignments(user)
+        self._create_equipment()
 
     def _create_admin(self):
         password = os.getenv("PREVIEW_ADMIN_PASSWORD", "")
@@ -97,3 +99,27 @@ class Command(BaseCommand):
             )
             Assignment.objects.get_or_create(event=event, member=entry, defaults={"role": role})
         self.stdout.write("デモの割当部員を作成しました(出欠はON)。")
+
+    def _create_equipment(self):
+        """機材の紐付けと「予約OK/競合」の表示を試せるよう、デモ機材を予定に結ぶ。"""
+        category = Category.objects.order_by("code").first()
+        if category is None:
+            return
+
+        mic, _ = Equipment.objects.get_or_create(
+            inventory_number="PREVIEW-MIC",
+            defaults={"category": category, "name": "【デモ】ワイヤレスマイク", "quantity": 2, "unit": "本"},
+        )
+        tripod, _ = Equipment.objects.get_or_create(
+            inventory_number="PREVIEW-TRIPOD",
+            defaults={"category": category, "name": "【デモ】三脚", "quantity": 3, "unit": "本"},
+        )
+
+        meeting = Event.objects.filter(title=DEMO_TITLES[0]).first()
+        shoot = Event.objects.filter(title=DEMO_TITLES[1]).first()
+        if meeting and not meeting.equipment_items.exists():
+            EventEquipment.objects.create(event=meeting, equipment=mic, quantity=1)
+        if shoot and not shoot.equipment_items.exists():
+            EventEquipment.objects.create(event=shoot, equipment=mic, quantity=2)
+            EventEquipment.objects.create(event=shoot, equipment=tripod, quantity=2)
+        self.stdout.write("デモの使用機材を設定しました。")
