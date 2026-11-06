@@ -39,7 +39,7 @@ from .models import (
 @login_required
 def dashboard(request):
     active_equipment = Equipment.objects.filter(is_active=True).select_related(
-        "category"
+        "model__category"
     ).prefetch_related(
         Prefetch(
             "usage_records",
@@ -96,8 +96,8 @@ def dashboard(request):
 def equipment_list(request):
     archived = request.GET.get("archived") == "1"
     equipment = Equipment.objects.filter(is_active=not archived).select_related(
-        "category",
-        "manufacturer",
+        "model__category",
+        "model__manufacturer",
         "location",
         "manager",
         "created_by",
@@ -120,9 +120,9 @@ def equipment_list(request):
         equipment = equipment.filter(
             Q(inventory_number__icontains=query)
             | Q(qr_token__iexact=query)
-            | Q(name__icontains=query)
-            | Q(manufacturer__name__icontains=query)
-            | Q(model_number__icontains=query)
+            | Q(model__name__icontains=query)
+            | Q(model__manufacturer__name__icontains=query)
+            | Q(model__model_number__icontains=query)
             | Q(serial_number__icontains=query)
             | Q(receipt_number__icontains=query)
             | Q(qr_inventory_number__iexact=query)
@@ -133,7 +133,7 @@ def equipment_list(request):
         ).distinct()
     if category:
         if category.isdigit():
-            equipment = equipment.filter(category_id=category)
+            equipment = equipment.filter(model__category_id=category)
         else:
             equipment = equipment.none()
     if condition:
@@ -294,9 +294,7 @@ def equipment_edit(request, pk):
                         updated_equipment,
                         Kind.STATUS if field_name == "condition" else Kind.UPDATE,
                         request.user,
-                        field_name=updated_equipment._meta.get_field(
-                            field_name
-                        ).verbose_name,
+                        field_name=form.fields[field_name].label,
                         old_value=original_values[field_name],
                         new_value=_display_value(updated_equipment, field_name),
                     )
@@ -315,7 +313,11 @@ def equipment_edit(request, pk):
 def equipment_detail(request, pk):
     equipment = get_object_or_404(
         Equipment.objects.select_related(
-            "category", "location", "created_by", "last_modified_by"
+            "model__category",
+            "model__manufacturer",
+            "location",
+            "created_by",
+            "last_modified_by",
         ),
         pk=pk,
     )
@@ -640,7 +642,8 @@ def return_usage(request, pk):
 def category_list(request):
     categories = Category.objects.annotate(
         equipment_count=Count(
-            "equipment", filter=Q(equipment__is_active=True)
+            "equipment_models__items",
+            filter=Q(equipment_models__items__is_active=True),
         )
     )
     return render(

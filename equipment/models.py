@@ -82,7 +82,86 @@ class Manufacturer(models.Model):
         return self.name
 
 
+class EquipmentModelManager(models.Manager):
+    def resolve(self, category, name, manufacturer=None, model_number="", unit="個"):
+        """Return the model (機種) with these attributes, creating it if needed."""
+        model = self.filter(
+            category=category,
+            name=name,
+            manufacturer=manufacturer,
+            model_number=model_number,
+            unit=unit,
+        ).first()
+        if model is None:
+            model = self.create(
+                category=category,
+                name=name,
+                manufacturer=manufacturer,
+                model_number=model_number,
+                unit=unit,
+            )
+        return model
+
+
+class EquipmentModel(models.Model):
+    """機種: what is shared by every unit of the same kind of equipment."""
+
+    category = models.ForeignKey(
+        Category,
+        verbose_name="分類",
+        on_delete=models.PROTECT,
+        related_name="equipment_models",
+    )
+    name = models.CharField("備品名", max_length=200)
+    manufacturer = models.ForeignKey(
+        Manufacturer,
+        verbose_name="メーカー",
+        on_delete=models.PROTECT,
+        null=True,
+        blank=True,
+        related_name="equipment_models",
+    )
+    model_number = models.CharField("型番", max_length=100, blank=True)
+    unit = models.CharField("単位", max_length=20, default="個")
+    image = models.ImageField("画像", upload_to="equipment/", blank=True)
+
+    objects = EquipmentModelManager()
+
+    class Meta:
+        ordering = ["name"]
+        verbose_name = "機種"
+        verbose_name_plural = "機種"
+        indexes = [models.Index(fields=["name"])]
+
+    def __str__(self):
+        return self.name
+
+
+MODEL_FIELDS = ("category", "name", "manufacturer", "model_number", "unit", "image")
+
+
+class EquipmentManager(models.Manager):
+    def create(self, **kwargs):
+        """Accept the 機種 fields directly and resolve the model for the caller."""
+        if "model" not in kwargs and any(key in kwargs for key in MODEL_FIELDS):
+            image = kwargs.pop("image", "")
+            model = EquipmentModel.objects.resolve(
+                category=kwargs.pop("category"),
+                name=kwargs.pop("name"),
+                manufacturer=kwargs.pop("manufacturer", None),
+                model_number=kwargs.pop("model_number", ""),
+                unit=kwargs.pop("unit", "個"),
+            )
+            if image and not model.image:
+                model.image = image
+                model.save(update_fields=["image"])
+            kwargs["model"] = model
+        return super().create(**kwargs)
+
+
 class Equipment(models.Model):
+    """個体(備品): one physical item, or one counted lot of identical items."""
+
     class Condition(models.TextChoices):
         NORMAL = "normal", "正常"
         INSPECTION = "inspection", "要点検"
@@ -112,28 +191,17 @@ class Equipment(models.Model):
         default="",
         editable=False,
     )
-    category = models.ForeignKey(
-        Category,
-        verbose_name="分類",
+    model = models.ForeignKey(
+        EquipmentModel,
+        verbose_name="機種",
         on_delete=models.PROTECT,
-        related_name="equipment",
+        related_name="items",
     )
-    name = models.CharField("備品名", max_length=200)
-    manufacturer = models.ForeignKey(
-        Manufacturer,
-        verbose_name="メーカー",
-        on_delete=models.PROTECT,
-        null=True,
-        blank=True,
-        related_name="equipment",
-    )
-    model_number = models.CharField("型番", max_length=100, blank=True)
     serial_number = models.CharField("製造番号", max_length=100, blank=True)
     receipt_number = models.CharField("レシート番号", max_length=100, blank=True)
     quantity = models.PositiveIntegerField(
         "保有数量", validators=[MinValueValidator(1)]
     )
-    unit = models.CharField("単位", max_length=20, default="個")
     manager = models.ForeignKey(
         "roll.Position",
         verbose_name="管理担当役職",
@@ -171,7 +239,6 @@ class Equipment(models.Model):
         "法定耐用年数", null=True, blank=True
     )
     notes = models.TextField("備考", blank=True)
-    image = models.ImageField("画像", upload_to="equipment/", blank=True)
     condition = models.CharField(
         "備品の状態",
         max_length=12,
@@ -212,8 +279,7 @@ class Equipment(models.Model):
         verbose_name = "備品"
         verbose_name_plural = "備品"
         indexes = [
-            models.Index(fields=["category", "is_active"]),
-            models.Index(fields=["name"]),
+            models.Index(fields=["model", "is_active"]),
             models.Index(fields=["serial_number"]),
         ]
         constraints = [
@@ -222,6 +288,34 @@ class Equipment(models.Model):
                 name="equipment_quantity_at_least_one",
             )
         ]
+
+    objects = EquipmentManager()
+
+    # Shared attributes live on the 機種; expose them so callers (and
+    # templates) can keep reading equipment.name, equipment.unit, ...
+    @property
+    def category(self):
+        return self.model.category
+
+    @property
+    def name(self):
+        return self.model.name
+
+    @property
+    def manufacturer(self):
+        return self.model.manufacturer
+
+    @property
+    def model_number(self):
+        return self.model.model_number
+
+    @property
+    def unit(self):
+        return self.model.unit
+
+    @property
+    def image(self):
+        return self.model.image
 
     def __str__(self):
         return f"{self.inventory_number} {self.name}"
@@ -335,18 +429,31 @@ class Equipment(models.Model):
 
     def assign_identifiers(self):
         if not self.inventory_number:
-            if not self.category_id:
-                raise ValidationError("分類を選択してから備品番号を付番してください。")
-            self.inventory_number = generate_inventory_number(self.category.code)
+            if not self.model_id:
+                raise ValidationError("機種を指定してから備品番号を付番してください。")
+            self.inventory_number = generate_inventory_number(
+                self.model.category.code
+            )
         if not self.qr_token:
             alphabet = string.ascii_letters + string.digits
             self.qr_token = "".join(secrets.choice(alphabet) for _ in range(12))
         if not self.qr_inventory_number:
             self.qr_inventory_number = self.inventory_number
 
+    @classmethod
+    def from_db(cls, db, field_names, values):
+        instance = super().from_db(db, field_names, values)
+        instance._original_model_id = instance.model_id
+        return instance
+
     def save(self, *args, **kwargs):
         self.assign_identifiers()
         super().save(*args, **kwargs)
+        # Moving to another 機種 may leave the old one without any item.
+        original = getattr(self, "_original_model_id", None)
+        if original and original != self.model_id:
+            EquipmentModel.objects.filter(pk=original, items__isnull=True).delete()
+        self._original_model_id = self.model_id
 
 
 class UsageRecord(models.Model):

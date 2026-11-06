@@ -6,6 +6,7 @@ from .models import (
     Category,
     Equipment,
     EquipmentHistory,
+    EquipmentModel,
     Manufacturer,
     QRDesign,
     ReturnRecord,
@@ -22,7 +23,7 @@ class CategoryAdmin(admin.ModelAdmin):
     readonly_fields = ("code",)
 
     def get_readonly_fields(self, request, obj=None):
-        if obj is None or not obj.equipment.exists():
+        if obj is None or not obj.equipment_models.exists():
             return ()
         return self.readonly_fields
 
@@ -34,6 +35,13 @@ class CategoryAdmin(admin.ModelAdmin):
 class ManufacturerAdmin(admin.ModelAdmin):
     list_display = ("name",)
     search_fields = ("name",)
+
+
+@admin.register(EquipmentModel)
+class EquipmentModelAdmin(admin.ModelAdmin):
+    list_display = ("name", "category", "manufacturer", "model_number", "unit")
+    list_filter = ("category",)
+    search_fields = ("name", "manufacturer__name", "model_number")
 
 
 @admin.register(Equipment)
@@ -48,12 +56,12 @@ class EquipmentAdmin(admin.ModelAdmin):
         "condition",
         "is_active",
     )
-    list_filter = ("category", "condition", "is_active")
+    list_filter = ("model__category", "condition", "is_active")
     search_fields = (
         "inventory_number",
-        "name",
-        "manufacturer__name",
-        "model_number",
+        "model__name",
+        "model__manufacturer__name",
+        "model__model_number",
         "serial_number",
         "receipt_number",
         "qr_token",
@@ -96,14 +104,13 @@ class EquipmentAdmin(admin.ModelAdmin):
             )
             return
         for field_name in changed_fields:
-            field = obj._meta.get_field(field_name)
             old_value = previous_values[field_name]
             new_value = getattr(obj, field_name)
             record_event(
                 obj,
                 Kind.STATUS if field_name == "condition" else Kind.UPDATE,
                 request.user,
-                field_name=field.verbose_name,
+                field_name=form.fields[field_name].label,
                 old_value=old_value,
                 new_value=new_value,
             )
@@ -160,7 +167,11 @@ class UsageRecordAdmin(admin.ModelAdmin):
 class EquipmentHistoryAdmin(admin.ModelAdmin):
     list_display = ("equipment", "kind", "field_name", "changed_by", "changed_at")
     list_filter = ("kind", "changed_at")
-    search_fields = ("equipment__inventory_number", "equipment__name", "field_name")
+    search_fields = (
+        "equipment__inventory_number",
+        "equipment__model__name",
+        "field_name",
+    )
     readonly_fields = (
         "equipment",
         "kind",

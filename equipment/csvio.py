@@ -12,7 +12,13 @@ from django.utils import timezone
 from roll.models import Position
 
 from .events import Kind, record_event
-from .models import Category, Equipment, Manufacturer, StorageLocation
+from .models import (
+    Category,
+    Equipment,
+    EquipmentModel,
+    Manufacturer,
+    StorageLocation,
+)
 
 MAX_ROWS = 2000
 MAX_ERRORS = 20
@@ -234,14 +240,16 @@ def _parse_row(raw_row, lookups):
     if len(manufacturer_name) > Manufacturer._meta.get_field("name").max_length:
         raise ValueError("メーカー名が長すぎます")
 
+    model_fields = {
+        "category": category,
+        "name": row["name"],
+        "model_number": row.get("model_number", ""),
+        "unit": row.get("unit") or "個",
+    }
     equipment = Equipment(
-        category=category,
-        name=row["name"],
-        model_number=row.get("model_number", ""),
         serial_number=row.get("serial_number", ""),
         receipt_number=row.get("receipt_number", ""),
         quantity=quantity,
-        unit=row.get("unit") or "個",
         manager=manager,
         location=location,
         purchased_on=_parse_date(row.get("purchased_on", "")),
@@ -256,19 +264,20 @@ def _parse_row(raw_row, lookups):
         condition=condition,
     )
     try:
+        EquipmentModel(**model_fields).full_clean(exclude=["manufacturer", "image"])
         equipment.full_clean(
             exclude=[
+                "model",
                 "inventory_number",
                 "qr_inventory_number",
                 "qr_token",
-                "manufacturer",
                 "created_by",
             ]
         )
     except ValidationError as error:
         messages = [m for msgs in error.message_dict.values() for m in msgs]
         raise ValueError(" / ".join(messages)) from None
-    return equipment, manufacturer_name
+    return equipment, model_fields, manufacturer_name
 
 
 def import_equipment_csv(uploaded_file, user):
@@ -315,7 +324,8 @@ def import_equipment_csv(uploaded_file, user):
     manufacturers = {}
     try:
         with transaction.atomic():
-            for equipment, manufacturer_name in parsed:
+            for equipment, model_fields, manufacturer_name in parsed:
+                manufacturer = None
                 if manufacturer_name:
                     key = manufacturer_name.casefold()
                     if key not in manufacturers:
@@ -323,7 +333,10 @@ def import_equipment_csv(uploaded_file, user):
                             Manufacturer.objects.filter(name__iexact=manufacturer_name).first()
                             or Manufacturer.objects.create(name=manufacturer_name)
                         )
-                    equipment.manufacturer = manufacturers[key]
+                    manufacturer = manufacturers[key]
+                equipment.model = EquipmentModel.objects.resolve(
+                    manufacturer=manufacturer, **model_fields
+                )
                 equipment.created_by = user
                 equipment.last_modified_by = user
                 equipment.save()

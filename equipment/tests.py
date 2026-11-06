@@ -17,6 +17,7 @@ from .numbering import generate_inventory_number
 from .models import (
     Category,
     Equipment,
+    EquipmentModel,
     EquipmentHistory,
     EquipmentReminderDelivery,
     Manufacturer,
@@ -181,7 +182,8 @@ class EquipmentWorkflowTests(TestCase):
         self.assertEqual(self.equipment.inventory_number, "A-0042")
         self.assertEqual(len(self.equipment.qr_token), 12)
 
-        self.equipment.category = Category.objects.get(code="C")
+        self.equipment.model.category = Category.objects.get(code="C")
+        self.equipment.model.save()
         self.equipment.save()
         self.assertEqual(self.equipment.inventory_number, "A-0042")
 
@@ -274,7 +276,7 @@ class EquipmentWorkflowTests(TestCase):
             )
 
         self.assertEqual(response.status_code, 302)
-        created = Equipment.objects.get(name="事務用ノート")
+        created = Equipment.objects.get(model__name="事務用ノート")
         self.assertEqual(created.inventory_number, "W-26000001")
         self.assertEqual(created.qr_inventory_number, "W-26000001")
         self.assertEqual(created.created_by, self.user)
@@ -305,7 +307,7 @@ class EquipmentWorkflowTests(TestCase):
             )
 
         self.assertEqual(
-            Equipment.objects.get(name="次の備品").inventory_number, "A-26000008"
+            Equipment.objects.get(model__name="次の備品").inventory_number, "A-26000008"
         )
 
     def test_fiscal_year_switches_in_april(self):
@@ -324,7 +326,7 @@ class EquipmentWorkflowTests(TestCase):
 
         self.assertEqual(response.status_code, 302)
         self.assertEqual(
-            Equipment.objects.get(name="購入日だけ古い備品").inventory_number,
+            Equipment.objects.get(model__name="購入日だけ古い備品").inventory_number,
             "A-26000001",
         )
 
@@ -979,8 +981,8 @@ class EquipmentCsvIoTests(TestCase):
             response = self._upload(csv_text)
 
         self.assertContains(response, "2件の備品を登録しました")
-        first = Equipment.objects.get(name="ワイヤレスマイク")
-        second = Equipment.objects.get(name="ミキサー")
+        first = Equipment.objects.get(model__name="ワイヤレスマイク")
+        second = Equipment.objects.get(model__name="ミキサー")
         self.assertEqual(first.inventory_number, "A-26000001")
         self.assertEqual(second.inventory_number, "A-26000002")
         self.assertEqual(first.manufacturer, second.manufacturer)
@@ -1044,7 +1046,7 @@ class EquipmentCsvIoTests(TestCase):
 
         existing.refresh_from_db()
         self.assertEqual(existing.name, "既存")
-        created = Equipment.objects.get(name="既存を上書きしたい")
+        created = Equipment.objects.get(model__name="既存を上書きしたい")
         self.assertEqual(created.inventory_number, "A-26000002")
 
     def test_import_is_staff_only(self):
@@ -1231,3 +1233,128 @@ class EquipmentEventTests(TestCase):
         self.assertEqual(convert("登録状態", "登録解除"), "unregister")
         self.assertEqual(convert("登録状態", "管理中"), "reactivate")
         self.assertEqual(convert("備品名", ""), "update")
+
+
+class EquipmentModelSplitTests(TestCase):
+    def setUp(self):
+        self.user = get_user_model().objects.create_user(
+            username="model-user", password="pw-123456", is_staff=True
+        )
+        self.client.force_login(self.user)
+        self.category = Category.objects.get(code="A")
+        self.maker = Manufacturer.objects.create(name="Shure")
+
+    def _create(self, **overrides):
+        values = dict(
+            category=self.category,
+            name="ワイヤレスマイク",
+            manufacturer=self.maker,
+            model_number="SM58",
+            unit="本",
+            quantity=1,
+        )
+        values.update(overrides)
+        return Equipment.objects.create(**values)
+
+    def _payload(self, item, **overrides):
+        payload = {
+            "category": item.model.category_id,
+            "name": item.model.name,
+            "manufacturer": item.model.manufacturer_id or "",
+            "model_number": item.model.model_number,
+            "unit": item.model.unit,
+            "quantity": str(item.quantity),
+            "purchase_currency": Equipment.Currency.JPY,
+            "condition": item.condition,
+        }
+        payload.update(overrides)
+        return payload
+
+    def test_items_with_same_attributes_share_one_model(self):
+        first = self._create()
+        second = self._create()
+        self.assertEqual(first.model_id, second.model_id)
+        self.assertEqual(EquipmentModel.objects.count(), 1)
+        self.assertNotEqual(first.inventory_number, second.inventory_number)
+
+    def test_item_exposes_model_attributes(self):
+        item = self._create()
+        self.assertEqual(item.name, "ワイヤレスマイク")
+        self.assertEqual(item.unit, "本")
+        self.assertEqual(item.manufacturer, self.maker)
+        self.assertEqual(item.category, self.category)
+        self.assertEqual(item.model_number, "SM58")
+
+    def test_registering_twice_reuses_the_model(self):
+        for _ in range(2):
+            self.client.post(
+                reverse("equipment:register"),
+                {
+                    "category": self.category.pk,
+                    "name": "ワイヤレスマイク",
+                    "manufacturer": self.maker.pk,
+                    "model_number": "SM58",
+                    "unit": "本",
+                    "quantity": "1",
+                    "purchase_currency": Equipment.Currency.JPY,
+                    "condition": Equipment.Condition.NORMAL,
+                },
+            )
+        self.assertEqual(Equipment.objects.count(), 2)
+        self.assertEqual(EquipmentModel.objects.count(), 1)
+
+    def test_editing_one_item_does_not_change_its_siblings(self):
+        first = self._create()
+        second = self._create()
+        self.client.post(
+            reverse("equipment:edit", args=[first.pk]),
+            self._payload(first, name="名前を変えた1本"),
+        )
+        first.refresh_from_db()
+        second.refresh_from_db()
+        self.assertEqual(first.name, "名前を変えた1本")
+        self.assertEqual(second.name, "ワイヤレスマイク")
+        self.assertNotEqual(first.model_id, second.model_id)
+        self.assertEqual(EquipmentModel.objects.count(), 2)
+
+    def test_renaming_the_only_item_removes_the_unused_model(self):
+        item = self._create()
+        self.client.post(
+            reverse("equipment:edit", args=[item.pk]),
+            self._payload(item, name="改名後"),
+        )
+        item.refresh_from_db()
+        self.assertEqual(item.name, "改名後")
+        self.assertEqual(EquipmentModel.objects.count(), 1)
+
+    def test_renaming_keeps_the_photo(self):
+        item = self._create()
+        item.model.image = "equipment/photo.png"
+        item.model.save()
+        self.client.post(
+            reverse("equipment:edit", args=[item.pk]),
+            self._payload(item, name="写真つき改名", image=""),
+        )
+        item.refresh_from_db()
+        self.assertEqual(item.model.name, "写真つき改名")
+        self.assertEqual(item.model.image.name, "equipment/photo.png")
+
+    def test_search_and_filter_use_model_attributes(self):
+        self._create()
+        self._create(name="ミキサー", manufacturer=None, model_number="MX1")
+        response = self.client.get(reverse("equipment:list"), {"q": "SM58"})
+        self.assertContains(response, "ワイヤレスマイク")
+        self.assertNotContains(response, "ミキサー")
+        response = self.client.get(reverse("equipment:list"), {"q": "Shure"})
+        self.assertContains(response, "ワイヤレスマイク")
+        response = self.client.get(
+            reverse("equipment:list"), {"category": self.category.pk}
+        )
+        self.assertContains(response, "ミキサー")
+
+    def test_category_count_includes_items_across_models(self):
+        self._create()
+        self._create(name="ミキサー", model_number="MX1")
+        response = self.client.get(reverse("equipment:categories"))
+        counts = {c.code: c.equipment_count for c in response.context["categories"]}
+        self.assertEqual(counts["A"], 2)
