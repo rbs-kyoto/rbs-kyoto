@@ -14,6 +14,7 @@ from django.urls import reverse
 from django.utils import timezone
 from qrcode.image.svg import SvgPathImage
 
+from places.models import Place
 from roll.models import RosterEntry
 
 from .forms import (
@@ -29,7 +30,6 @@ from .models import (
     EquipmentHistory,
     QRDesign,
     ReturnRecord,
-    StorageLocation,
     UsageRecord,
 )
 
@@ -231,7 +231,7 @@ def equipment_list(request):
             "csv_url": csv_url,
             "categories": Category.objects.all(),
             "conditions": Equipment.Condition.choices,
-            "locations": StorageLocation.objects.filter(is_active=True),
+            "locations": Place.objects.filter(is_active=True, is_storage=True),
             "managers": RosterEntry.objects.exclude(
                 entry_type=RosterEntry.EntryType.ORGANIZATION
             ).order_by("name"),
@@ -700,7 +700,7 @@ def category_list(request):
 
 @login_required
 def location_list(request):
-    locations = StorageLocation.objects.select_related("parent").annotate(
+    locations = Place.objects.filter(is_storage=True).select_related("parent").annotate(
         equipment_count=Count("equipment", filter=Q(equipment__is_active=True))
     )
     return render(
@@ -729,7 +729,7 @@ def location_create(request):
 
 @login_required
 def location_edit(request, pk):
-    location = get_object_or_404(StorageLocation, pk=pk)
+    location = get_object_or_404(Place, pk=pk)
     if request.method == "POST":
         form = StorageLocationForm(request.POST, instance=location)
         if form.is_valid():

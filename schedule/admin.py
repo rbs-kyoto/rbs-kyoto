@@ -17,7 +17,7 @@ class EventAdmin(admin.ModelAdmin):
     inlines = [AssignmentInline, EventEquipmentInline]
     list_display = ("title", "start", "end", "all_day", "recurrence", "ask_attendance")
     list_filter = ("recurrence", "all_day")
-    search_fields = ("title", "location", "description")
+    search_fields = ("title", "place__name", "description")
 
 
 @admin.register(Attendance)

@@ -292,6 +292,31 @@ a.schedule-cell__day:hover {
     align-items: center;
 }
 
+.schedule-form__warning {
+    margin: 0;
+    padding: .6rem .9rem;
+    border: #ef4444 solid .1rem;
+    border-radius: .3rem;
+    color: #ef4444;
+    font-size: .85rem;
+}
+
+.schedule-form__warning[hidden] {
+    display: none;
+}
+
+.schedule-form__note a {
+    text-decoration: underline;
+}
+
+.schedule-place-warning {
+    margin: 0 1rem 1rem;
+}
+
+.schedule-place-warning a {
+    text-decoration: underline;
+}
+
 /* 割当部員・出欠 */
 .schedule-people {
     padding: 1rem;

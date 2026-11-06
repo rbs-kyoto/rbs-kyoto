@@ -1,8 +1,10 @@
 from django import forms
+from django.db.models import Q
 from django.forms import inlineformset_factory
 from django.utils import timezone
 
 from equipment.models import Equipment
+from places.models import Place
 from roll.models import RosterEntry
 
 from .models import Assignment, Attendance, Event, EventEquipment
@@ -39,13 +41,23 @@ class EventForm(forms.ModelForm):
             "start",
             "end",
             "all_day",
-            "location",
+            "place",
             "description",
             "recurrence",
             "recurrence_until",
             "ask_attendance",
         ]
         widgets = {"description": forms.Textarea(attrs={"rows": 5})}
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        # 予定の場所として使える場所。すでに選ばれている場所は、あとから外れても選択肢に残す
+        venues = Q(is_active=True, is_venue=True)
+        if self.instance.pk and self.instance.place_id:
+            venues |= Q(pk=self.instance.place_id)
+        self.fields["place"].queryset = Place.objects.filter(venues).select_related("parent")
+        self.fields["place"].empty_label = "場所なし・未定"
+        self.fields["place"].required = False
 
     def clean(self):
         cleaned = super().clean()

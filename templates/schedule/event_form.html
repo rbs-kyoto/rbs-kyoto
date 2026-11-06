@@ -9,7 +9,7 @@
 <section class="schedule-section">
     <h2 class="heading">{% if event %}予定を編集{% else %}予定を追加{% endif %}</h2>
 
-    <form class="schedule-form" method="post" novalidate>
+    <form class="schedule-form" method="post" novalidate data-places-api="{% url 'places_api:list' %}"{% if event %} data-event-id="{{ event.pk }}"{% endif %}>
         {% csrf_token %}
         {{ form.non_field_errors }}
 
@@ -24,6 +24,8 @@
             {% for error in field.errors %}<p class="schedule-form__error">{{ error }}</p>{% endfor %}
         </div>
         {% endfor %}
+        <p class="schedule-form__warning" id="place-live-warning" role="status" hidden></p>
+        <p class="schedule-form__note">場所は、<a href="{% url 'places:list' %}">場所の管理</a>で「予定の場所」にした場所から選べます。同じ場所に重なる予定があっても保存はできますが、詳細ページで警告します。</p>
 
         <fieldset class="schedule-assign" data-formset="{{ formset.prefix }}">
             <legend>割当部員</legend>
@@ -96,6 +98,49 @@
 
 <script>
 (function () {
+    // 場所と日時が決まったら、同じ場所に重なる予定がないかを JSON API で調べて警告する(保存は止めない)
+    const form = document.querySelector(".schedule-form");
+    const box = document.getElementById("place-live-warning");
+    const place = document.getElementById("id_place");
+    const start = document.getElementById("id_start");
+    const end = document.getElementById("id_end");
+    const allDay = document.getElementById("id_all_day");
+    if (form && box && place && start) {
+        let timer = null;
+        let sequence = 0;
+        const check = function () {
+            box.hidden = true;
+            box.textContent = "";
+            if (!place.value || !start.value) return;
+            let from = start.value;
+            let to = end && end.value ? end.value : start.value;
+            if (allDay && allDay.checked) {
+                from = from.slice(0, 10);
+                to = to.slice(0, 10);
+            }
+            const params = new URLSearchParams({ start: from, end: to });
+            if (form.dataset.eventId) params.append("exclude", "schedule:" + form.dataset.eventId);
+            const current = ++sequence;
+            fetch(form.dataset.placesApi + place.value + "/usage/?" + params, { credentials: "same-origin" })
+                .then(function (response) { return response.ok ? response.json() : null; })
+                .then(function (data) {
+                    if (!data || current !== sequence || data.available) return;
+                    const titles = data.conflicts.map(function (c) { return c.title; }).join("、");
+                    box.textContent = "この日時、同じ場所に重なる予定があります: " + titles + "（保存はできます）";
+                    box.hidden = false;
+                })
+                .catch(function () {});
+        };
+        [place, start, end, allDay].forEach(function (element) {
+            if (!element) return;
+            element.addEventListener("change", function () {
+                clearTimeout(timer);
+                timer = setTimeout(check, 250);
+            });
+        });
+        check();
+    }
+
     document.querySelectorAll("[data-formset]").forEach(function (box) {
         const prefix = box.dataset.formset;
         const rows = box.querySelector("[data-rows]");

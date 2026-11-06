@@ -16,7 +16,14 @@ class Event(models.Model):
     start = models.DateTimeField("開始")
     end = models.DateTimeField("終了", null=True, blank=True)
     all_day = models.BooleanField("終日", default=False)
-    location = models.CharField("場所", max_length=200, blank=True)
+    place = models.ForeignKey(
+        "places.Place",
+        verbose_name="場所",
+        null=True,
+        blank=True,
+        on_delete=models.PROTECT,
+        related_name="schedule_events",
+    )
     description = models.TextField("メモ", blank=True)
     recurrence = models.CharField(
         "繰り返し",
