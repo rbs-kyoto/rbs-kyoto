@@ -12,6 +12,7 @@ from django.utils import timezone
 from pywebpush import WebPushException
 from requests import Response
 
+from .numbering import generate_inventory_number
 from .models import (
     Category,
     Equipment,
@@ -287,23 +288,27 @@ class EquipmentWorkflowTests(TestCase):
             EquipmentHistory.objects.filter(equipment_id=self.equipment.pk).exists()
         )
 
+    def _register_payload(self, category, name):
+        return {
+            "category": category.pk,
+            "name": name,
+            "quantity": "1",
+            "unit": "個",
+            "purchase_currency": Equipment.Currency.JPY,
+            "condition": Equipment.Condition.NORMAL,
+        }
+
     def test_register_records_actor_and_initial_history(self):
         with patch("equipment.numbering.timezone.localdate", return_value=date(2026, 10, 23)):
             response = self.client.post(
                 reverse("equipment:register"),
-                {
-                    "category": Category.objects.get(code="W").pk,
-                    "name": "事務用ノート",
-                    "quantity": "3",
-                    "unit": "冊",
-                    "purchase_currency": Equipment.Currency.JPY,
-                    "condition": Equipment.Condition.NORMAL,
-                },
+                self._register_payload(Category.objects.get(code="W"), "事務用ノート"),
             )
 
         self.assertEqual(response.status_code, 302)
         created = Equipment.objects.get(name="事務用ノート")
-        self.assertEqual(created.inventory_number, "W-621261023a")
+        self.assertEqual(created.inventory_number, "W-26000001")
+        self.assertEqual(created.qr_inventory_number, "W-26000001")
         self.assertEqual(created.created_by, self.user)
         self.assertTrue(
             EquipmentHistory.objects.filter(
@@ -311,76 +316,49 @@ class EquipmentWorkflowTests(TestCase):
             ).exists()
         )
 
-    def test_new_equipment_gets_next_daily_letter_across_categories(self):
-        fixed_date = date(2026, 10, 23)
+    def test_serial_increments_per_category_and_fiscal_year(self):
+        Equipment.objects.create(
+            category=self.category_a,
+            inventory_number="A-26000007",
+            name="登録済み",
+            quantity=1,
+        )
         Equipment.objects.create(
             category=Category.objects.get(code="D"),
-            inventory_number="D-621261023a",
-            name="同日登録済み備品",
+            inventory_number="D-26000003",
+            name="別分類",
             quantity=1,
         )
 
-        with patch("equipment.numbering.timezone.localdate", return_value=fixed_date):
-            response = self.client.post(
+        with patch("equipment.numbering.timezone.localdate", return_value=date(2026, 10, 23)):
+            self.client.post(
                 reverse("equipment:register"),
-                {
-                    "category": self.category_a.pk,
-                    "name": "自動番号の備品",
-                    "quantity": "1",
-                    "unit": "個",
-                    "purchase_currency": Equipment.Currency.JPY,
-                    "condition": Equipment.Condition.NORMAL,
-                },
+                self._register_payload(self.category_a, "次の備品"),
             )
 
-        self.assertEqual(response.status_code, 302)
-        created = Equipment.objects.get(name="自動番号の備品")
-        self.assertEqual(created.inventory_number, "A-621261023b")
-
-    def test_new_equipment_uses_purchase_date_for_inventory_number(self):
-        response = self.client.post(
-            reverse("equipment:register"),
-            {
-                "category": self.category_a.pk,
-                "name": "購入日付番の備品",
-                "quantity": "1",
-                "unit": "個",
-                "purchased_on": "2024-06-15",
-                "purchase_currency": Equipment.Currency.JPY,
-                "condition": Equipment.Condition.NORMAL,
-            },
+        self.assertEqual(
+            Equipment.objects.get(name="次の備品").inventory_number, "A-26000008"
         )
 
-        self.assertEqual(response.status_code, 302)
-        equipment = Equipment.objects.get(name="購入日付番の備品")
-        self.assertEqual(equipment.inventory_number, "A-621240615a")
+    def test_fiscal_year_switches_in_april(self):
+        self.assertEqual(generate_inventory_number("A", date(2027, 3, 31)), "A-26000001")
+        self.assertEqual(generate_inventory_number("A", date(2027, 4, 1)), "A-27000001")
 
-    def test_daily_inventory_number_limit_is_25_across_categories(self):
-        fixed_date = date(2026, 10, 23)
-        for index, suffix in enumerate("abcdefghijklmnopqrstuvwxy"):
-            Equipment.objects.create(
-                category=Category.objects.get(code="D" if index % 2 else "A"),
-                inventory_number=f"{'D' if index % 2 else 'A'}-621261023{suffix}",
-                name=f"同日登録済み備品{index}",
-                quantity=1,
-            )
-
-        with patch("equipment.numbering.timezone.localdate", return_value=fixed_date):
+    def test_number_ignores_purchase_date(self):
+        with patch("equipment.numbering.timezone.localdate", return_value=date(2026, 10, 23)):
             response = self.client.post(
                 reverse("equipment:register"),
                 {
-                    "category": self.category_a.pk,
-                    "name": "上限超過の備品",
-                    "quantity": "1",
-                    "unit": "個",
-                    "purchase_currency": Equipment.Currency.JPY,
-                    "condition": Equipment.Condition.NORMAL,
+                    **self._register_payload(self.category_a, "購入日だけ古い備品"),
+                    "purchased_on": "2024-06-15",
                 },
             )
 
-        self.assertEqual(response.status_code, 200)
-        self.assertFalse(Equipment.objects.filter(name="上限超過の備品").exists())
-        self.assertContains(response, "上限の25件に達しています")
+        self.assertEqual(response.status_code, 302)
+        self.assertEqual(
+            Equipment.objects.get(name="購入日だけ古い備品").inventory_number,
+            "A-26000001",
+        )
 
     def test_edit_can_select_existing_manufacturer(self):
         sony = Manufacturer.objects.create(name="SONY")
