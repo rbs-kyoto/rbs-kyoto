@@ -23,6 +23,7 @@ from .models import (
     UsageRecord,
 )
 from accounts.models import NotificationHistory, WebPushSubscription
+from places.models import Place
 from roll.models import RosterEntry
 
 
