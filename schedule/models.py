@@ -174,3 +174,34 @@ class UsageLink(models.Model):
 
     def __str__(self):
         return f"{self.item} {self.date}"
+
+
+class AttendanceReminderDelivery(models.Model):
+    """出欠リマインドを、どの端末に・どの回の・何日前の分まで送ったかの記録(二重送信の防止)。"""
+
+    subscription = models.ForeignKey(
+        "accounts.WebPushSubscription",
+        on_delete=models.CASCADE,
+        related_name="attendance_reminder_deliveries",
+    )
+    assignment = models.ForeignKey(
+        Assignment,
+        on_delete=models.CASCADE,
+        related_name="reminder_deliveries",
+    )
+    date = models.DateField("対象日")
+    days_until = models.IntegerField("何日前の通知か")
+    sent_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        verbose_name = "出欠リマインド送信記録"
+        verbose_name_plural = "出欠リマインド送信記録"
+        constraints = [
+            models.UniqueConstraint(
+                fields=["subscription", "assignment", "date", "days_until"],
+                name="schedule_attendance_reminder_unique",
+            ),
+        ]
+
+    def __str__(self):
+        return f"{self.assignment} {self.date} ({self.days_until}日前)"
