@@ -5,6 +5,7 @@ from django.core.validators import RegexValidator
 from .models import (
     Category,
     Equipment,
+    Manufacturer,
     QRDesign,
     ReturnRecord,
     UsageRecord,
@@ -15,6 +16,13 @@ from roll.models import RosterEntry
 
 
 class EquipmentForm(forms.ModelForm):
+    new_manufacturer = forms.CharField(
+        label="新しいメーカーを追加",
+        max_length=100,
+        required=False,
+        help_text="一覧にないメーカーのみ入力してください。入力すると上の選択より優先されます。",
+    )
+
     class Meta:
         model = Equipment
         fields = [
@@ -55,9 +63,21 @@ class EquipmentForm(forms.ModelForm):
             is_active=True, is_storage=True
         )
         self.fields["location"].required = False
+        self.fields["manufacturer"].queryset = Manufacturer.objects.all()
+        self.fields["manufacturer"].empty_label = "---------"
+        self.order_fields([*self.Meta.fields, "new_manufacturer"])
+
+    def clean_new_manufacturer(self):
+        return " ".join(self.cleaned_data["new_manufacturer"].split())
 
     def clean(self):
         cleaned_data = super().clean()
+        new_name = cleaned_data.get("new_manufacturer")
+        if new_name:
+            cleaned_data["manufacturer"] = (
+                Manufacturer.objects.filter(name__iexact=new_name).first()
+                or Manufacturer(name=new_name)
+            )
         if not self.instance.pk:
             category = cleaned_data.get("category")
             if category:
@@ -74,6 +94,12 @@ class EquipmentForm(forms.ModelForm):
         equipment = super().save(commit=False)
         if not self.instance.pk and hasattr(self, "generated_inventory_number"):
             equipment.inventory_number = self.generated_inventory_number
+        manufacturer = self.cleaned_data.get("manufacturer")
+        if manufacturer is not None and manufacturer.pk is None:
+            manufacturer, _ = Manufacturer.objects.get_or_create(
+                name=manufacturer.name
+            )
+        equipment.manufacturer = manufacturer
         if commit:
             equipment.save()
             self.save_m2m()

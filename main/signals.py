@@ -5,9 +5,10 @@ from django.db.models.signals import post_save, pre_save
 from django.dispatch import receiver
 from django.urls import reverse
 from pywebpush import WebPushException
+from requests import RequestException
 
-from accounts.models import WebPushSubscription
-from accounts.push import PushConfigurationError, send_web_push
+from accounts.models import NotificationHistory, WebPushSubscription
+from accounts.push import PushConfigurationError, record_notification, send_web_push
 from .models import News
 
 
@@ -51,22 +52,26 @@ def send_news_notifications(news_id):
     subscriptions = WebPushSubscription.objects.filter(
         news_notifications_enabled=True
     )
+    payload = {
+        "title": "新しいお知らせが投稿されました",
+        "body": news.title,
+        "url": reverse("main:news_detail", args=[news.pk]),
+    }
+    recorded_user_ids = set()
     for subscription in subscriptions.iterator():
         try:
-            send_web_push(
-                subscription,
-                {
-                    "title": "新しいお知らせが投稿されました",
-                    "body": news.title,
-                    "url": reverse("main:news_detail", args=[news.pk]),
-                },
-            )
+            delivered = send_web_push(subscription, payload)
+            if delivered and subscription.user_id not in recorded_user_ids:
+                record_notification(
+                    subscription.user_id, NotificationHistory.Kind.NEWS, payload
+                )
+                recorded_user_ids.add(subscription.user_id)
         except PushConfigurationError:
             logger.exception(
                 "Could not send new-news notification: Web Push is not configured."
             )
             break
-        except WebPushException:
+        except (WebPushException, RequestException):
             logger.exception(
                 "Could not send new-news notification to subscription %s.",
                 subscription.pk,

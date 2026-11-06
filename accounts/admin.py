@@ -1,8 +1,13 @@
+
 from django.contrib import admin
 from django.contrib.auth.admin import UserAdmin
 from django import forms
 
-from .models import SuperuserGrantCredential, User
+from .models import (
+    SuperuserGrantCredential,
+    User,
+    WebPushSubscription,
+)
 
 
 @admin.register(User)
@@ -55,3 +60,44 @@ class SuperuserGrantCredentialAdmin(admin.ModelAdmin):
 
     def has_view_permission(self, request, obj=None):
         return request.user.is_superuser
+
+
+@admin.register(WebPushSubscription)
+class WebPushSubscriptionAdmin(admin.ModelAdmin):
+    list_display = (
+        "id",
+        "user",
+        "equipment_reminders_enabled",
+        "news_notifications_enabled",
+        "created_at",
+        "updated_at",
+    )
+
+    list_filter = (
+        "equipment_reminders_enabled",
+        "news_notifications_enabled",
+        "created_at",
+    )
+
+    search_fields = (
+        "user__username",
+        "user__display_name",
+    )
+
+    readonly_fields = (
+        "user",
+        "created_at",
+        "updated_at",
+    )
+
+    fields = (
+        "user",
+        "equipment_reminders_enabled",
+        "news_notifications_enabled",
+        "created_at",
+        "updated_at",
+    )
+
+    ordering = ("-created_at",)
+
+    list_per_page = 50
