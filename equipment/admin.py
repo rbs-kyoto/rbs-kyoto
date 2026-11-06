@@ -5,6 +5,7 @@ from .models import (
     Category,
     Equipment,
     EquipmentHistory,
+    Manufacturer,
     QRDesign,
     ReturnRecord,
     StorageLocation,
@@ -28,6 +29,12 @@ class CategoryAdmin(admin.ModelAdmin):
         return False
 
 
+@admin.register(Manufacturer)
+class ManufacturerAdmin(admin.ModelAdmin):
+    list_display = ("name",)
+    search_fields = ("name",)
+
+
 @admin.register(Equipment)
 class EquipmentAdmin(admin.ModelAdmin):
     form = EquipmentForm
@@ -44,7 +51,7 @@ class EquipmentAdmin(admin.ModelAdmin):
     search_fields = (
         "inventory_number",
         "name",
-        "manufacturer",
+        "manufacturer__name",
         "model_number",
         "serial_number",
         "receipt_number",
@@ -66,7 +73,9 @@ class EquipmentAdmin(admin.ModelAdmin):
     def save_model(self, request, obj, form, change):
         previous_values = {}
         changed_fields = [
-            field for field in form.changed_data if field in form.fields
+            field
+            for field in form.changed_data
+            if field in EquipmentForm.Meta.fields
         ]
         if change:
             previous = Equipment.objects.get(pk=obj.pk)
