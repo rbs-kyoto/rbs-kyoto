@@ -18,9 +18,9 @@
                 {{ event.start|date:"Y年n月j日 H:i" }}{% if event.end %} 〜 {% if event.end|date:"Ymd" == event.start|date:"Ymd" %}{{ event.end|date:"H:i" }}{% else %}{{ event.end|date:"Y年n月j日 H:i" }}{% endif %}{% endif %}
             {% endif %}
         </dd>
-        {% if event.location %}
+        {% if event.place %}
         <dt>場所</dt>
-        <dd>{{ event.location }}</dd>
+        <dd>{{ event.place }}</dd>
         {% endif %}
         {% if event.recurrence != "none" %}
         <dt>繰り返し</dt>
@@ -31,6 +31,27 @@
         <dd class="schedule-detail__memo">{{ event.description|linebreaksbr }}</dd>
         {% endif %}
     </dl>
+
+    {% if place_warnings or place_upcoming %}
+    <div class="schedule-equipment__problems schedule-place-warning" role="status">
+        {% if place_warnings %}
+        <p>この回は、同じ場所（{{ event.place }}）に重なる予定があります。</p>
+        <ul>
+            {% for use in place_warnings %}
+            <li><a href="{{ use.url }}">{{ use.title }}</a>（{{ use.start|date:"n月j日 H:i" }}〜{{ use.end|date:"H:i" }}{% if use.place != event.place %}・{{ use.place }}{% endif %}）</li>
+            {% endfor %}
+        </ul>
+        {% endif %}
+        {% if place_upcoming %}
+        <p>今後の回にも、場所が重なる予定があります。</p>
+        <ul>
+            {% for problem_day, uses in place_upcoming %}
+            <li>{{ problem_day|date:"n月j日" }}: {% for use in uses %}<a href="{{ use.url }}">{{ use.title }}</a>{% if not forloop.last %}、{% endif %}{% endfor %}</li>
+            {% endfor %}
+        </ul>
+        {% endif %}
+    </div>
+    {% endif %}
 
     {% if rows or event.ask_attendance %}
     <section class="schedule-people" aria-labelledby="people-heading">

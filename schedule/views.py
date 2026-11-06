@@ -12,6 +12,7 @@ from django.utils.http import urlencode
 from django.views.decorators.http import require_POST
 
 from .equipment_status import event_statuses, upcoming_problems
+from .place_status import place_conflicts, upcoming_place_conflicts
 from .forms import (
     AssignmentFormSet,
     AttendanceForm,
@@ -45,7 +46,9 @@ def _shift_month(year, month, delta):
 def _occurrences_by_day(range_start, range_end):
     """期間内の予定を {日付: [出現, ...]} にまとめる(複数日の予定は各日に入る)。"""
     # 繰り返し予定は開始が期間より前でも出現しうるので、開始が期間終端以前のものを対象にする
-    candidates = Event.objects.filter(start__date__lte=range_end)
+    candidates = Event.objects.filter(start__date__lte=range_end).select_related(
+        "place__parent"
+    )
     by_day = {}
     for occ in expand(candidates, range_start, range_end):
         day = max(occ.first_day, range_start)
@@ -220,6 +223,12 @@ def event_detail(request, pk):
             }
         )
     # 表示中の回の問題は機材ごとのバッジで分かるので、それ以外の今後の回だけを警告にまとめる
+    place_warnings = place_conflicts(event, occurrence) if occurrence else []
+    place_upcoming = [
+        (problem_day, conflicts)
+        for problem_day, conflicts in upcoming_place_conflicts(event, day)
+        if problem_day != day
+    ]
     equipment_problems = [
         (problem_day, status)
         for problem_day, status in upcoming_problems(event, day)
@@ -242,6 +251,8 @@ def event_detail(request, pk):
             "summary": summary,
             "can_respond": mine is not None,
             "form": form,
+            "place_warnings": place_warnings,
+            "place_upcoming": place_upcoming,
             "equipment_rows": equipment_rows,
             "equipment_problems": equipment_problems,
         },

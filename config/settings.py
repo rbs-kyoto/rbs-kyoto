@@ -69,6 +69,7 @@ INSTALLED_APPS = [
     'video_archive',
     'maintenance',
     'errors',
+    'places',
     'equipment',
     'roll',
 ]

@@ -44,7 +44,7 @@
                             {% if occ.event.all_day %}終日{% elif occ.first_day == day.date %}{{ occ.start|date:"H:i" }}{% else %}〜{% endif %}
                         </span>
                         <span class="schedule-week__title">{{ occ.event.title }}</span>
-                        {% if occ.event.location %}<span class="schedule-week__place">{{ occ.event.location }}</span>{% endif %}
+                        {% if occ.event.place %}<span class="schedule-week__place">{{ occ.event.place }}</span>{% endif %}
                     </a>
                 </li>
                 {% empty %}

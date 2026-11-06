@@ -29,6 +29,12 @@ APPS = [
         "url_name": "equipment:dashboard",
     },
     {
+        "title": "Places",
+        "description": "場所マスターの管理(予定・機材の保管場所)",
+        "url_name": "places:list",
+        "staff_only": True,
+    },
+    {
         "title": "Roll",
         "description": "校内名簿・部員・役職の管理",
         "url_name": "roll:list",

@@ -759,3 +759,132 @@ class AttendanceReminderTests(TestCase):
         self.bob_sub.refresh_from_db()
         self.assertTrue(self.bob_sub.schedule_reminders_enabled)
         self.assertEqual(self.bob_sub.equipment_reminders_enabled, equipment_before)
+
+
+class PlaceIntegrationTests(TestCase):
+    def setUp(self):
+        from places.models import Place
+
+        User = get_user_model()
+        self.staff = User.objects.create_user("staff", password="pw", is_staff=True)
+        self.member = User.objects.create_user("member", password="pw")
+        self.school = Place.objects.create(name="校舎", is_venue=True)
+        self.studio = Place.objects.create(name="放送室", parent=self.school, is_venue=True)
+        self.gym = Place.objects.create(name="体育館", is_venue=True)
+        self.shelf = Place.objects.create(name="棚A", is_venue=False)
+
+    def make_event(self, title, start, end=None, place=None, **extra):
+        return Event.objects.create(title=title, start=start, end=end, place=place, **extra)
+
+    def conflicts(self, event, day):
+        self.client.force_login(self.member)
+        response = self.client.get(reverse("schedule:event_detail", args=[event.pk]), {"date": day})
+        return response, response.context["place_warnings"]
+
+    def post_event(self, **extra):
+        self.client.force_login(self.staff)
+        return self.client.post(
+            reverse("schedule:event_create"),
+            {"title": "収録", "start": "2026-11-10T13:00", "recurrence": "none", **formset_data(), **extra},
+        )
+
+    def test_schedule_registers_itself_as_a_place_provider(self):
+        from places.registry import PROVIDERS
+
+        self.assertIn("schedule", PROVIDERS)
+
+    def test_form_offers_only_active_venues(self):
+        self.client.force_login(self.staff)
+        queryset = self.client.get(reverse("schedule:event_create")).context["form"].fields["place"].queryset
+        self.assertEqual({p.name for p in queryset}, {"校舎", "放送室", "体育館"})
+
+    def test_staff_sets_a_place(self):
+        response = self.post_event(place=self.studio.pk)
+        event = Event.objects.get(title="収録")
+        self.assertRedirects(response, reverse("schedule:event_detail", args=[event.pk]))
+        self.assertEqual(event.place, self.studio)
+
+    def test_place_is_optional(self):
+        self.post_event()
+        self.assertIsNone(Event.objects.get(title="収録").place)
+
+    def test_non_venue_place_cannot_be_chosen(self):
+        response = self.post_event(place=self.shelf.pk)
+        self.assertEqual(response.status_code, 200)
+        self.assertFalse(Event.objects.filter(title="収録").exists())
+
+    def test_existing_place_stays_selectable_after_it_stops_being_a_venue(self):
+        event = self.make_event("既存", jst(2026, 11, 10, 13), place=self.gym)
+        self.gym.is_venue = False
+        self.gym.save()
+        self.client.force_login(self.staff)
+        form = self.client.get(reverse("schedule:event_edit", args=[event.pk])).context["form"]
+        self.assertIn(self.gym, form.fields["place"].queryset)
+
+    def test_detail_and_week_show_the_place_path(self):
+        event = self.make_event("収録", jst(2026, 11, 10, 13), place=self.studio)
+        self.client.force_login(self.member)
+        self.assertContains(self.client.get(reverse("schedule:event_detail", args=[event.pk])), "校舎 / 放送室")
+        self.assertContains(self.client.get(reverse("schedule:week"), {"date": "2026-11-10"}), "校舎 / 放送室")
+
+    def test_overlapping_events_in_the_same_place_warn_but_both_exist(self):
+        a = self.make_event("A", jst(2026, 11, 10, 13), jst(2026, 11, 10, 15), place=self.studio)
+        b = self.make_event("B", jst(2026, 11, 10, 14), jst(2026, 11, 10, 16), place=self.studio)
+        response, warnings = self.conflicts(b, "2026-11-10")
+        self.assertEqual([w.title for w in warnings], ["A"])
+        self.assertContains(response, "同じ場所")
+        self.assertContains(response, "A</a>")
+        self.assertEqual([w.title for w in self.conflicts(a, "2026-11-10")[1]], ["B"])
+
+    def test_no_conflict_when_times_or_places_differ(self):
+        base = self.make_event("A", jst(2026, 11, 10, 13), jst(2026, 11, 10, 15), place=self.studio)
+        self.make_event("別の時間", jst(2026, 11, 10, 16), jst(2026, 11, 10, 17), place=self.studio)
+        self.make_event("別の場所", jst(2026, 11, 10, 13), jst(2026, 11, 10, 15), place=self.gym)
+        self.make_event("場所なし", jst(2026, 11, 10, 13), jst(2026, 11, 10, 15))
+        self.assertEqual(self.conflicts(base, "2026-11-10")[1], [])
+
+    def test_parent_and_child_places_conflict(self):
+        room = self.make_event("放送室", jst(2026, 11, 10, 13), jst(2026, 11, 10, 15), place=self.studio)
+        building = self.make_event("校舎全体", jst(2026, 11, 10, 14), jst(2026, 11, 10, 16), place=self.school)
+        self.assertEqual([w.title for w in self.conflicts(room, "2026-11-10")[1]], ["校舎全体"])
+        self.assertEqual([w.title for w in self.conflicts(building, "2026-11-10")[1]], ["放送室"])
+
+    def test_all_day_event_conflicts_with_timed_event_the_same_day(self):
+        timed = self.make_event("収録", jst(2026, 11, 10, 13), jst(2026, 11, 10, 14), place=self.gym)
+        self.make_event("大会", jst(2026, 11, 10, 0), all_day=True, place=self.gym)
+        self.assertEqual([w.title for w in self.conflicts(timed, "2026-11-10")[1]], ["大会"])
+
+    def test_a_recurring_event_blocks_every_week(self):
+        single = self.make_event("単発", jst(2026, 11, 18, 16), jst(2026, 11, 18, 17), place=self.studio)
+        self.make_event(
+            "定例会", jst(2026, 11, 4, 16), jst(2026, 11, 4, 17), place=self.studio,
+            recurrence=Event.Recurrence.WEEKLY,
+        )
+        self.assertEqual([w.title for w in self.conflicts(single, "2026-11-18")[1]], ["定例会"])
+        self.assertEqual(self.conflicts(single, "2026-11-18")[1][0].start.date(), date(2026, 11, 18))
+
+    def test_upcoming_conflicts_of_a_recurring_event_are_listed(self):
+        recurring = self.make_event(
+            "定例会", jst(2026, 11, 4, 16), jst(2026, 11, 4, 17), place=self.studio,
+            recurrence=Event.Recurrence.WEEKLY,
+        )
+        self.make_event("単発", jst(2026, 11, 18, 16), jst(2026, 11, 18, 17), place=self.studio)
+        self.client.force_login(self.member)
+        response = self.client.get(reverse("schedule:event_detail", args=[recurring.pk]), {"date": "2026-11-04"})
+        self.assertEqual(response.context["place_warnings"], [])
+        upcoming = response.context["place_upcoming"]
+        self.assertEqual([(d.isoformat(), [u.title for u in uses]) for d, uses in upcoming], [("2026-11-18", ["単発"])])
+        self.assertContains(response, "今後の回にも")
+
+    def test_event_without_a_place_never_warns(self):
+        event = self.make_event("場所なし", jst(2026, 11, 10, 13), jst(2026, 11, 10, 15))
+        self.make_event("同時刻", jst(2026, 11, 10, 13), jst(2026, 11, 10, 15))
+        self.assertEqual(self.conflicts(event, "2026-11-10")[1], [])
+
+    def test_form_page_wires_up_the_live_conflict_check(self):
+        event = self.make_event("収録", jst(2026, 11, 10, 13), place=self.studio)
+        self.client.force_login(self.staff)
+        response = self.client.get(reverse("schedule:event_edit", args=[event.pk]))
+        self.assertContains(response, 'data-places-api="/api/places/"')
+        self.assertContains(response, f'data-event-id="{event.pk}"')
+        self.assertContains(response, 'id="place-live-warning"')
