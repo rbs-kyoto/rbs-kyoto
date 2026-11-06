@@ -1,0 +1,42 @@
+{% extends "main/base.html" %}
+{% load static %}
+
+{% block title %}場所の管理｜rbs京都{% endblock %}
+{% block extra_css %}<link rel="stylesheet" href="{% static 'main/css/places.css' %}">{% endblock %}
+
+{% block content %}
+<section class="places-section">
+    <div class="section-heading">
+        <h2 class="heading">Places</h2>
+        <a class="section-heading__link page-control-style-forward" href="{% url 'places:create' %}">場所を追加</a>
+    </div>
+    <p class="places-note">予定の場所や機材の保管場所として、サイト全体で共通に使う場所の一覧です。「予定の場所」にチェックした場所が、予定のフォームで選べます。</p>
+
+    <div class="places-table-wrap">
+        <table class="places-table">
+            <thead>
+                <tr><th>場所</th><th>コード</th><th>予定の場所</th><th>機材の保管</th><th>機材数</th><th>状態</th><th></th></tr>
+            </thead>
+            <tbody>
+                {% for place in places %}
+                <tr{% if not place.is_active %} class="is-inactive"{% endif %}>
+                    <td>{{ place }}</td>
+                    <td>{{ place.code|default:"—" }}</td>
+                    <td>{% if place.is_venue %}○{% else %}—{% endif %}</td>
+                    <td>{% if place.is_storage %}○{% else %}—{% endif %}</td>
+                    <td>{{ place.equipment_count }}</td>
+                    <td>{% if place.is_active %}使用中{% else %}停止中{% endif %}</td>
+                    <td><a href="{% url 'places:edit' place.pk %}">編集</a></td>
+                </tr>
+                {% empty %}
+                <tr><td colspan="7">場所がまだありません。「場所を追加」から登録してください。</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    <div class="page_control">
+        <a class="page-control-style-back" href="{% url 'main:index' %}">ホームへ</a>
+    </div>
+</section>
+{% endblock %}

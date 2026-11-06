@@ -9,7 +9,8 @@
     const preferencesUrl = form.querySelector("[data-push-preferences-url]").dataset.pushPreferencesUrl;
     const csrfToken = form.querySelector("[name=csrfmiddlewaretoken]").value;
     const buttons = [...form.querySelectorAll("[data-notification-type]")];
-    const enabled = { equipment: false, news: false };
+    const enabled = { equipment: false, news: false, schedule: false };
+    const labels = { equipment: "返却予定", news: "新着投稿", schedule: "出欠リマインド" };
     let subscription = null;
 
     function setStatus(type, message) {
@@ -19,8 +20,8 @@
     function updateButton(type) {
         const button = form.querySelector(`[data-notification-type="${type}"]`);
         button.textContent = enabled[type]
-            ? `${type === "equipment" ? "返却予定" : "新着投稿"}通知を無効にする`
-            : `${type === "equipment" ? "返却予定" : "新着投稿"}通知を有効にする`;
+            ? `${labels[type]}通知を無効にする`
+            : `${labels[type]}通知を有効にする`;
         button.setAttribute("aria-pressed", String(enabled[type]));
     }
 
@@ -62,6 +63,7 @@
         if (!subscription) {
             enabled.equipment = false;
             enabled.news = false;
+            enabled.schedule = false;
             buttons.forEach((button) => updateButton(button.dataset.notificationType));
             return;
         }
@@ -70,6 +72,7 @@
         const result = await readResponse(await fetch(url, { credentials: "same-origin" }));
         enabled.equipment = Boolean(result.subscribed && result.equipment_reminders_enabled);
         enabled.news = Boolean(result.subscribed && result.news_notifications_enabled);
+        enabled.schedule = Boolean(result.subscribed && result.schedule_reminders_enabled);
         buttons.forEach((button) => updateButton(button.dataset.notificationType));
     }
 
@@ -115,6 +118,7 @@
                 subscription = null;
                 enabled.equipment = false;
                 enabled.news = false;
+                enabled.schedule = false;
                 buttons.forEach((item) => updateButton(item.dataset.notificationType));
             }
             setStatus(type, error.message || "通知設定に失敗しました。");

@@ -20,7 +20,6 @@ from .models import (
     EquipmentReminderDelivery,
     Manufacturer,
     ReturnRecord,
-    StorageLocation,
     UsageRecord,
 )
 from accounts.models import NotificationHistory, WebPushSubscription
@@ -932,8 +931,8 @@ class EquipmentWorkflowTests(TestCase):
         ).count(), 0)
 
     def test_hierarchical_location_form_rejects_cycles(self):
-        location = StorageLocation.objects.create(name="部室")
-        child = StorageLocation.objects.create(name="棚", parent=location)
+        location = Place.objects.create(name="部室")
+        child = Place.objects.create(name="棚", parent=location)
 
         response = self.client.post(
             reverse("equipment:location_edit", args=[location.pk]),

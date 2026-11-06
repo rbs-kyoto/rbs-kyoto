@@ -143,7 +143,7 @@ class Equipment(models.Model):
         related_name="managed_equipment",
     )
     location = models.ForeignKey(
-        StorageLocation,
+        "places.Place",
         verbose_name="保管場所",
         on_delete=models.SET_NULL,
         null=True,
