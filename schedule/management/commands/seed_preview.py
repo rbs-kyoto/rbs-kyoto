@@ -12,6 +12,7 @@ from django.core.management.base import BaseCommand
 from django.utils import timezone
 
 from equipment.models import Category, Equipment
+from places.models import Place
 from roll.models import RosterEntry
 from schedule.models import Assignment, Event, EventEquipment
 
@@ -45,11 +46,20 @@ class Command(BaseCommand):
         self.stdout.write(f"管理者ユーザー '{username}' を{'作成' if created else '更新'}しました。")
         return user
 
+    def _place(self, name):
+        """予定の場所として使える、デモ用の場所(なければ作る)。"""
+        place, _ = Place.objects.get_or_create(
+            name=name, parent=None, defaults={"is_venue": True, "is_storage": False}
+        )
+        return place
+
     def _create_events(self):
         if Event.objects.filter(title__in=DEMO_TITLES).exists():
             return
 
         today = timezone.localdate()
+        studio = self._place("【デモ】放送室")
+        gym = self._place("【デモ】体育館")
 
         def at(day, hour=0, minute=0):
             return timezone.make_aware(datetime.combine(day, time(hour, minute)))
@@ -60,13 +70,13 @@ class Command(BaseCommand):
             title=DEMO_TITLES[0],
             start=at(wednesday, 16),
             end=at(wednesday, 17, 30),
-            location="放送室",
+            place=studio,
             recurrence=Event.Recurrence.WEEKLY,
         )
         Event.objects.create(
             title=DEMO_TITLES[1],
             start=at(today + timedelta(days=1), 13),
-            location="体育館",
+            place=gym,
             description="デモ用の予定です。",
         )
         Event.objects.create(
