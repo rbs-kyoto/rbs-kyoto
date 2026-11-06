@@ -11,7 +11,7 @@ from django.test import TestCase, override_settings
 from django.urls import reverse
 from django.utils import timezone
 
-from accounts.models import WebPushSubscription
+from accounts.models import NotificationHistory, WebPushSubscription
 from .admin import PickupAdminForm
 from .models import FooterSocialLink, HeaderLogoSchedule, News, Pickup, SitePage
 
@@ -445,6 +445,41 @@ class NewsPushNotificationTests(TestCase):
                 "url": reverse("main:news_detail", args=[news.pk]),
             },
         )
+
+    @patch("main.signals.send_web_push", return_value=True)
+    def test_delivered_news_notification_is_saved_once_per_user(self, send_push):
+        WebPushSubscription.objects.create(
+            user=self.subscription.user,
+            endpoint="https://fcm.googleapis.com/fcm/send/news-second-device",
+            p256dh="public-key",
+            auth="auth-secret",
+            news_notifications_enabled=True,
+        )
+
+        with self.captureOnCommitCallbacks(execute=True):
+            news = News.objects.create(
+                title="履歴に残るお知らせ",
+                date=date(2026, 11, 5),
+                caption="<p>本文</p>",
+            )
+
+        self.assertEqual(send_push.call_count, 2)
+        history = NotificationHistory.objects.get()
+        self.assertEqual(history.user, self.subscription.user)
+        self.assertEqual(history.kind, NotificationHistory.Kind.NEWS)
+        self.assertEqual(history.body, "履歴に残るお知らせ")
+        self.assertEqual(history.url, reverse("main:news_detail", args=[news.pk]))
+
+    @patch("main.signals.send_web_push", return_value=False)
+    def test_undelivered_news_notification_is_not_saved(self, send_push):
+        with self.captureOnCommitCallbacks(execute=True):
+            News.objects.create(
+                title="届かなかったお知らせ",
+                date=date(2026, 11, 5),
+                caption="<p>本文</p>",
+            )
+
+        self.assertFalse(NotificationHistory.objects.exists())
 
     @patch("main.signals.send_web_push")
     def test_draft_and_internal_news_do_not_notify_subscribers(self, send_push):

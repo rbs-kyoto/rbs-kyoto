@@ -11,8 +11,10 @@ from django.utils import timezone
 
 from roll.models import Position
 
+from places.models import Place
+
 from .events import Kind, record_event
-from .models import Category, Equipment, Manufacturer, StorageLocation
+from .models import Category, Equipment, Manufacturer
 
 MAX_ROWS = 2000
 MAX_ERRORS = 20
@@ -164,7 +166,7 @@ class _Lookups:
                 self.categories[_norm(key).casefold()] = category
         self.locations = {}
         name_counts = {}
-        active = list(StorageLocation.objects.filter(is_active=True))
+        active = list(Place.objects.filter(is_active=True, is_storage=True))
         for location in active:
             name_counts[location.name] = name_counts.get(location.name, 0) + 1
         for location in active:

@@ -1,0 +1,63 @@
+{% extends "main/base.html" %}
+{% load static %}
+
+{% block title %}{{ week_start|date:"n月j日" }}〜{{ week_end|date:"n月j日" }}の予定｜rbs京都{% endblock %}
+{% block extra_css %}<link rel="stylesheet" href="{% static 'main/css/schedule.css' %}">{% endblock %}
+
+{% block content %}
+
+<section class="schedule-section">
+    <div class="section-heading">
+        <h2 class="heading">Schedule</h2>
+        {% if user.is_staff %}
+        <a class="section-heading__link page-control-style-forward" href="{% url 'schedule:event_create' %}">
+            予定を追加
+        </a>
+        {% endif %}
+    </div>
+
+    {% include "schedule/_view_switch.html" with active="week" month_year=week_start.year month_month=week_start.month week_date=week_start %}
+
+    <div class="schedule-nav">
+        <a class="schedule-nav__link" href="?date={{ prev_date|date:'Y-m-d' }}" aria-label="前の週">&lt; 前の週</a>
+        <h3 class="schedule-nav__title">{{ week_start|date:"Y年n月j日" }} 〜 {{ week_end|date:"n月j日" }}</h3>
+        <a class="schedule-nav__link" href="?date={{ next_date|date:'Y-m-d' }}" aria-label="次の週">次の週 &gt;</a>
+    </div>
+    <p class="schedule-nav__today"><a class="schedule-nav__link" href="?date={{ today|date:'Y-m-d' }}">今日の週へ</a></p>
+
+    <ol class="schedule-week">
+        {% for day in days %}
+        <li class="schedule-week__day{% if day.is_today %} is-today{% endif %}">
+            <div class="schedule-week__head">
+                <span class="schedule-week__date{% if day.is_sat %} is-sat{% elif day.is_sun %} is-sun{% endif %}">
+                    {{ day.date|date:"n/j" }}<small>（{{ day.weekday }}）</small>
+                </span>
+                {% if user.is_staff %}
+                <a class="schedule-week__add" href="{% url 'schedule:event_create' %}?date={{ day.date|date:'Y-m-d' }}" aria-label="{{ day.date|date:'n月j日' }}に予定を追加">+</a>
+                {% endif %}
+            </div>
+            <ul class="schedule-week__events">
+                {% for occ in day.occurrences %}
+                <li>
+                    <a class="schedule-week__event" href="{% url 'schedule:event_detail' occ.event.pk %}?date={{ occ.first_day|date:'Y-m-d' }}">
+                        <span class="schedule-week__time">
+                            {% if occ.event.all_day %}終日{% elif occ.first_day == day.date %}{{ occ.start|date:"H:i" }}{% else %}〜{% endif %}
+                        </span>
+                        <span class="schedule-week__title">{{ occ.event.title }}</span>
+                        {% if occ.event.place %}<span class="schedule-week__place">{{ occ.event.place }}</span>{% endif %}
+                    </a>
+                </li>
+                {% empty %}
+                <li class="schedule-week__empty">予定なし</li>
+                {% endfor %}
+            </ul>
+        </li>
+        {% endfor %}
+    </ol>
+
+    <div class="page_control">
+        <a class="page-control-style-back" href="{% url 'main:index' %}">ホームへ</a>
+    </div>
+</section>
+
+{% endblock %}

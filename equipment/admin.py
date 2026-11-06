@@ -1,7 +1,7 @@
 from django.contrib import admin
 
 from .events import Kind, record_event
-from .forms import EquipmentForm, StorageLocationForm
+from .forms import EquipmentForm
 from .models import (
     Category,
     Equipment,
@@ -9,7 +9,6 @@ from .models import (
     Manufacturer,
     QRDesign,
     ReturnRecord,
-    StorageLocation,
     UsageRecord,
 )
 
@@ -107,17 +106,6 @@ class EquipmentAdmin(admin.ModelAdmin):
                 old_value=old_value,
                 new_value=new_value,
             )
-
-@admin.register(StorageLocation)
-class StorageLocationAdmin(admin.ModelAdmin):
-    form = StorageLocationForm
-    list_display = ("name", "code", "parent", "is_active")
-    list_filter = ("is_active",)
-    search_fields = ("name", "code", "description")
-
-    def has_delete_permission(self, request, obj=None):
-        return False
-
 
 class ReturnRecordInline(admin.TabularInline):
     model = ReturnRecord
