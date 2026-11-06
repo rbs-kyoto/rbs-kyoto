@@ -1,7 +1,7 @@
 from django.contrib import admin
 
 from .events import Kind, record_event
-from .forms import EquipmentForm, StorageLocationForm
+from .forms import EquipmentForm
 from .services import change_status
 from .models import (
     Category,
@@ -13,7 +13,6 @@ from .models import (
     Loan,
     LoanLine,
     ReturnRecord,
-    StorageLocation,
 )
 
 
@@ -120,17 +119,6 @@ class EquipmentAdmin(admin.ModelAdmin):
                 new_value=new_value,
             )
         change_status(obj, new_condition, request.user)
-
-@admin.register(StorageLocation)
-class StorageLocationAdmin(admin.ModelAdmin):
-    form = StorageLocationForm
-    list_display = ("name", "code", "parent", "is_active")
-    list_filter = ("is_active",)
-    search_fields = ("name", "code", "description")
-
-    def has_delete_permission(self, request, obj=None):
-        return False
-
 
 class LoanLineInline(admin.TabularInline):
     model = LoanLine
