@@ -440,6 +440,10 @@ body.dark-mode .equipment__status--unregistered {
     gap: .4rem;
 }
 
+.equipment__field {
+    min-width: 0;
+}
+
 .equipment__field-pair {
     display: grid;
     grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -465,6 +469,14 @@ body.dark-mode .equipment__status--unregistered {
     corner-shape: superellipse(1.4);
     background: var(--Controlbackground);
     font: inherit;
+}
+
+.equipment input[type="date"],
+.equipment input[type="datetime-local"] {
+    min-width: 0;
+    max-width: 100%;
+    -webkit-appearance: none;
+    appearance: none;
 }
 
 .equipment input[type="color"] {

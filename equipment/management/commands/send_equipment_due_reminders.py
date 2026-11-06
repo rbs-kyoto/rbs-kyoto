@@ -1,12 +1,14 @@
-import json
 from datetime import timedelta
 
 from django.conf import settings
 from django.core.management.base import BaseCommand, CommandError
 from django.urls import reverse
 from django.utils import timezone
-from pywebpush import WebPushException, webpush
+from pywebpush import WebPushException
+from requests import RequestException
 
+from accounts.models import NotificationHistory
+from accounts.push import PushConfigurationError, record_notification, send_web_push
 from equipment.models import EquipmentReminderDelivery, LoanLine
 
 
@@ -66,7 +68,7 @@ class Command(BaseCommand):
                 body = f"「{usage.equipment.name}」の返却期限は本日です！"
             else:
                 body = f"「{usage.equipment.name}」の返却期限を過ぎています！"
-            payload = json.dumps(
+            payload = (
                 {
                     "title": title,
                     "body": (
@@ -74,11 +76,12 @@ class Command(BaseCommand):
                         f"未返却：{usage.remaining_quantity}{usage.equipment.unit}"
                     ),
                     "url": reverse("equipment:usage_detail", args=[usage.loan_id]),
-                },
-                ensure_ascii=False,
+                }
             )
 
-            subscriptions = usage.destination_entry.account.push_subscriptions.all()
+            account = usage.destination_entry.account
+            history_recorded = False
+            subscriptions = account.push_subscriptions.all()
             for subscription in subscriptions:
                 already_sent = EquipmentReminderDelivery.objects.filter(
                     subscription=subscription,
@@ -90,30 +93,20 @@ class Command(BaseCommand):
                     continue
 
                 try:
-                    webpush(
-                        subscription_info={
-                            "endpoint": subscription.endpoint,
-                            "keys": {
-                                "p256dh": subscription.p256dh,
-                                "auth": subscription.auth,
-                            },
-                        },
-                        data=payload,
-                        vapid_private_key=settings.WEBPUSH_VAPID_PRIVATE_KEY,
-                        vapid_claims={"sub": settings.WEBPUSH_VAPID_SUBJECT},
+                    delivered = send_web_push(subscription, payload)
+                except PushConfigurationError as error:
+                    raise CommandError(str(error)) from error
+                except (WebPushException, RequestException) as error:
+                    response = getattr(error, "response", None)
+                    status_code = getattr(response, "status_code", None)
+                    failure_count += 1
+                    self.stderr.write(
+                        f"Push failed for subscription {subscription.pk} "
+                        f"(HTTP {status_code or 'unknown'})."
                     )
-                except WebPushException as error:
-                    status_code = (
-                        error.response.status_code if error.response is not None else None
-                    )
-                    if status_code in {404, 410}:
-                        subscription.delete()
-                    else:
-                        failure_count += 1
-                        self.stderr.write(
-                            f"Push failed for subscription {subscription.pk} "
-                            f"(HTTP {status_code or 'unknown'})."
-                        )
+                    continue
+                if not delivered:
+                    # send_web_push already removed the expired subscription.
                     continue
 
                 EquipmentReminderDelivery.objects.get_or_create(
@@ -123,6 +116,11 @@ class Command(BaseCommand):
                     days_until_due=days_until_due,
                 )
                 sent_count += 1
+                if not history_recorded:
+                    record_notification(
+                        account.pk, NotificationHistory.Kind.EQUIPMENT, payload
+                    )
+                    history_recorded = True
 
         if failure_count:
             raise CommandError(

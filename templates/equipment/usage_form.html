@@ -7,6 +7,11 @@
     <p class="equipment__muted">貸し出す備品を選び、数量と貸出先を入力します。複数の備品をまとめて登録できます。貸出できる数を超えた登録はできません。返却は貸出の詳細画面から記録してください。</p>
     <form method="post" class="equipment__form">
         {% csrf_token %}
+        {% if schedule_link %}
+        <input type="hidden" name="schedule_item" value="{{ schedule_link.item }}">
+        <input type="hidden" name="schedule_date" value="{{ schedule_link.date }}">
+        <p class="equipment__muted">予定「{{ schedule_link.title }}」（{{ schedule_link.date }}）の機材として登録します。</p>
+        {% endif %}
         {% if form.non_field_errors %}<div class="equipment__errors">{{ form.non_field_errors }}</div>{% endif %}
 
         <section class="equipment__form-group" aria-labelledby="loan-items-heading">

@@ -22,6 +22,9 @@ urlpatterns = [
     path("preview_418/", error_views.preview_418, name="preview_418"),
     path("manuals/", include("manuals.urls")),
     path("videos/", include("video_archive.urls")),
+    path("schedule/", include("schedule.urls")),
+    path("places/", include("places.urls")),
+    path("api/places/", include("places.api_urls")),
     path("", include("main.urls")),
     path("accounts/", include("allauth.urls")),
 ]

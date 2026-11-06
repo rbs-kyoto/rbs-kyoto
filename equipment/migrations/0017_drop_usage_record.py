@@ -19,6 +19,9 @@ def refuse_if_loans_are_missing(apps, schema_editor):
 class Migration(migrations.Migration):
     dependencies = [
         ("equipment", "0016_loans_and_statuses"),
+        # schedule.UsageLink pointed at UsageRecord until this migration; it must
+        # have been moved to LoanLine before the table is dropped.
+        ("schedule", "0006_usagelink_loanline"),
     ]
 
     operations = [

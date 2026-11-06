@@ -41,7 +41,7 @@ def renumber_inventory_numbers(apps, schema_editor):
 
 class Migration(migrations.Migration):
     dependencies = [
-        ("equipment", "0011_manufacturer"),
+        ("equipment", "0011_merge_manufacturer_and_places"),
     ]
 
     operations = [

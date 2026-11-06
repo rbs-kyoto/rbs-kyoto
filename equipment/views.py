@@ -1,5 +1,5 @@
 import csv
-from datetime import date
+from datetime import date, datetime
 from io import BytesIO
 
 import qrcode
@@ -12,10 +12,12 @@ from django.db.models import Count, Q, Sum
 from django.http import Http404, HttpResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
+from django.utils.http import urlencode
 from django.utils import timezone
 from qrcode.image.svg import SvgPathImage
 
 from accounts.decorators import staff_required
+from places.models import Place
 from roll.models import Position, RosterEntry
 
 from .csvio import EquipmentImportError, import_equipment_csv, write_export
@@ -36,7 +38,6 @@ from .models import (
     LoanLine,
     QRDesign,
     ReturnRecord,
-    StorageLocation,
 )
 from .services import LoanError, change_status, create_loan, record_return
 
@@ -193,7 +194,7 @@ def equipment_list(request):
             "csv_url": csv_url,
             "categories": Category.objects.all(),
             "conditions": Equipment.Condition.choices,
-            "locations": StorageLocation.objects.filter(is_active=True),
+            "locations": Place.objects.filter(is_active=True, is_storage=True),
             "managers": Position.objects.filter(is_active=True),
         },
     )
@@ -573,6 +574,17 @@ def _posted_ids(post):
     return ids
 
 
+def _back_to_lending_form(post):
+    """Return to the lending form, keeping the schedule link and what was typed."""
+    keep = {
+        key: post[key]
+        for key in ("schedule_item", "schedule_date", "started_at", "due_at", "purpose")
+        if post.get(key)
+    }
+    target = reverse("equipment:lending_register")
+    return redirect(f"{target}?{urlencode(keep)}" if keep else target)
+
+
 @login_required
 def cart_add(request, pk=None):
     if request.method != "POST":
@@ -585,7 +597,7 @@ def cart_add(request, pk=None):
     elif raw:
         messages.error(request, "貸出できない備品です。")
     _save_cart(request, {k: max(v, 1) for k, v in cart.items()})
-    return redirect("equipment:lending_register")
+    return _back_to_lending_form(request.POST)
 
 
 @login_required
@@ -596,11 +608,13 @@ def cart_remove(request, pk):
     cart = {**_get_cart(request), **_posted_quantities(request.POST, ids)}
     cart.pop(pk, None)
     _save_cart(request, {k: max(v, 1) for k, v in cart.items()})
-    return redirect("equipment:lending_register")
+    return _back_to_lending_form(request.POST)
 
 
 @login_required
 def usage_create(request):
+    from schedule.linking import link_usage, parse_link_params
+
     cart = _get_cart(request)
     quantities = None
     if request.method == "POST":
@@ -622,6 +636,8 @@ def usage_create(request):
                 except LoanError as error:
                     form.add_error(None, error.message)
                 else:
+                    # 予定の機材から開いた場合は、その回の貸出として結ぶ。
+                    link_usage(request.user, loan, request.POST)
                     request.session.pop(CART_KEY, None)
                     messages.success(request, "貸出・持出を登録しました。")
                     return redirect("equipment:usage_detail", pk=loan.pk)
@@ -629,10 +645,38 @@ def usage_create(request):
     else:
         equipment_id = request.GET.get("equipment", "")
         if equipment_id.isdigit() and _lendable_equipment().filter(pk=equipment_id).exists():
-            cart.setdefault(int(equipment_id), 1)
+            # 予定の詳細から開いたときは、数量などのプリセットを付けたままにする。
+            quantity = request.GET.get("quantity", "")
+            cart[int(equipment_id)] = (
+                int(quantity) if quantity.isdigit() and int(quantity) >= 1 else cart.get(int(equipment_id), 1)
+            )
             _save_cart(request, cart)
-            return redirect("equipment:lending_register")
-        form = LoanForm()
+            presets = {
+                key: request.GET[key]
+                for key in ("started_at", "due_at", "purpose", "schedule_item", "schedule_date")
+                if request.GET.get(key)
+            }
+            target = reverse("equipment:lending_register")
+            return redirect(f"{target}?{urlencode(presets)}" if presets else target)
+        initial = {}
+        for key in ("started_at", "due_at"):
+            raw = request.GET.get(key, "")
+            try:
+                datetime.strptime(raw, "%Y-%m-%dT%H:%M")
+            except ValueError:
+                continue
+            initial[key] = raw
+        if request.GET.get("purpose"):
+            initial["purpose"] = request.GET["purpose"][:250]
+        form = LoanForm(initial=initial)
+
+    source = request.POST if request.method == "POST" else request.GET
+    link = parse_link_params(source)
+    schedule_link = (
+        {"item": link[0].pk, "date": link[1].isoformat(), "title": link[0].event.title}
+        if link
+        else None
+    )
     by_pk = {item.pk: item for item in _lendable_equipment().filter(pk__in=cart)}
     rows = [
         {"equipment": by_pk[pk], "quantity": cart[pk]} for pk in cart if pk in by_pk
@@ -644,6 +688,7 @@ def usage_create(request):
             "form": form,
             "rows": rows,
             "picker": _lendable_equipment().exclude(pk__in=[r["equipment"].pk for r in rows]),
+            "schedule_link": schedule_link,
         },
     )
 
@@ -757,7 +802,7 @@ def category_list(request):
 
 @login_required
 def location_list(request):
-    locations = StorageLocation.objects.select_related("parent").annotate(
+    locations = Place.objects.filter(is_storage=True).select_related("parent").annotate(
         equipment_count=Count("equipment", filter=Q(equipment__is_active=True))
     )
     return render(
@@ -786,7 +831,7 @@ def location_create(request):
 
 @login_required
 def location_edit(request, pk):
-    location = get_object_or_404(StorageLocation, pk=pk)
+    location = get_object_or_404(Place, pk=pk)
     if request.method == "POST":
         form = StorageLocationForm(request.POST, instance=location)
         if form.is_valid():
