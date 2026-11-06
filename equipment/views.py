@@ -1,8 +1,10 @@
 import csv
+from datetime import date
 from io import BytesIO
 
 import qrcode
 from django.contrib import messages
+from django.contrib.auth import get_user_model
 from django.contrib.auth.decorators import login_required
 from django.core.paginator import Paginator
 from django.db import IntegrityError, transaction
@@ -29,6 +31,7 @@ from .forms import (
 from .models import (
     Category,
     Equipment,
+    EquipmentHistory,
     Loan,
     LoanLine,
     QRDesign,
@@ -494,8 +497,16 @@ def usage_list(request):
     ).prefetch_related("returns")
     filter_type = request.GET.get("type", "")
     filter_status = request.GET.get("status", "")
+    query = request.GET.get("q", "").strip()
     if filter_type in Loan.UsageType.values:
         records = records.filter(loan__usage_type=filter_type)
+    if query:
+        records = records.filter(
+            Q(loan__destination__icontains=query)
+            | Q(loan__recipient__icontains=query)
+            | Q(equipment__inventory_number__icontains=query)
+            | Q(equipment__model__name__icontains=query)
+        )
     all_records = list(records)
     if filter_status == "open":
         all_records = [record for record in all_records if record.remaining_quantity]
@@ -510,36 +521,131 @@ def usage_list(request):
             "records": all_records,
             "selected_type": filter_type,
             "selected_status": filter_status,
+            "query": query,
             "usage_types": Loan.UsageType.choices,
         },
     )
 
 
+CART_KEY = "equipment_cart"
+
+
+def _get_cart(request):
+    """The lending cart: {equipment id: quantity}, kept in the session."""
+    cart = {}
+    for entry in request.session.get(CART_KEY, []):
+        try:
+            cart[int(entry[0])] = max(int(entry[1]), 1)
+        except (TypeError, ValueError, IndexError):
+            continue
+    return cart
+
+
+def _save_cart(request, cart):
+    request.session[CART_KEY] = [[pk, quantity] for pk, quantity in cart.items()]
+
+
+def _posted_quantities(post, ids):
+    """Quantities typed next to each cart row (quantity_<id>), default 1."""
+    quantities = {}
+    for pk in ids:
+        raw = post.get(f"quantity_{pk}")
+        if raw is None and len(ids) == 1:
+            raw = post.get("quantity")  # simple single-item form
+        try:
+            quantities[pk] = int(raw) if raw not in (None, "") else 1
+        except ValueError:
+            quantities[pk] = 0
+    return quantities
+
+
+def _lendable_equipment():
+    return Equipment.objects.filter(
+        is_active=True, condition__in=Equipment.LOANABLE_CONDITIONS
+    ).select_related("model__category")
+
+
+def _posted_ids(post):
+    ids = []
+    for raw in post.getlist("equipment"):
+        if raw.isdigit() and int(raw) not in ids:
+            ids.append(int(raw))
+    return ids
+
+
+@login_required
+def cart_add(request, pk=None):
+    if request.method != "POST":
+        raise Http404
+    ids = _posted_ids(request.POST)
+    cart = {**_get_cart(request), **_posted_quantities(request.POST, ids)}
+    raw = pk if pk is not None else request.POST.get("add_equipment", "")
+    if str(raw).isdigit() and _lendable_equipment().filter(pk=raw).exists():
+        cart.setdefault(int(raw), 1)
+    elif raw:
+        messages.error(request, "貸出できない備品です。")
+    _save_cart(request, {k: max(v, 1) for k, v in cart.items()})
+    return redirect("equipment:lending_register")
+
+
+@login_required
+def cart_remove(request, pk):
+    if request.method != "POST":
+        raise Http404
+    ids = _posted_ids(request.POST)
+    cart = {**_get_cart(request), **_posted_quantities(request.POST, ids)}
+    cart.pop(pk, None)
+    _save_cart(request, {k: max(v, 1) for k, v in cart.items()})
+    return redirect("equipment:lending_register")
+
+
 @login_required
 def usage_create(request):
+    cart = _get_cart(request)
+    quantities = None
     if request.method == "POST":
         form = LoanForm(request.POST)
+        ids = _posted_ids(request.POST)
+        quantities = _posted_quantities(request.POST, ids)
         if form.is_valid():
-            try:
-                loan = create_loan(
-                    request.user,
-                    [(form.cleaned_data["equipment"].pk, form.cleaned_data["quantity"])],
-                    **form.loan_fields(),
-                )
-            except LoanError as error:
-                form.add_error(error.field, error.message)
+            if not ids:
+                form.add_error(None, "貸出する備品を選択してください。")
+            elif any(quantity < 1 for quantity in quantities.values()):
+                form.add_error(None, "数量は1以上の整数で入力してください。")
             else:
-                messages.success(request, "貸出・持出を登録しました。")
-                return redirect("equipment:usage_detail", pk=loan.pk)
+                try:
+                    loan = create_loan(
+                        request.user,
+                        [(pk, quantities[pk]) for pk in ids],
+                        **form.loan_fields(),
+                    )
+                except LoanError as error:
+                    form.add_error(None, error.message)
+                else:
+                    request.session.pop(CART_KEY, None)
+                    messages.success(request, "貸出・持出を登録しました。")
+                    return redirect("equipment:usage_detail", pk=loan.pk)
+        cart = quantities
     else:
-        initial = {}
         equipment_id = request.GET.get("equipment", "")
-        if equipment_id.isdigit() and Equipment.objects.filter(
-            pk=equipment_id, is_active=True
-        ).exists():
-            initial["equipment"] = equipment_id
-        form = LoanForm(initial=initial)
-    return render(request, "equipment/usage_form.html", {"form": form})
+        if equipment_id.isdigit() and _lendable_equipment().filter(pk=equipment_id).exists():
+            cart.setdefault(int(equipment_id), 1)
+            _save_cart(request, cart)
+            return redirect("equipment:lending_register")
+        form = LoanForm()
+    by_pk = {item.pk: item for item in _lendable_equipment().filter(pk__in=cart)}
+    rows = [
+        {"equipment": by_pk[pk], "quantity": cart[pk]} for pk in cart if pk in by_pk
+    ]
+    return render(
+        request,
+        "equipment/usage_form.html",
+        {
+            "form": form,
+            "rows": rows,
+            "picker": _lendable_equipment().exclude(pk__in=[r["equipment"].pk for r in rows]),
+        },
+    )
 
 
 @login_required
@@ -550,7 +656,61 @@ def usage_detail(request, pk):
         ),
         pk=pk,
     )
-    return render(request, "equipment/usage_detail.html", {"loan": loan})
+    return render(
+        request,
+        "equipment/usage_detail.html",
+        {
+            "loan": loan,
+            "return_conditions": [
+                (value, label)
+                for value, label in ReturnRecord.Condition.choices
+                if value != ReturnRecord.Condition.DAMAGED
+            ],
+        },
+    )
+
+
+@login_required
+def loan_return_all(request, pk):
+    """Return every ticked line of a loan at once (the whole remaining quantity)."""
+    if request.method != "POST":
+        raise Http404
+    loan = get_object_or_404(Loan.objects.prefetch_related("lines__returns"), pk=pk)
+    valid_conditions = {
+        value
+        for value, _ in ReturnRecord.Condition.choices
+        if value != ReturnRecord.Condition.DAMAGED
+    }
+    chosen = [
+        line
+        for line in loan.lines.all()
+        if line.remaining_quantity and request.POST.get(f"return_{line.pk}")
+    ]
+    if not chosen:
+        messages.error(request, "返却する備品をチェックしてください。")
+        return redirect("equipment:usage_detail", pk=loan.pk)
+    try:
+        with transaction.atomic():
+            for line in chosen:
+                condition = request.POST.get(f"condition_{line.pk}", "normal")
+                if condition not in valid_conditions:
+                    condition = ReturnRecord.Condition.NORMAL
+                record_return(
+                    line.pk,
+                    request.user,
+                    ReturnRecord(
+                        quantity=line.remaining_quantity,
+                        returned_at=timezone.now(),
+                        confirmed_by=request.POST.get("confirmed_by", "").strip(),
+                        condition=condition,
+                        condition_details=request.POST.get(f"details_{line.pk}", "").strip(),
+                    ),
+                )
+    except LoanError as error:
+        messages.error(request, error.message)
+    else:
+        messages.success(request, f"{len(chosen)}件の返却を記録しました。")
+    return redirect("equipment:usage_detail", pk=loan.pk)
 
 
 @login_required
@@ -678,3 +838,47 @@ def settings_view(request):
     else:
         form = QRDesignForm(instance=design)
     return render(request, "equipment/settings.html", {"form": form})
+
+
+@login_required
+@staff_required
+def activity(request):
+    """Audit view: everything that happened, filterable by kind, actor and period."""
+    events = EquipmentHistory.objects.select_related(
+        "equipment__model", "changed_by"
+    )
+    kind = request.GET.get("kind", "")
+    actor = request.GET.get("user", "")
+    date_from = request.GET.get("from", "")
+    date_to = request.GET.get("to", "")
+    query = request.GET.get("q", "").strip()
+    if kind in EquipmentHistory.Kind.values:
+        events = events.filter(kind=kind)
+    if actor.isdigit():
+        events = events.filter(changed_by_id=actor)
+    for raw, lookup in ((date_from, "changed_at__date__gte"), (date_to, "changed_at__date__lte")):
+        try:
+            events = events.filter(**{lookup: date.fromisoformat(raw)}) if raw else events
+        except ValueError:
+            pass
+    if query:
+        events = events.filter(
+            Q(equipment__inventory_number__icontains=query)
+            | Q(equipment__model__name__icontains=query)
+            | Q(field_name__icontains=query)
+            | Q(reason__icontains=query)
+        )
+    page_obj = Paginator(events, 50).get_page(request.GET.get("page"))
+    params = request.GET.copy()
+    params.pop("page", None)
+    return render(
+        request,
+        "equipment/activity.html",
+        {
+            "page_obj": page_obj,
+            "kinds": EquipmentHistory.Kind.choices,
+            "actors": get_user_model().objects.filter(equipment_changes__isnull=False).distinct().order_by("username"),
+            "selected": {"kind": kind, "user": actor, "from": date_from, "to": date_to, "q": query},
+            "query_string": params.urlencode(),
+        },
+    )

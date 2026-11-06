@@ -1569,3 +1569,238 @@ class StatusAndReturnTests(TestCase):
         loan_id = line.loan_id
         item.delete()
         self.assertFalse(Loan.objects.filter(pk=loan_id).exists())
+
+
+class LendingUiTests(TestCase):
+    def setUp(self):
+        self.user = get_user_model().objects.create_user(
+            username="ui-staff", password="pw-123456", is_staff=True
+        )
+        self.member = get_user_model().objects.create_user(
+            username="ui-member", password="pw-123456"
+        )
+        self.client.force_login(self.user)
+        self.category = Category.objects.get(code="A")
+        self.mic = Equipment.objects.create(
+            category=self.category, name="マイク", quantity=5, unit="本"
+        )
+        self.mixer = Equipment.objects.create(
+            category=self.category, name="ミキサー", quantity=1, unit="台"
+        )
+
+    def _header(self, **overrides):
+        data = {
+            "usage_type": Loan.UsageType.LENDING,
+            "destination_selection": "other",
+            "other_destination": "放送室",
+            "recipient": "受取者",
+            "started_at": "2026-10-01T10:00",
+            "due_at": "",
+            "purpose": "収録",
+            "notes": "",
+        }
+        data.update(overrides)
+        return data
+
+    # --- cart
+    def test_opening_lending_with_an_item_puts_it_in_the_cart(self):
+        response = self.client.get(
+            reverse("equipment:lending_register"), {"equipment": self.mic.pk}
+        )
+        self.assertRedirects(response, reverse("equipment:lending_register"))
+        page = self.client.get(reverse("equipment:lending_register"))
+        self.assertContains(page, self.mic.inventory_number)
+        self.assertContains(page, f'name="quantity_{self.mic.pk}"')
+
+    def test_cart_add_remove_keep_typed_quantities_and_ignore_duplicates(self):
+        self.client.post(reverse("equipment:cart_add_item", args=[self.mic.pk]))
+        self.client.post(reverse("equipment:cart_add_item", args=[self.mic.pk]))
+        self.client.post(
+            reverse("equipment:cart_add"),
+            {
+                "add_equipment": self.mixer.pk,
+                "equipment": [self.mic.pk],
+                f"quantity_{self.mic.pk}": "3",
+            },
+        )
+        cart = dict(self.client.session["equipment_cart"])
+        self.assertEqual(cart, {self.mic.pk: 3, self.mixer.pk: 1})
+        self.client.post(reverse("equipment:cart_remove", args=[self.mic.pk]))
+        self.assertEqual(
+            dict(self.client.session["equipment_cart"]), {self.mixer.pk: 1}
+        )
+
+    def test_cart_refuses_items_that_cannot_be_lent(self):
+        self.mixer.condition = Equipment.Condition.BROKEN
+        self.mixer.save()
+        response = self.client.post(
+            reverse("equipment:cart_add_item", args=[self.mixer.pk]), follow=True
+        )
+        self.assertContains(response, "貸出できない備品です")
+        self.assertEqual(self.client.session.get("equipment_cart", []), [])
+
+    def test_lending_page_lists_only_lendable_items_in_the_picker(self):
+        self.mixer.condition = Equipment.Condition.REPAIR
+        self.mixer.save()
+        page = self.client.get(reverse("equipment:lending_register"))
+        self.assertContains(page, f'<option value="{self.mic.pk}">')
+        self.assertNotContains(page, f'<option value="{self.mixer.pk}">')
+
+    # --- lending several items
+    def test_several_items_are_lent_in_one_loan_and_the_cart_is_cleared(self):
+        self.client.post(reverse("equipment:cart_add_item", args=[self.mic.pk]))
+        response = self.client.post(
+            reverse("equipment:lending_register"),
+            {
+                **self._header(),
+                "equipment": [self.mic.pk, self.mixer.pk],
+                f"quantity_{self.mic.pk}": "3",
+                f"quantity_{self.mixer.pk}": "1",
+            },
+        )
+        loan = Loan.objects.get()
+        self.assertRedirects(response, reverse("equipment:usage_detail", args=[loan.pk]))
+        self.assertEqual(
+            {line.equipment_id: line.quantity for line in loan.lines.all()},
+            {self.mic.pk: 3, self.mixer.pk: 1},
+        )
+        self.assertEqual(self.mic.available_quantity, 2)
+        self.assertNotIn("equipment_cart", self.client.session)
+
+    def test_lending_without_items_or_with_bad_quantity_is_rejected(self):
+        response = self.client.post(reverse("equipment:lending_register"), self._header())
+        self.assertContains(response, "貸出する備品を選択してください")
+        response = self.client.post(
+            reverse("equipment:lending_register"),
+            {**self._header(), "equipment": [self.mic.pk], f"quantity_{self.mic.pk}": "0"},
+        )
+        self.assertContains(response, "数量は1以上の整数")
+        self.assertFalse(Loan.objects.exists())
+
+    def test_one_failing_item_prevents_the_whole_loan(self):
+        response = self.client.post(
+            reverse("equipment:lending_register"),
+            {
+                **self._header(),
+                "equipment": [self.mic.pk, self.mixer.pk],
+                f"quantity_{self.mic.pk}": "1",
+                f"quantity_{self.mixer.pk}": "9",
+            },
+        )
+        self.assertContains(response, "貸出可能数量を超えています")
+        self.assertFalse(Loan.objects.exists())
+        self.assertContains(response, f'name="quantity_{self.mic.pk}"')
+
+    # --- destination search + list search
+    def test_destination_search_box_targets_the_destination_select(self):
+        page = self.client.get(reverse("equipment:lending_register"))
+        self.assertContains(page, 'data-filter-select="id_destination_selection"')
+        self.assertContains(page, "equipment/filter-select.js")
+
+    def test_lending_list_can_be_searched(self):
+        make_usage(
+            equipment=self.mic,
+            usage_type=Loan.UsageType.LENDING,
+            destination="放送室",
+            quantity=1,
+        )
+        make_usage(
+            equipment=self.mixer,
+            usage_type=Loan.UsageType.LENDING,
+            destination="体育館",
+            quantity=1,
+        )
+        response = self.client.get(reverse("equipment:lending"), {"q": "体育"})
+        self.assertContains(response, "体育館")
+        self.assertNotContains(response, "放送室")
+
+    # --- bulk return
+    def _loan_with_two_lines(self):
+        from .services import create_loan
+
+        return create_loan(
+            self.user,
+            [(self.mic.pk, 2), (self.mixer.pk, 1)],
+            usage_type=Loan.UsageType.LENDING,
+            destination="放送室",
+        )
+
+    def test_bulk_return_returns_every_checked_line_with_its_condition(self):
+        loan = self._loan_with_two_lines()
+        mic_line, mixer_line = loan.lines.order_by("equipment_id")
+        response = self.client.post(
+            reverse("equipment:return_all", args=[loan.pk]),
+            {
+                f"return_{mic_line.pk}": "1",
+                f"condition_{mic_line.pk}": "normal",
+                f"return_{mixer_line.pk}": "1",
+                f"condition_{mixer_line.pk}": "faulty",
+                f"details_{mixer_line.pk}": "電源が入らない",
+                "confirmed_by": "確認者",
+            },
+        )
+        self.assertRedirects(response, reverse("equipment:usage_detail", args=[loan.pk]))
+        self.assertEqual(Loan.objects.get().remaining_quantity, 0)
+        self.mixer.refresh_from_db()
+        self.mic.refresh_from_db()
+        self.assertEqual(self.mixer.condition, "broken")
+        self.assertEqual(self.mic.condition, "normal")
+        self.assertEqual(ReturnRecord.objects.filter(confirmed_by="確認者").count(), 2)
+
+    def test_bulk_return_only_touches_checked_lines(self):
+        loan = self._loan_with_two_lines()
+        mic_line, mixer_line = loan.lines.order_by("equipment_id")
+        self.client.post(
+            reverse("equipment:return_all", args=[loan.pk]),
+            {f"return_{mic_line.pk}": "1"},
+        )
+        self.assertEqual(mic_line.remaining_quantity, 0)
+        self.assertEqual(mixer_line.remaining_quantity, 1)
+
+    def test_bulk_return_requires_a_checked_line(self):
+        loan = self._loan_with_two_lines()
+        response = self.client.post(
+            reverse("equipment:return_all", args=[loan.pk]), {}, follow=True
+        )
+        self.assertContains(response, "返却する備品をチェックしてください")
+        self.assertFalse(ReturnRecord.objects.exists())
+
+    def test_loan_detail_shows_bulk_return_form_only_while_items_are_out(self):
+        loan = self._loan_with_two_lines()
+        page = self.client.get(reverse("equipment:usage_detail", args=[loan.pk]))
+        self.assertContains(page, "チェックした備品を返却")
+        self.client.post(
+            reverse("equipment:return_all", args=[loan.pk]),
+            {f"return_{line.pk}": "1" for line in loan.lines.all()},
+        )
+        page = self.client.get(reverse("equipment:usage_detail", args=[loan.pk]))
+        self.assertNotContains(page, "チェックした備品を返却")
+
+    # --- audit view
+    def test_activity_is_staff_only(self):
+        self.client.force_login(self.member)
+        response = self.client.get(reverse("equipment:activity"))
+        self.assertEqual(response.status_code, 302)
+
+    def test_activity_filters_by_kind_user_period_and_keyword(self):
+        from .events import Kind, record_event
+
+        record_event(self.mic, Kind.UPDATE, self.user, field_name="型番", new_value="X1")
+        other = record_event(self.mixer, Kind.STATUS, self.member, new_value="故障")
+        EquipmentHistory.objects.filter(pk=other.pk).update(
+            changed_at=timezone.now() - timedelta(days=30)
+        )
+        url = reverse("equipment:activity")
+        page = self.client.get(url)
+        self.assertEqual(page.context["page_obj"].paginator.count, 2)
+        by_kind = self.client.get(url, {"kind": "status"})
+        self.assertEqual([e.pk for e in by_kind.context["page_obj"]], [other.pk])
+        by_user = self.client.get(url, {"user": self.member.pk})
+        self.assertEqual([e.pk for e in by_user.context["page_obj"]], [other.pk])
+        recent = self.client.get(url, {"from": timezone.localdate().isoformat()})
+        self.assertNotIn(other.pk, [e.pk for e in recent.context["page_obj"]])
+        by_text = self.client.get(url, {"q": "ミキサー"})
+        self.assertTrue(
+            all(e.equipment_id == self.mixer.pk for e in by_text.context["page_obj"])
+        )
+        self.assertContains(self.client.get(url, {"from": "bad-date"}), "操作履歴")

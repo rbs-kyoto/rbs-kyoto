@@ -7,6 +7,7 @@
 
 {% block extra_js %}
 <script src="{% static 'equipment/info.js' %}" defer></script>
+<script src="{% static 'equipment/filter-select.js' %}" defer></script>
 {% endblock %}
 
 {% block content %}
@@ -20,6 +21,7 @@
             <a href="{% url 'equipment:list' %}">備品一覧</a>
             <a href="{% url 'equipment:register' %}">備品登録</a>
             <a href="{% url 'equipment:lending' %}">貸出・持出</a>
+            {% if user.is_staff %}<a href="{% url 'equipment:activity' %}">操作履歴</a>{% endif %}
             <a href="{% url 'equipment:scan_camera' %}">QR読み取り</a>
             <a href="{% url 'equipment:categories' %}">分類</a>
             <a href="{% url 'equipment:locations' %}">保管場所</a>

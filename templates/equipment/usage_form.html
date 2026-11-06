@@ -4,11 +4,47 @@
 {% block equipment_content %}
 <section class="equipment__section equipment__form-section">
     <h2>貸出・持出登録</h2>
-    <p class="equipment__muted">保管数量を超える貸出は登録できません。返却は返却処理画面から記録してください。</p>
+    <p class="equipment__muted">貸し出す備品を選び、数量と貸出先を入力します。複数の備品をまとめて登録できます。貸出できる数を超えた登録はできません。返却は貸出の詳細画面から記録してください。</p>
     <form method="post" class="equipment__form">
         {% csrf_token %}
         {% if form.non_field_errors %}<div class="equipment__errors">{{ form.non_field_errors }}</div>{% endif %}
-        {% for field in form %}{% include "equipment/_form_field.html" %}{% endfor %}
+
+        <section class="equipment__form-group" aria-labelledby="loan-items-heading">
+            <h3 class="equipment__form-group-title" id="loan-items-heading">貸し出す備品</h3>
+            <div class="equipment__table-wrap"><table>
+                <thead><tr><th>備品</th><th>貸出可能</th><th>数量</th><th></th></tr></thead>
+                <tbody>
+                {% for row in rows %}
+                <tr>
+                    <td><input type="hidden" name="equipment" value="{{ row.equipment.pk }}"><a href="{% url 'equipment:detail' row.equipment.pk %}">{{ row.equipment.inventory_number }} {{ row.equipment.name }}</a></td>
+                    <td>{{ row.equipment.available_quantity }}{{ row.equipment.unit }}</td>
+                    <td><input type="number" name="quantity_{{ row.equipment.pk }}" value="{{ row.quantity }}" min="1" max="{{ row.equipment.available_quantity }}" aria-label="{{ row.equipment.name }}の数量"></td>
+                    <td><button type="submit" class="common-style white equipment__button" formaction="{% url 'equipment:cart_remove' row.equipment.pk %}" formmethod="post" formnovalidate>外す</button></td>
+                </tr>
+                {% empty %}
+                <tr><td colspan="4" class="equipment__empty">備品が選択されていません。下の一覧から追加するか、備品の詳細画面（QR読み取り）から「貸出・持出」を押してください。</td></tr>
+                {% endfor %}
+                </tbody>
+            </table></div>
+            <div class="equipment__field-pair">
+                <div class="equipment__field">
+                    <label for="add-equipment">備品を追加</label>
+                    <select id="add-equipment" name="add_equipment">
+                        <option value="">---------</option>
+                        {% for item in picker %}<option value="{{ item.pk }}">{{ item.inventory_number }} {{ item.name }}</option>{% endfor %}
+                    </select>
+                </div>
+                <div class="equipment__field">
+                    <label>&nbsp;</label>
+                    <button type="submit" class="common-style white equipment__button" formaction="{% url 'equipment:cart_add' %}" formmethod="post" formnovalidate>追加</button>
+                </div>
+            </div>
+        </section>
+
+        <section class="equipment__form-group" aria-labelledby="loan-header-heading">
+            <h3 class="equipment__form-group-title" id="loan-header-heading">貸出・持出の内容</h3>
+            {% for field in form %}{% include "equipment/_form_field.html" %}{% endfor %}
+        </section>
         <div class="equipment__actions"><button class="common-style reverse equipment__button" type="submit">貸出を登録</button><a class="common-style white equipment__button" href="{% url 'equipment:lending' %}">キャンセル</a></div>
     </form>
 </section>
