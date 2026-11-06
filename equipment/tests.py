@@ -17,6 +17,7 @@ from .models import (
     Equipment,
     EquipmentHistory,
     EquipmentReminderDelivery,
+    Manufacturer,
     ReturnRecord,
     StorageLocation,
     UsageRecord,
@@ -347,6 +348,72 @@ class EquipmentWorkflowTests(TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertFalse(Equipment.objects.filter(name="上限超過の備品").exists())
         self.assertContains(response, "上限の25件に達しています")
+
+    def test_edit_can_select_existing_manufacturer(self):
+        sony = Manufacturer.objects.create(name="SONY")
+        response = self.client.post(
+            reverse("equipment:edit", args=[self.equipment.pk]),
+            self._edit_payload(manufacturer=sony.pk),
+        )
+        self.assertEqual(response.status_code, 302)
+        self.equipment.refresh_from_db()
+        self.assertEqual(self.equipment.manufacturer, sony)
+        self.assertTrue(
+            EquipmentHistory.objects.filter(
+                equipment=self.equipment,
+                field_name="メーカー",
+                new_value="SONY",
+            ).exists()
+        )
+
+    def test_edit_can_add_new_manufacturer_from_form(self):
+        response = self.client.post(
+            reverse("equipment:edit", args=[self.equipment.pk]),
+            self._edit_payload(new_manufacturer="  Shure  "),
+        )
+        self.assertEqual(response.status_code, 302)
+        self.equipment.refresh_from_db()
+        self.assertEqual(self.equipment.manufacturer.name, "Shure")
+        self.assertEqual(Manufacturer.objects.filter(name="Shure").count(), 1)
+        self.assertTrue(
+            EquipmentHistory.objects.filter(
+                equipment=self.equipment, field_name="メーカー"
+            ).exists()
+        )
+
+    def test_new_manufacturer_reuses_existing_name_ignoring_case(self):
+        existing = Manufacturer.objects.create(name="Shure")
+        self.client.post(
+            reverse("equipment:edit", args=[self.equipment.pk]),
+            self._edit_payload(new_manufacturer="shure"),
+        )
+        self.equipment.refresh_from_db()
+        self.assertEqual(self.equipment.manufacturer, existing)
+        self.assertEqual(Manufacturer.objects.count(), 1)
+
+    def _edit_payload(self, **overrides):
+        payload = {
+            "category": self.category_a.pk,
+            "name": "テストマイク",
+            "manufacturer": "",
+            "model_number": "",
+            "serial_number": "",
+            "receipt_number": "",
+            "quantity": "5",
+            "unit": "本",
+            "manager": "",
+            "location": "",
+            "purchased_on": "",
+            "purchase_price": "",
+            "purchase_currency": Equipment.Currency.JPY,
+            "purchase_vendor": "",
+            "warranty_expiry": "",
+            "expected_lifespan_years": "",
+            "notes": "",
+            "condition": Equipment.Condition.NORMAL,
+        }
+        payload.update(overrides)
+        return payload
 
     def test_edit_records_changed_fields(self):
         response = self.client.post(

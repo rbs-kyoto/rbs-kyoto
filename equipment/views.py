@@ -93,7 +93,12 @@ def dashboard(request):
 def equipment_list(request):
     archived = request.GET.get("archived") == "1"
     equipment = Equipment.objects.filter(is_active=not archived).select_related(
-        "category", "location", "manager", "created_by", "last_modified_by"
+        "category",
+        "manufacturer",
+        "location",
+        "manager",
+        "created_by",
+        "last_modified_by",
     ).prefetch_related(
         Prefetch(
             "usage_records",
@@ -113,7 +118,7 @@ def equipment_list(request):
             Q(inventory_number__icontains=query)
             | Q(qr_token__iexact=query)
             | Q(name__icontains=query)
-            | Q(manufacturer__icontains=query)
+            | Q(manufacturer__name__icontains=query)
             | Q(model_number__icontains=query)
             | Q(serial_number__icontains=query)
             | Q(receipt_number__icontains=query)
@@ -182,7 +187,7 @@ def equipment_list(request):
                     item.inventory_number,
                     item.name,
                     str(item.category),
-                    item.manufacturer,
+                    item.manufacturer or "",
                     item.model_number,
                     item.quantity,
                     item.unit,
@@ -285,6 +290,8 @@ def _display_value(equipment, field_name):
         return str(value) if value else ""
     if field_name == "category":
         return str(value)
+    if field_name == "manufacturer":
+        return str(value) if value else ""
     if field_name == "condition":
         return equipment.get_condition_display()
     return str(value) if value is not None else ""
@@ -303,12 +310,18 @@ def equipment_edit(request, pk):
             changed_fields = [
                 field
                 for field in form.changed_data
-                if field in form.fields
+                if field in EquipmentForm.Meta.fields
             ]
             with transaction.atomic():
                 updated_equipment = form.save(commit=False)
                 updated_equipment.last_modified_by = request.user
                 updated_equipment.save()
+                if (
+                    "manufacturer" not in changed_fields
+                    and _display_value(updated_equipment, "manufacturer")
+                    != original_values["manufacturer"]
+                ):
+                    changed_fields.append("manufacturer")
                 for field_name in changed_fields:
                     EquipmentHistory.objects.create(
                         equipment=updated_equipment,
