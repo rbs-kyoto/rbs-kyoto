@@ -5,8 +5,8 @@
     }
 
     const publicKey = form.querySelector("[data-push-public-key]").textContent.trim();
-    const subscribeUrl = form.querySelector("[data-push-subscribe-url]").textContent.trim();
-    const preferencesUrl = form.querySelector("[data-push-preferences-url]").textContent.trim();
+    const subscribeUrl = form.querySelector("[data-push-subscribe-url]").dataset.pushSubscribeUrl;
+    const preferencesUrl = form.querySelector("[data-push-preferences-url]").dataset.pushPreferencesUrl;
     const csrfToken = form.querySelector("[name=csrfmiddlewaretoken]").value;
     const buttons = [...form.querySelectorAll("[data-notification-type]")];
     const enabled = { equipment: false, news: false };

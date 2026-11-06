@@ -103,6 +103,30 @@
             <p>通知機能は現在設定されていません。</p>
             {% endif %}
         </section>
+        <section class="mypage-card" aria-labelledby="mypage-notification-history-heading">
+            <div class="mypage-card__header">
+                <h3 id="mypage-notification-history-heading">通知履歴</h3>
+            </div>
+            {% if notification_history %}
+            <ul class="mypage-notification-history">
+                {% for item in notification_history %}
+                <li class="mypage-notification-history__item">
+                    <div class="mypage-notification-history__meta">
+                        <span class="mypage-notification-history__kind">{{ item.get_kind_display }}</span>
+                        <time datetime="{{ item.sent_at|date:'c' }}">{{ item.sent_at|date:"Y/m/d H:i" }}</time>
+                    </div>
+                    <p class="mypage-notification-history__title">
+                        {% if item.url %}<a href="{{ item.url }}">{{ item.title }}</a>{% else %}{{ item.title }}{% endif %}
+                    </p>
+                    {% if item.body %}<p class="mypage-notification-history__body">{{ item.body }}</p>{% endif %}
+                </li>
+                {% endfor %}
+            </ul>
+            <p class="mypage-notification-history__note">直近20件を表示しています。</p>
+            {% else %}
+            <p>送信済みの通知はまだありません。</p>
+            {% endif %}
+        </section>
         <section class="mypage-card">
             <div class="mypage-card__header">
                 <h3>マニュアル</h3>
@@ -205,6 +229,6 @@
 <script src="{% static 'main/js/error_preview.js' %}"></script>
 {% endif %}
 {% if webpush_public_key %}
-<script src="{% static 'main/js/push_notifications.js' %}?v=2" defer></script>
+<script src="{% static 'main/js/push_notifications.js' %}?v=3" defer></script>
 {% endif %}
 {% endblock %}

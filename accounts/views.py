@@ -19,7 +19,12 @@ from pywebpush import WebPushException
 from equipment.models import UsageRecord
 from roll.models import RosterEntry
 from .push import PushConfigurationError, send_web_push
-from .models import SuperuserGrantCredential, User, WebPushSubscription
+from .models import (
+    NotificationHistory,
+    SuperuserGrantCredential,
+    User,
+    WebPushSubscription,
+)
 
 
 def login_view(request):
@@ -64,6 +69,9 @@ def mypage(request):
             "has_roster_entry": RosterEntry.objects.filter(
                 account=request.user
             ).exists(),
+            "notification_history": NotificationHistory.objects.filter(
+                user=request.user
+            )[:20],
             "webpush_public_key": (
                 settings.WEBPUSH_VAPID_PUBLIC_KEY
                 if all(

@@ -426,3 +426,49 @@ body.dark-mode .mypage-actions a.mypage-actions__logout {
     color: var(--Red-400);
     font-size: .8rem;
 }
+
+.mypage-notification-history {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: grid;
+    gap: 0.75rem;
+}
+
+.mypage-notification-history__item {
+    padding-bottom: 0.75rem;
+    border-bottom: 1px solid rgba(128, 128, 128, 0.3);
+}
+
+.mypage-notification-history__item:last-child {
+    border-bottom: none;
+}
+
+.mypage-notification-history__meta {
+    display: flex;
+    gap: 0.75rem;
+    align-items: center;
+    font-size: 0.85rem;
+    opacity: 0.8;
+}
+
+.mypage-notification-history__kind {
+    padding: 0.1rem 0.5rem;
+    border: 1px solid currentColor;
+    border-radius: 999px;
+}
+
+.mypage-notification-history__title,
+.mypage-notification-history__body {
+    margin: 0.25rem 0 0;
+}
+
+.mypage-notification-history__title {
+    font-weight: 700;
+}
+
+.mypage-notification-history__note {
+    margin: 0.75rem 0 0;
+    font-size: 0.85rem;
+    opacity: 0.8;
+}
