@@ -39,7 +39,7 @@
             <ul class="schedule-week__events">
                 {% for occ in day.occurrences %}
                 <li>
-                    <a class="schedule-week__event" href="{% url 'schedule:event_detail' occ.event.pk %}">
+                    <a class="schedule-week__event" href="{% url 'schedule:event_detail' occ.event.pk %}?date={{ occ.first_day|date:'Y-m-d' }}">
                         <span class="schedule-week__time">
                             {% if occ.event.all_day %}終日{% elif occ.first_day == day.date %}{{ occ.start|date:"H:i" }}{% else %}〜{% endif %}
                         </span>

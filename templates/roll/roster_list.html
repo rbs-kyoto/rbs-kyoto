@@ -1,0 +1,45 @@
+{% extends "main/base.html" %}
+{% load static %}
+
+{% block title %}Roll 名簿管理{% endblock %}
+{% block extra_css %}<link rel="stylesheet" href="{% static 'main/css/roll.css' %}">{% endblock %}
+{% block content %}
+<div class="roll-page">
+    <header class="roll-page__header">
+        <div>
+            <h1>Roll</h1>
+        </div>
+        <div class="roll-page__actions">
+            <a class="common-style white" href="{{ import_url }}">CSVインポート</a>
+            <a class="common-style reverse" href="{{ admin_url }}">名簿を登録・編集</a>
+            <a class="common-style white" href="{% url 'admin:roll_position_changelist' %}">役職管理</a>
+        </div>
+    </header>
+    <form class="roll-filters" method="get">
+        <label>検索<input type="search" name="q" value="{{ query }}" placeholder="氏名・ふりがな・学年・アカウント"></label>
+        <label>種別<select name="type"><option value="">すべて</option>{% for value, label in entry_types %}<option value="{{ value }}" {% if selected_type == value %}selected{% endif %}>{{ label }}</option>{% endfor %}</select></label>
+        <label class="roll-filters__member"><input type="checkbox" name="members" value="1" {% if show_members %}checked{% endif %}>部員のみ</label>
+        <button class="common-style reverse" type="submit">絞り込む</button>
+    </form>
+    <div class="roll-table-wrap">
+        <table class="roll-table">
+            <thead><tr><th>氏名・団体名</th><th>種別</th><th>学年・組・番号</th><th>部員</th><th>部内役職</th><th>アカウント</th><th>校内識別番号</th></tr></thead>
+            <tbody>
+                {% for entry in entries %}
+                <tr>
+                    <td><strong>{{ entry.name }}</strong>{% if entry.name_kana %}<small>{{ entry.name_kana }}</small>{% endif %}</td>
+                    <td>{{ entry.get_entry_type_display }}</td>
+                    <td>{% if entry.grade %}{{ entry.grade }}年{% endif %}{% if entry.homeroom %} {{ entry.homeroom }}組{% endif %}{% if entry.student_number %} {{ entry.student_number }}番{% endif %}</td>
+                    <td>{% if entry.is_member %}部員{% else %}—{% endif %}</td>
+                    <td>{% for position in entry.positions.all %}<span class="roll-tag">{{ position.name }}</span>{% empty %}—{% endfor %}</td>
+                    <td>{% if entry.account %}{{ entry.account.username }}{% else %}未紐付け{% endif %}</td>
+                    <td>{{ entry.school_identifier|default:"—" }}</td>
+                </tr>
+                {% empty %}
+                <tr><td class="roll-empty" colspan="7">名簿がありません。CSVインポートまたは名簿登録から追加してください。</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

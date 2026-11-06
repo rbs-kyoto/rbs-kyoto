@@ -1,0 +1,12 @@
+{% extends "equipment/base.html" %}
+
+{% block title %}保管場所{% endblock %}
+{% block equipment_content %}
+<section class="equipment__section">
+    <div class="equipment__section-heading"><h2>保管場所</h2><a class="common-style reverse equipment__button" href="{% url 'equipment:location_register' %}">保管場所を追加</a></div>
+    <div class="equipment__table-wrap"><table><thead><tr><th>場所名</th><th>コード</th><th>上位保管場所</th><th>備品数</th><th>状態</th><th></th></tr></thead><tbody>
+    {% for location in locations %}<tr><td>{{ location.name }}</td><td>{{ location.code|default:"—" }}</td><td>{{ location.parent|default:"—" }}</td><td>{{ location.equipment_count }}</td><td>{% if location.is_active %}使用中{% else %}使用停止{% endif %}</td><td><a href="{% url 'equipment:location_edit' location.pk %}">編集</a></td></tr>
+    {% empty %}<tr><td colspan="6" class="equipment__empty">保管場所は登録されていません。</td></tr>{% endfor %}
+    </tbody></table></div>
+</section>
+{% endblock %}

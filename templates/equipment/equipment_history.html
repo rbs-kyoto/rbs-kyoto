@@ -1,0 +1,16 @@
+{% extends "equipment/base.html" %}
+
+{% block title %}{{ equipment.name }}の履歴{% endblock %}
+{% block equipment_content %}
+<section class="equipment__section">
+    <div class="equipment__section-heading"><h2>{{ equipment.inventory_number }} {{ equipment.name }} · 履歴</h2><a href="{% url 'equipment:detail' equipment.pk %}">備品詳細へ</a></div>
+    <h3>基本情報・操作の変更履歴</h3>
+    <div class="equipment__table-wrap"><table><thead><tr><th>日時</th><th>変更者</th><th>項目</th><th>変更前</th><th>変更後</th><th>理由</th></tr></thead>
+        <tbody>{% for item in changes %}<tr><td>{{ item.changed_at|date:"Y/m/d H:i" }}</td><td>{{ item.changed_by|default:"—" }}</td><td>{{ item.field_name }}</td><td>{{ item.old_value|default:"—" }}</td><td>{{ item.new_value|default:"—" }}</td><td>{{ item.reason|default:"—" }}</td></tr>{% empty %}<tr><td colspan="6" class="equipment__empty">履歴はありません。</td></tr>{% endfor %}</tbody>
+    </table></div>
+    <h3>貸出・返却履歴</h3>
+    <div class="equipment__table-wrap"><table><thead><tr><th>開始日時</th><th>区分・貸出先</th><th>数量</th><th>状況</th><th>返却履歴</th></tr></thead>
+        <tbody>{% for usage in usages %}<tr><td>{{ usage.started_at|date:"Y/m/d H:i" }}</td><td>{{ usage.get_usage_type_display }} · {{ usage.destination }}</td><td>{{ usage.quantity }}{{ equipment.unit }}</td><td>{{ usage.status }}</td><td>{% for returned in usage.returns.all %}{{ returned.returned_at|date:"Y/m/d H:i" }} · {{ returned.quantity }}{{ equipment.unit }} · {{ returned.get_condition_display }}<br>{% empty %}—{% endfor %}</td></tr>{% empty %}<tr><td colspan="5" class="equipment__empty">利用履歴はありません。</td></tr>{% endfor %}</tbody>
+    </table></div>
+</section>
+{% endblock %}

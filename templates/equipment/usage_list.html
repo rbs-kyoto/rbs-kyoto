@@ -1,0 +1,22 @@
+{% extends "equipment/base.html" %}
+
+{% block title %}貸出・持出一覧{% endblock %}
+{% block equipment_content %}
+<section class="equipment__section">
+    <div class="equipment__section-heading"><h2>貸出・持出一覧</h2><a class="common-style reverse equipment__button" href="{% url 'equipment:lending_register' %}">貸出・持出を登録</a></div>
+    <form method="get" class="equipment__filters">
+        <label>区分<select name="type"><option value="">すべて</option>{% for value, label in usage_types %}<option value="{{ value }}" {% if selected_type == value %}selected{% endif %}>{{ label }}</option>{% endfor %}</select></label>
+        <label>状況<select name="status"><option value="">すべて</option><option value="open" {% if selected_status == "open" %}selected{% endif %}>利用中</option><option value="overdue" {% if selected_status == "overdue" %}selected{% endif %}>期限超過</option><option value="closed" {% if selected_status == "closed" %}selected{% endif %}>返却済み</option></select></label>
+        <button class="common-style reverse equipment__button" type="submit">絞り込む</button>
+    </form>
+    <div class="equipment__table-wrap"><table><thead><tr><th>備品</th><th>区分・貸出先</th><th>数量</th><th>開始・返却予定</th><th>状態</th><th></th></tr></thead>
+    <tbody>{% for usage in records %}<tr>
+        <td><a href="{% url 'equipment:detail' usage.equipment.pk %}">{{ usage.equipment.inventory_number }} {{ usage.equipment.name }}</a></td>
+        <td>{{ usage.get_usage_type_display }} · {{ usage.destination }}</td>
+        <td>{{ usage.quantity }}{{ usage.equipment.unit }}<br><small>未返却 {{ usage.remaining_quantity }}{{ usage.equipment.unit }}</small></td>
+        <td>{{ usage.started_at|date:"Y/m/d H:i" }}<br>{{ usage.due_at|date:"Y/m/d H:i"|default:"期限なし" }}</td>
+        <td>{% if usage.is_overdue %}<span class="equipment__badge equipment__badge--warning">期限超過</span>{% else %}{{ usage.status }}{% endif %}</td>
+        <td><a href="{% url 'equipment:usage_detail' usage.pk %}">詳細</a></td>
+    </tr>{% empty %}<tr><td colspan="6" class="equipment__empty">該当する記録はありません。</td></tr>{% endfor %}</tbody></table></div>
+</section>
+{% endblock %}

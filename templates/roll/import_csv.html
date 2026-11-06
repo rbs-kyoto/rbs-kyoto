@@ -1,0 +1,42 @@
+{% extends "main/base.html" %}
+{% load static %}
+
+{% block title %}名簿CSVインポート{% endblock %}
+{% block extra_css %}<link rel="stylesheet" href="{% static 'main/css/roll.css' %}">{% endblock %}
+{% block content %}
+<div class="roll-page roll-import">
+    <header class="roll-page__header">
+        <div>
+            <p class="roll-page__eyebrow">MEMBER DIRECTORY</p>
+            <h1>名簿CSVインポート</h1>
+            <p>校内全体名簿、生徒、教職員、校内団体をまとめて登録できます。</p>
+        </div>
+        <a class="common-style white" href="{{ list_url }}">名簿へ戻る</a>
+    </header>
+    {% if error %}<p class="roll-message roll-message--error" role="alert">{{ error }}</p>{% endif %}
+    {% if result %}<p class="roll-message roll-message--success" role="status">{{ result }}</p>{% endif %}
+    <section class="roll-panel">
+        <h2>CSVファイルを選択</h2>
+        <form method="post" enctype="multipart/form-data" class="roll-import__form">
+            {% csrf_token %}
+            {% if form.non_field_errors %}<div class="roll-message roll-message--error">{{ form.non_field_errors }}</div>{% endif %}
+            <label for="{{ form.csv_file.id_for_label }}">{{ form.csv_file.label }}</label>
+            {{ form.csv_file }}
+            {% if form.csv_file.help_text %}<p class="roll-help">{{ form.csv_file.help_text }}</p>{% endif %}
+            {% if form.csv_file.errors %}<p class="roll-message roll-message--error">{{ form.csv_file.errors|join:" " }}</p>{% endif %}
+            <button class="common-style reverse" type="submit">インポート</button>
+        </form>
+    </section>
+    <section class="roll-panel">
+        <h2>CSV列</h2>
+        <p>1行目を列名にします。氏名（または氏名・団体名）は必須です。校内識別番号がある場合は同じ識別番号のレコードを更新し、ない場合は氏名・種別・学年・組が同じレコードを更新します。</p>
+        <div class="roll-csv-example">
+            <code>種別,氏名,ふりがな,校内識別番号,学年,組,出席番号,部員,アカウント,役職,備考</code>
+            <code>生徒,山田 花子,やまだ はなこ,S12345,2,3,12,はい,hanako,"部長,会計",</code>
+            <code>教職員,佐藤 太郎,さとう たろう,T0001,,,,,,顧問,</code>
+            <code>校内団体,放送部,,,,,,,,</code>
+        </div>
+        <p>学年は1〜6、組は1〜9から選択し、出席番号は1以上の数字を入力します（いずれも空欄可）。校内識別番号とは別の項目です。種別は「生徒」「教職員」「校内団体」「その他」。部員は「はい／いいえ」。アカウント欄はユーザー名またはメールアドレスです。役職は先に役職管理で登録し、複数ある場合はカンマ区切りにしてください。</p>
+    </section>
+</div>
+{% endblock %}

@@ -1,0 +1,16 @@
+{% extends "main/base.html" %}
+
+{% load static %}
+
+{% block title %}{{ page.title }}{% endblock %}
+{% block extra_css %}<link rel="stylesheet" href="{% static 'main/css/site_page.css' %}">{% endblock %}
+{% block content %}
+<article class="site-page">
+    <header class="site-page__header">
+        <h1>{{ page.title }}</h1>
+    </header>
+    <div class="site-page__content">
+        {{ page.content|safe }}
+    </div>
+</article>
+{% endblock %}

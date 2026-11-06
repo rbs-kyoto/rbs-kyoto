@@ -8,7 +8,7 @@ from .models import SuperuserGrantCredential, User
 @admin.register(User)
 class CustomUserAdmin(UserAdmin):
     fieldsets = UserAdmin.fieldsets + (
-        ("RBS", {"fields": ("display_name",)}),
+        ("rbs", {"fields": ("display_name",)}),
     )
 
 

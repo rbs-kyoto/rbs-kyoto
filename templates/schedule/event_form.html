@@ -25,6 +25,35 @@
         </div>
         {% endfor %}
 
+        <fieldset class="schedule-assign">
+            <legend>割当部員</legend>
+            {{ formset.management_form }}
+            {{ formset.non_form_errors }}
+            <div class="schedule-assign__rows" id="assign-rows" data-prefix="{{ formset.prefix }}">
+                {% for f in formset %}
+                <div class="schedule-assign__row">
+                    {{ f.id }}
+                    {{ f.member }}
+                    {{ f.role }}
+                    {% if f.instance.pk %}
+                    <label class="schedule-assign__delete">{{ f.DELETE }} 外す</label>
+                    {% endif %}
+                    {% for error in f.member.errors %}<p class="schedule-form__error">{{ error }}</p>{% endfor %}
+                    {% for error in f.role.errors %}<p class="schedule-form__error">{{ error }}</p>{% endfor %}
+                    {% for error in f.non_field_errors %}<p class="schedule-form__error">{{ error }}</p>{% endfor %}
+                </div>
+                {% endfor %}
+            </div>
+            <template id="assign-empty">
+                <div class="schedule-assign__row">
+                    {{ formset.empty_form.member }}
+                    {{ formset.empty_form.role }}
+                </div>
+            </template>
+            <button class="common-style" type="button" id="assign-add">+ 部員を追加</button>
+            <p class="schedule-form__note">放送部員として名簿に登録されている人から選べます。出欠を取る場合、回答できるのは、アカウントが名簿と連携している割当部員だけです。</p>
+        </fieldset>
+
         {% if event and event.recurrence != "none" %}
         <p class="schedule-form__note">繰り返し予定の編集は、すべての回に反映されます。</p>
         {% endif %}
@@ -35,5 +64,23 @@
         </div>
     </form>
 </section>
+
+<script>
+(function () {
+    const rows = document.getElementById("assign-rows");
+    const tpl = document.getElementById("assign-empty");
+    const addButton = document.getElementById("assign-add");
+    if (!rows || !tpl || !addButton) return;
+    const prefix = rows.dataset.prefix;
+    const total = document.getElementById("id_" + prefix + "-TOTAL_FORMS");
+    addButton.addEventListener("click", function () {
+        const index = parseInt(total.value, 10);
+        const wrapper = document.createElement("div");
+        wrapper.innerHTML = tpl.innerHTML.replace(/__prefix__/g, index);
+        rows.appendChild(wrapper.firstElementChild);
+        total.value = index + 1;
+    });
+})();
+</script>
 
 {% endblock %}

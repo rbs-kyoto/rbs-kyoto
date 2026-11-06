@@ -69,6 +69,8 @@ INSTALLED_APPS = [
     'video_archive',
     'maintenance',
     'errors',
+    'equipment',
+    'roll',
 ]
 
 ASGI_APPLICATION = 'config.asgi.application'
@@ -98,6 +100,7 @@ TEMPLATES = [
                 'django.template.context_processors.request',
                 'django.contrib.auth.context_processors.auth',
                 'django.contrib.messages.context_processors.messages',
+                'main.context_processors.footer_content',
             ],
         },
     },
@@ -154,6 +157,10 @@ SOCIALACCOUNT_PROVIDERS = {
         ],
     },
 }
+
+WEBPUSH_VAPID_PUBLIC_KEY = os.getenv("WEBPUSH_VAPID_PUBLIC_KEY", "").strip()
+WEBPUSH_VAPID_PRIVATE_KEY = os.getenv("WEBPUSH_VAPID_PRIVATE_KEY", "").strip()
+WEBPUSH_VAPID_SUBJECT = os.getenv("WEBPUSH_VAPID_SUBJECT", "").strip()
 
 # Internationalization
 # https://docs.djangoproject.com/en/6.1/topics/i18n/

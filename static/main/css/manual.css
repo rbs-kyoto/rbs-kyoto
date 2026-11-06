@@ -43,6 +43,7 @@
     gap: 1.5rem;
     padding: 1.25rem 1rem;
     border-radius: .2rem;
+    corner-shape: superellipse(1.4);
     border-bottom: var(--Bordercolor) solid .1rem;
     transition: all .3s;
 }

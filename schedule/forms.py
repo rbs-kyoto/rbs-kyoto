@@ -1,7 +1,10 @@
 from django import forms
+from django.forms import inlineformset_factory
 from django.utils import timezone
 
-from .models import Event
+from roll.models import RosterEntry
+
+from .models import Assignment, Attendance, Event
 
 DATETIME_INPUT = "%Y-%m-%dT%H:%M"
 
@@ -39,6 +42,7 @@ class EventForm(forms.ModelForm):
             "description",
             "recurrence",
             "recurrence_until",
+            "ask_attendance",
         ]
         widgets = {"description": forms.Textarea(attrs={"rows": 5})}
 
@@ -66,3 +70,38 @@ class EventForm(forms.ModelForm):
             self.add_error("recurrence_until", "終了日は開始日以降にしてください。")
 
         return cleaned
+
+
+class AssignmentForm(forms.ModelForm):
+    class Meta:
+        model = Assignment
+        fields = ["member", "role"]
+        widgets = {"role": forms.TextInput(attrs={"placeholder": "役割(例: カメラ)"})}
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields["member"].queryset = RosterEntry.objects.filter(is_member=True)
+        self.fields["member"].empty_label = "部員を選択"
+
+
+AssignmentFormSet = inlineformset_factory(
+    Event,
+    Assignment,
+    form=AssignmentForm,
+    extra=3,
+    can_delete=True,
+)
+
+
+class AttendanceForm(forms.Form):
+    status = forms.ChoiceField(
+        label="出欠",
+        choices=Attendance.Status.choices,
+        widget=forms.RadioSelect,
+    )
+    comment = forms.CharField(
+        label="コメント",
+        required=False,
+        max_length=200,
+        widget=forms.TextInput(attrs={"placeholder": "遅刻・早退など(任意)"}),
+    )

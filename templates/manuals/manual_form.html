@@ -1,7 +1,7 @@
 {% extends "main/base.html" %}
 {% load static %}
 
-{% block title %}{% if manual %}マニュアルを編集{% else %}マニュアルを作成{% endif %}｜rbs京都{% endblock %}
+{% block title %}{% if manual %}マニュアルを編集{% else %}マニュアルを作成{% endif %}{% endblock %}
 {% block extra_css %}<link rel="stylesheet" href="{% static 'main/css/manual.css' %}">{% endblock %}
 
 {% block content %}
@@ -39,11 +39,11 @@
 
         <div class="manual-form__footer">
             {% if manual %}
-            <a class="common-style" href="{% url 'manuals:manual_detail' manual.pk %}">キャンセル</a>
+            <a class="common-style white" href="{% url 'manuals:manual_detail' manual.pk %}">キャンセル</a>
             {% else %}
-            <a class="common-style" href="{% url 'manuals:manual_list' %}">キャンセル</a>
+            <a class="common-style white" href="{% url 'manuals:manual_list' %}">キャンセル</a>
             {% endif %}
-            <button class="common-style" type="submit">保存</button>
+            <button class="common-style reverse" type="submit">保存</button>
         </div>
     </form>
 </section>

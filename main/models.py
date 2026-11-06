@@ -1,8 +1,11 @@
 from django.db import models
+from django.core.exceptions import ValidationError
+from django.core.validators import FileExtensionValidator
 from django_ckeditor_5.fields import CKEditor5Field
 from django.utils.html import strip_tags
 
 from .sanitizers import sanitize_richtext
+
 
 class Pickup(models.Model):
     title = models.CharField("タイトル", max_length=100)
@@ -20,6 +23,7 @@ class Pickup(models.Model):
     def __str__(self):
         return self.title
 
+
 class Category(models.Model):
     name = models.CharField("カテゴリ名", max_length=50, unique=True)
     order = models.PositiveIntegerField("表示順", default=0)
@@ -31,6 +35,48 @@ class Category(models.Model):
 
     def __str__(self):
         return self.name
+
+
+class HeaderLogoSchedule(models.Model):
+    image = models.FileField(
+        "ロゴ画像",
+        upload_to="header-logos/",
+        validators=[
+            FileExtensionValidator(
+                ["svg", "png", "apng", "gif", "webp", "jpg", "jpeg"]
+            )
+        ],
+    )
+    starts_on = models.DateField("開始日")
+    ends_on = models.DateField("終了日")
+
+    class Meta:
+        ordering = ["starts_on", "pk"]
+        verbose_name = "ヘッダーロゴ"
+        verbose_name_plural = "ヘッダーロゴ"
+
+    def __str__(self):
+        return f"{self.starts_on:%Y/%m/%d}〜{self.ends_on:%Y/%m/%d}"
+
+    def clean(self):
+        super().clean()
+        if self.starts_on and self.ends_on and self.starts_on > self.ends_on:
+            raise ValidationError({"ends_on": "終了日は開始日以降の日付を指定してください。"})
+
+        if not self.starts_on or not self.ends_on:
+            return
+
+        overlapping_schedules = type(self).objects.filter(
+            starts_on__lte=self.ends_on,
+            ends_on__gte=self.starts_on,
+        )
+        if self.pk:
+            overlapping_schedules = overlapping_schedules.exclude(pk=self.pk)
+        if overlapping_schedules.exists():
+            raise ValidationError(
+                {"starts_on": "既存のヘッダーロゴ設定と期間が重複しています。"}
+            )
+
 
 class News(models.Model):
     title = models.CharField(max_length=200)
@@ -72,3 +118,87 @@ class News(models.Model):
         text = text.replace("\xa0", "").strip()
 
         return bool(text)
+
+
+class SitePage(models.Model):
+    PAGE_CHOICES = [
+        ("terms", "ご利用にあたって"),
+        ("privacy", "プライバシーポリシー"),
+        ("ethics", "技術者倫理方針"),
+        ("sitemap", "サイトマップ"),
+    ]
+
+    slug = models.SlugField("ページ識別子", max_length=20, choices=PAGE_CHOICES, unique=True)
+    title = models.CharField("ページタイトル", max_length=100)
+    content = CKEditor5Field("本文", config_name="extends", blank=True)
+    order = models.PositiveIntegerField("表示順", default=0)
+
+    class Meta:
+        ordering = ["order", "pk"]
+        verbose_name = "固定ページ"
+        verbose_name_plural = "固定ページ"
+
+    def __str__(self):
+        return self.title
+
+    def save(self, *args, **kwargs):
+        self.content = sanitize_richtext(self.content)
+        super().save(*args, **kwargs)
+
+
+class FooterSocialLink(models.Model):
+    label = models.CharField("アクセシビリティ用名称", max_length=50)
+    url = models.URLField("リンク先")
+    light_icon = models.FileField(
+        "ライトモード用SVG",
+        upload_to="footer/social-icons/",
+        blank=True,
+        validators=[FileExtensionValidator(["svg"])],
+    )
+    dark_icon = models.FileField(
+        "ダークモード用SVG",
+        upload_to="footer/social-icons/",
+        blank=True,
+        validators=[FileExtensionValidator(["svg"])],
+    )
+    hover_icon = models.FileField(
+        "ホバー用SVG",
+        upload_to="footer/social-icons/",
+        blank=True,
+        validators=[FileExtensionValidator(["svg"])],
+    )
+    order = models.PositiveIntegerField("表示順", default=0)
+    is_active = models.BooleanField("表示", default=True)
+
+    class Meta:
+        ordering = ["order", "pk"]
+        verbose_name = "フッターSNSリンク"
+        verbose_name_plural = "フッターSNSリンク"
+
+    def __str__(self):
+        return self.label
+
+    def _icon_url(self, preferred_icon):
+        icon = (
+            getattr(self, preferred_icon)
+            or self.light_icon
+            or self.dark_icon
+            or self.hover_icon
+        )
+        return icon.url if icon else ""
+
+    @property
+    def light_icon_url(self):
+        return self._icon_url("light_icon")
+
+    @property
+    def dark_icon_url(self):
+        return self._icon_url("dark_icon")
+
+    @property
+    def hover_icon_url(self):
+        return self.hover_icon.url if self.hover_icon else ""
+
+    @property
+    def has_hover_icon(self):
+        return bool(self.hover_icon)
