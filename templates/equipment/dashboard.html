@@ -37,7 +37,7 @@
     <div class="equipment__table-wrap"><table>
         <thead><tr><th>備品</th><th>貸出先</th><th>未返却数量</th><th>返却予定</th></tr></thead>
         <tbody>{% for usage in overdue_usages %}<tr>
-            <td><a href="{% url 'equipment:usage_detail' usage.pk %}">{{ usage.equipment.inventory_number }} {{ usage.equipment.name }}</a></td>
+            <td><a href="{% url 'equipment:usage_detail' usage.loan_id %}">{{ usage.equipment.inventory_number }} {{ usage.equipment.name }}</a></td>
             <td>{{ usage.destination }}</td><td>{{ usage.remaining_quantity }}{{ usage.equipment.unit }}</td><td>{{ usage.due_at|date:"Y/m/d H:i" }}</td>
         </tr>{% endfor %}</tbody>
     </table></div>
@@ -57,13 +57,13 @@
     <div>
         <h2>最近の貸出・持出</h2>
         <ul class="equipment__simple-list">{% for usage in recent_usages %}
-            <li><a href="{% url 'equipment:usage_detail' usage.pk %}">{{ usage.equipment.inventory_number }} {{ usage.destination }}</a><span>{{ usage.started_at|date:"Y/m/d H:i" }}</span></li>
+            <li><a href="{% url 'equipment:usage_detail' usage.loan_id %}">{{ usage.equipment.inventory_number }} {{ usage.destination }}</a><span>{{ usage.started_at|date:"Y/m/d H:i" }}</span></li>
         {% empty %}<li class="equipment__empty">履歴はありません。</li>{% endfor %}</ul>
     </div>
     <div>
         <h2>最近の返却</h2>
         <ul class="equipment__simple-list">{% for returned in recent_returns %}
-            <li><a href="{% url 'equipment:usage_detail' returned.usage_id %}">{{ returned.usage.equipment.inventory_number }} {{ returned.quantity }}{{ returned.usage.equipment.unit }}</a><span>{{ returned.returned_at|date:"Y/m/d H:i" }}</span></li>
+            <li><a href="{% url 'equipment:usage_detail' returned.line.loan_id %}">{{ returned.line.equipment.inventory_number }} {{ returned.quantity }}{{ returned.line.equipment.unit }}</a><span>{{ returned.returned_at|date:"Y/m/d H:i" }}</span></li>
         {% empty %}<li class="equipment__empty">履歴はありません。</li>{% endfor %}</ul>
     </div>
 </section>

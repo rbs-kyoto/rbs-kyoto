@@ -1,6 +1,6 @@
 """予定で使う機材について、その回に「予約できているか」を判定する。
 
-機材アプリの貸出・持出記録は、開始日時に関係なく記録があれば在庫を減らす。
+機材アプリの貸出・持出記録(明細)は、開始日時に関係なく記録があれば在庫を減らす。
 そのため予約は予定側の「使う機材と数量」として持ち、当日に貸出登録した記録を
 UsageLink で結んで「貸出中」「返却済み」に切り替える。
 """
@@ -8,7 +8,7 @@ UsageLink で結んで「貸出中」「返却済み」に切り替える。
 from dataclasses import dataclass, field
 from datetime import timedelta
 
-from equipment.models import Equipment, UsageRecord
+from equipment.models import Equipment, LoanLine
 
 from .models import EventEquipment
 from .recurrence import expand
@@ -29,6 +29,7 @@ UNUSABLE_CONDITIONS = {
     Equipment.Condition.REPAIR,
     Equipment.Condition.BROKEN,
     Equipment.Condition.DISABLED,
+    Equipment.Condition.LOST,
 }
 
 
@@ -84,9 +85,11 @@ def _other_event_demand(item, occ):
 def _outside_usage_demand(item, occ):
     """予定とは無関係に、いま貸出・持出中で、返却予定がこの時間帯と重なるもの。"""
     demands = []
-    usages = UsageRecord.objects.filter(
-        equipment=item.equipment, schedule_link__isnull=True
-    ).prefetch_related("returns")
+    usages = (
+        LoanLine.objects.filter(equipment=item.equipment, schedule_link__isnull=True)
+        .select_related("loan")
+        .prefetch_related("returns")
+    )
     for usage in usages:
         remaining = usage.remaining_quantity
         if not remaining:

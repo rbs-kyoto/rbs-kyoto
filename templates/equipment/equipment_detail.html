@@ -63,7 +63,7 @@
     <div class="equipment__section-heading"><h2>利用中の記録</h2><a href="{% url 'equipment:history' equipment.pk %}">すべての履歴</a></div>
     <ul class="equipment__cards">
         {% for usage in current_usages %}
-        <li><a href="{% url 'equipment:usage_detail' usage.pk %}"><strong>{{ usage.get_usage_type_display }} · {{ usage.destination }}</strong><span>{{ usage.remaining_quantity }}{{ equipment.unit }} · {{ usage.status }}{% if usage.due_at %} · 返却予定 {{ usage.due_at|date:"Y/m/d H:i" }}{% endif %}</span></a></li>
+        <li><a href="{% url 'equipment:usage_detail' usage.loan_id %}"><strong>{{ usage.get_usage_type_display }} · {{ usage.destination }}</strong><span>{{ usage.remaining_quantity }}{{ equipment.unit }} · {{ usage.status }}{% if usage.due_at %} · 返却予定 {{ usage.due_at|date:"Y/m/d H:i" }}{% endif %}</span></a></li>
         {% empty %}<li class="equipment__empty">現在利用中の記録はありません。</li>{% endfor %}
     </ul>
     {% if equipment.is_active %}

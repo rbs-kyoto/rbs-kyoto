@@ -21,14 +21,18 @@ def parse_link_params(data):
     return item, day
 
 
-def link_usage(user, usage, data):
-    """貸出記録 usage を、予定の機材(その回)に結ぶ。staff のみ、機材が一致する場合のみ。"""
+def link_usage(user, loan, data):
+    """貸出 loan のうち、予定の機材に当たる明細を、その回に結ぶ。
+
+    staff のみ、機材が一致する明細がある場合のみ。
+    """
     if not user.is_staff:
         return None
     parsed = parse_link_params(data)
     if parsed is None:
         return None
     item, day = parsed
-    if item.equipment_id != usage.equipment_id:
+    line = loan.lines.filter(equipment_id=item.equipment_id).first()
+    if line is None:
         return None
-    return UsageLink.objects.create(item=item, date=day, usage=usage)
+    return UsageLink.objects.create(item=item, date=day, usage=line)

@@ -9,7 +9,8 @@ from django.test import TestCase, override_settings
 from django.urls import reverse
 from django.utils import timezone
 
-from equipment.models import Category, Equipment, ReturnRecord, UsageRecord
+from equipment.models import Category, Equipment, Loan, LoanLine, ReturnRecord
+from equipment.testing import make_usage
 from roll.models import RosterEntry
 
 from accounts.models import WebPushSubscription
@@ -475,7 +476,7 @@ class EquipmentLinkTests(TestCase):
         self.assertEqual([s.code for s in statuses], ["unavailable"])
 
     def test_outstanding_lending_outside_events_counts_as_conflict(self):
-        UsageRecord.objects.create(
+        make_usage(
             equipment=self.camera, usage_type="lending", destination="他部活", quantity=1,
             started_at=jst(2026, 11, 9, 10), due_at=jst(2026, 11, 12, 10),
         )
@@ -537,14 +538,14 @@ class EquipmentLinkTests(TestCase):
         _, statuses = self.status_of(event, "2026-11-10")
         self.assertEqual((statuses[0].code, statuses[0].label), ("lent", "貸出中"))
 
-        ReturnRecord.objects.create(usage=link.usage, quantity=2)
+        ReturnRecord.objects.create(line=link.usage, quantity=2)
         _, statuses = self.status_of(event, "2026-11-10")
         self.assertEqual([s.code for s in statuses], ["returned"])
 
     def test_non_staff_lending_is_not_linked(self):
         event = self.make_event("撮影", jst(2026, 11, 10, 13), quantity=2)
         self.register_lending(self.member, event)
-        self.assertEqual(UsageRecord.objects.count(), 1)
+        self.assertEqual(Loan.objects.count(), 1)
         self.assertEqual(UsageLink.objects.count(), 0)
 
     def test_link_for_non_occurrence_date_is_ignored(self):
@@ -579,7 +580,7 @@ class EquipmentLinkTests(TestCase):
         self.client.force_login(self.staff)
         self.client.post(reverse("schedule:event_delete", args=[event.pk]))
         self.assertEqual(UsageLink.objects.count(), 0)
-        self.assertEqual(UsageRecord.objects.count(), 1)
+        self.assertEqual(Loan.objects.count(), 1)
 
 
 SEND = "schedule.management.commands.send_attendance_reminders.send_web_push"

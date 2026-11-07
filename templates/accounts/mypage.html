@@ -52,7 +52,7 @@
             <ul class="mypage-loans">
                 {% for usage in open_usages %}
                 <li class="mypage-loans__item">
-                    <a href="{% url 'equipment:usage_detail' usage.pk %}">
+                    <a href="{% url 'equipment:usage_detail' usage.loan_id %}">
                         <strong>{{ usage.equipment.inventory_number }} · {{ usage.equipment.name }}</strong>
                         <span>{{ usage.get_usage_type_display }} · 未返却 {{ usage.remaining_quantity }}{{ usage.equipment.unit }}</span>
                         <span>返却予定：{% if usage.due_at %}{{ usage.due_at|date:"Y年n月j日 H:i" }}{% else %}未設定{% endif %}</span>
