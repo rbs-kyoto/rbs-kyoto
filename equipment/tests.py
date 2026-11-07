@@ -25,7 +25,7 @@ from .models import (
 )
 from accounts.models import NotificationHistory, WebPushSubscription
 from places.models import Place
-from roll.models import RosterEntry
+from roll.models import Position, RosterEntry
 
 
 class EquipmentDueReminderCommandTests(TestCase):
@@ -735,11 +735,16 @@ class EquipmentWorkflowTests(TestCase):
         response = self.client.get(reverse("equipment:register"))
         rendered_form = response.content.decode()
 
+        position = Position.objects.create(name="機材班長")
+        response = self.client.get(reverse("equipment:register"))
+        rendered_form = response.content.decode()
+
         self.assertContains(response, 'class="equipment__field-pair"')
         self.assertContains(
             response,
-            f'<option value="{self.responsible_person.pk}">{self.responsible_person}</option>',
+            f'<option value="{position.pk}">{position.name}</option>',
         )
+        self.assertContains(response, "管理担当役職")
         self.assertContains(response, "レシート番号")
         self.assertContains(response, "法定耐用年数")
         self.assertContains(response, "米ドル")
@@ -984,9 +989,11 @@ class EquipmentCsvIoTests(TestCase):
         )
         self.category = Category.objects.get(code="A")
         self.location = Place.objects.create(name="放送室")
-        self.manager = RosterEntry.objects.create(
-            name="管理者A", entry_type=RosterEntry.EntryType.STUDENT, grade="2", homeroom="3"
+        self.manager = Position.objects.create(name="機材班長")
+        holder = RosterEntry.objects.create(
+            name="班長の人", entry_type=RosterEntry.EntryType.STUDENT
         )
+        holder.positions.add(self.manager)
 
     def _upload(self, text, user=None, encoding="utf-8-sig"):
         self.client.force_login(user or self.staff)
@@ -997,8 +1004,8 @@ class EquipmentCsvIoTests(TestCase):
 
     def test_import_creates_equipment_with_auto_number_and_manufacturer(self):
         csv_text = (
-            "備品名,分類,メーカー,型番,保有数量,単位,管理担当者,保管場所,購入日,購入価格,通貨,備品の状態\n"
-            "ワイヤレスマイク,A,SONY,UWP-D21,4,本,管理者A,放送室,2026/04/10,\"120,000\",米ドル,要点検\n"
+            "備品名,分類,メーカー,型番,保有数量,単位,管理担当役職,保管場所,購入日,購入価格,通貨,備品の状態\n"
+            "ワイヤレスマイク,A,SONY,UWP-D21,4,本,機材班長,放送室,2026/04/10,\"120,000\",米ドル,要点検\n"
             "ミキサー,音響機器,sony,,1,,,,,,,\n"
         )
         with patch("equipment.numbering.timezone.localdate", return_value=date(2026, 10, 23)):
@@ -1041,6 +1048,19 @@ class EquipmentCsvIoTests(TestCase):
         self.assertContains(response, "4行目: 保管場所「倉庫」が見つかりません")
         self.assertContains(response, "5行目: 保有数量は1以上")
         self.assertFalse(Equipment.objects.exists())
+
+    def test_import_rejects_unknown_manager_position(self):
+        response = self._upload("備品名,分類,保有数量,管理担当役職\nテープ,A,1,存在しない役職\n")
+        self.assertContains(response, "管理担当役職「存在しない役職」が役職に見つかりません")
+        self.assertFalse(Equipment.objects.exists())
+
+    def test_detail_shows_position_and_current_holders(self):
+        item = Equipment.objects.create(
+            category=self.category, name="表示確認", quantity=1, manager=self.manager
+        )
+        self.client.force_login(self.member)
+        response = self.client.get(reverse("equipment:detail", args=[item.pk]))
+        self.assertContains(response, "機材班長（班長の人）")
 
     def test_import_requires_columns(self):
         response = self._upload("備品名,メーカー\nマイク,SONY\n")
