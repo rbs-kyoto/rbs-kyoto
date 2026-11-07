@@ -8,6 +8,7 @@ urlpatterns = [
     path("", views.dashboard, name="dashboard"),
     path("list/", views.equipment_list, name="list"),
     path("register/", views.equipment_create, name="register"),
+    path("import/", views.equipment_import, name="import"),
     path("search/", views.scan, name="scan"),
     path("scan/", views.scan, name="scan_camera"),
     path("q/<str:token>/", views.qr_lookup, name="qr_lookup"),

@@ -1,0 +1,36 @@
+{% extends "equipment/base.html" %}
+
+{% block title %}備品CSVインポート{% endblock %}
+{% block equipment_content %}
+<section class="equipment__section equipment__form-section">
+    <div class="equipment__section-heading">
+        <h2>備品CSVインポート</h2>
+        <a class="common-style white equipment__button" href="{% url 'equipment:list' %}">備品一覧へ戻る</a>
+    </div>
+    {% if error %}<div class="equipment__errors" role="alert">{{ error|linebreaksbr }}</div>{% endif %}
+    {% if result %}<p class="equipment__message equipment__message--success" role="status">{{ result }}</p>{% endif %}
+    <form method="post" enctype="multipart/form-data" class="equipment__form">
+        {% csrf_token %}
+        {% if form.non_field_errors %}<div class="equipment__errors">{{ form.non_field_errors }}</div>{% endif %}
+        {% include "equipment/_form_field.html" with field=form.csv_file %}
+        <div class="equipment__actions">
+            <button class="common-style reverse equipment__button" type="submit">インポート</button>
+        </div>
+    </form>
+</section>
+<section class="equipment__section">
+    <h2>CSVの書き方</h2>
+    <ul>
+        <li>1行目を列名にします。必須は「備品名」「分類」「保有数量」です。備品一覧の「CSVダウンロード」で出力したファイルをそのまま使えます。</li>
+        <li>インポートは<strong>新規登録のみ</strong>です。既存の備品は更新されません。備品番号は自動付番されるため、CSVの「備品番号」「利用状況」「登録日時」「最終更新日時」列は無視されます。</li>
+        <li>分類は分類記号（A）、分類名、「A：音響機器」のいずれかで指定します。保管場所は「上位 / 下位」の形式または重複しない場所名、管理担当者は名簿の氏名（同名がいる場合は「氏名（2年 3組）」の形式）で指定します。いずれも未登録だとエラーです。</li>
+        <li>メーカーが未登録の場合は自動でメーカーに追加されます（大文字小文字は区別しません）。</li>
+        <li>日付は YYYY-MM-DD 形式、通貨は JPY/USD/EUR（円・米ドル・ユーロ）、備品の状態は「正常・要点検・修理中・故障・使用停止」です。画像はCSVでは登録できません。</li>
+        <li>1つでもエラーがあると全件登録されません。エラーは行番号つきで表示されます（一度に{{ max_rows|default:2000 }}行まで）。</li>
+    </ul>
+    <div class="equipment__table-wrap"><table><tbody>
+        <tr><td><code>備品名,分類,メーカー,型番,保有数量,単位,保管場所,購入日,購入価格,通貨,備品の状態</code></td></tr>
+        <tr><td><code>ワイヤレスマイク,A,SONY,UWP-D21,4,本,放送室,2026-04-10,120000,JPY,正常</code></td></tr>
+    </tbody></table></div>
+</section>
+{% endblock %}

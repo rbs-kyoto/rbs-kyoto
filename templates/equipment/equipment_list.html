@@ -7,6 +7,7 @@
         <h2>備品一覧</h2>
         <div class="equipment__actions">
             <a class="common-style white equipment__button" href="{% url 'equipment:scan_camera' %}">QRを読み取る</a>
+            {% if user.is_staff %}<a class="common-style white equipment__button" href="{% url 'equipment:import' %}">CSVインポート</a>{% endif %}
             <a class="common-style reverse equipment__button" href="{% url 'equipment:register' %}">備品を登録</a>
         </div>
     </div>

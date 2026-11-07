@@ -5,6 +5,7 @@ from unittest.mock import patch
 
 import qrcode
 from django.contrib.auth import get_user_model
+from django.core.files.uploadedfile import SimpleUploadedFile
 from django.core.management import call_command
 from django.test import TestCase, override_settings
 from django.urls import reverse
@@ -971,3 +972,131 @@ class EquipmentAccessTests(TestCase):
                 response = self.client.get(url)
                 self.assertEqual(response.status_code, 302)
                 self.assertIn(reverse("accounts:login"), response["Location"])
+
+
+class EquipmentCsvIoTests(TestCase):
+    def setUp(self):
+        self.staff = get_user_model().objects.create_user(
+            username="csv-staff", password="pw-123456", is_staff=True
+        )
+        self.member = get_user_model().objects.create_user(
+            username="csv-member", password="pw-123456"
+        )
+        self.category = Category.objects.get(code="A")
+        self.location = Place.objects.create(name="放送室")
+        self.manager = RosterEntry.objects.create(
+            name="管理者A", entry_type=RosterEntry.EntryType.STUDENT, grade="2", homeroom="3"
+        )
+
+    def _upload(self, text, user=None, encoding="utf-8-sig"):
+        self.client.force_login(user or self.staff)
+        upload = SimpleUploadedFile(
+            "equipment.csv", text.encode(encoding), content_type="text/csv"
+        )
+        return self.client.post(reverse("equipment:import"), {"csv_file": upload})
+
+    def test_import_creates_equipment_with_auto_number_and_manufacturer(self):
+        csv_text = (
+            "備品名,分類,メーカー,型番,保有数量,単位,管理担当者,保管場所,購入日,購入価格,通貨,備品の状態\n"
+            "ワイヤレスマイク,A,SONY,UWP-D21,4,本,管理者A,放送室,2026/04/10,\"120,000\",米ドル,要点検\n"
+            "ミキサー,音響機器,sony,,1,,,,,,,\n"
+        )
+        with patch("equipment.numbering.timezone.localdate", return_value=date(2026, 10, 23)):
+            response = self._upload(csv_text)
+
+        self.assertContains(response, "2件の備品を登録しました")
+        first = Equipment.objects.get(name="ワイヤレスマイク")
+        second = Equipment.objects.get(name="ミキサー")
+        self.assertEqual(first.inventory_number, "A-26000001")
+        self.assertEqual(second.inventory_number, "A-26000002")
+        self.assertEqual(first.manufacturer, second.manufacturer)
+        self.assertEqual(Manufacturer.objects.count(), 1)
+        self.assertEqual(first.manager, self.manager)
+        self.assertEqual(first.location, self.location)
+        self.assertEqual(first.purchased_on, date(2026, 4, 10))
+        self.assertEqual(first.purchase_price, 120000)
+        self.assertEqual(first.purchase_currency, "USD")
+        self.assertEqual(first.condition, Equipment.Condition.INSPECTION)
+        self.assertEqual(second.unit, "個")
+        self.assertEqual(first.created_by, self.staff)
+        self.assertTrue(
+            EquipmentHistory.objects.filter(equipment=first, field_name="登録").exists()
+        )
+
+    def test_import_accepts_shift_jis(self):
+        response = self._upload("備品名,分類,保有数量\nテープ,A,2\n", encoding="cp932")
+        self.assertContains(response, "1件の備品を登録しました")
+
+    def test_import_is_all_or_nothing_and_reports_row_numbers(self):
+        csv_text = (
+            "備品名,分類,保有数量,保管場所\n"
+            "正常な行,A,1,\n"
+            "分類なし,ZZ,1,\n"
+            "場所なし,A,1,倉庫\n"
+            "数量ゼロ,A,0,\n"
+        )
+        response = self._upload(csv_text)
+
+        self.assertContains(response, "3行目: 分類「ZZ」が見つかりません")
+        self.assertContains(response, "4行目: 保管場所「倉庫」が見つかりません")
+        self.assertContains(response, "5行目: 保有数量は1以上")
+        self.assertFalse(Equipment.objects.exists())
+
+    def test_import_requires_columns(self):
+        response = self._upload("備品名,メーカー\nマイク,SONY\n")
+        self.assertContains(response, "CSVに次の列が必要です")
+        self.assertFalse(Equipment.objects.exists())
+
+    def test_import_ignores_reference_columns_and_never_updates(self):
+        existing = Equipment.objects.create(
+            category=self.category, inventory_number="A-26000001", name="既存", quantity=1
+        )
+        csv_text = "備品番号,備品名,分類,保有数量,利用状況\nA-26000001,既存を上書きしたい,A,9,保管中\n"
+        with patch("equipment.numbering.timezone.localdate", return_value=date(2026, 10, 23)):
+            self._upload(csv_text)
+
+        existing.refresh_from_db()
+        self.assertEqual(existing.name, "既存")
+        created = Equipment.objects.get(name="既存を上書きしたい")
+        self.assertEqual(created.inventory_number, "A-26000002")
+
+    def test_import_is_staff_only(self):
+        self.client.force_login(self.member)
+        self.assertEqual(self.client.get(reverse("equipment:import")).status_code, 302)
+        response = self._upload("備品名,分類,保有数量\nテープ,A,2\n", user=self.member)
+        self.assertEqual(response.status_code, 302)
+        self.assertFalse(Equipment.objects.exists())
+
+    def test_export_can_be_imported_again(self):
+        manufacturer = Manufacturer.objects.create(name="Shure")
+        Equipment.objects.create(
+            category=self.category,
+            name="往復テスト",
+            manufacturer=manufacturer,
+            quantity=3,
+            unit="本",
+            manager=self.manager,
+            location=self.location,
+            purchased_on=date(2026, 5, 1),
+            purchase_price=5000,
+            purchase_currency=Equipment.Currency.JPY,
+            condition=Equipment.Condition.REPAIR,
+            notes="メモ, カンマ入り",
+        )
+        self.client.force_login(self.member)
+        exported = self.client.get(reverse("equipment:list"), {"export": "csv"})
+        text = exported.content.decode("utf-8-sig")
+        self.assertTrue(text.startswith("備品番号,備品名,分類,メーカー"))
+
+        response = self._upload(text)
+        self.assertContains(response, "1件の備品を登録しました")
+        copy = Equipment.objects.exclude(
+            pk=Equipment.objects.order_by("pk").first().pk
+        ).get()
+        self.assertEqual(copy.name, "往復テスト")
+        self.assertEqual(copy.manufacturer, manufacturer)
+        self.assertEqual(copy.manager, self.manager)
+        self.assertEqual(copy.location, self.location)
+        self.assertEqual(copy.purchase_price, 5000)
+        self.assertEqual(copy.condition, Equipment.Condition.REPAIR)
+        self.assertEqual(copy.notes, "メモ, カンマ入り")
