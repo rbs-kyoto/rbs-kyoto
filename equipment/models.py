@@ -298,10 +298,7 @@ class Equipment(models.Model):
         if not self.inventory_number:
             if not self.category_id:
                 raise ValidationError("分類を選択してから備品番号を付番してください。")
-            self.inventory_number = generate_inventory_number(
-                self.category.code,
-                self.purchased_on,
-            )
+            self.inventory_number = generate_inventory_number(self.category.code)
         if not self.qr_token:
             alphabet = string.ascii_letters + string.digits
             self.qr_token = "".join(secrets.choice(alphabet) for _ in range(12))
