@@ -5,6 +5,10 @@
 <link rel="stylesheet" href="{% static 'equipment/equipment.css' %}">
 {% endblock %}
 
+{% block extra_js %}
+<script src="{% static 'equipment/info.js' %}" defer></script>
+{% endblock %}
+
 {% block content %}
 <div class="equipment">
     <header class="equipment__header">

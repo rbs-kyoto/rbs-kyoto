@@ -9,9 +9,7 @@
     <form method="post" class="equipment__form">
         {% csrf_token %}
         {% if form.non_field_errors %}<div class="equipment__errors">{{ form.non_field_errors }}</div>{% endif %}
-        {% for field in form %}
-        <div class="equipment__field {% if field.errors %}equipment__field--error{% endif %}">{{ field.label_tag }}{{ field }}{% for error in field.errors %}<span class="equipment__error">{{ error }}</span>{% endfor %}</div>
-        {% endfor %}
+        {% for field in form %}{% include "equipment/_form_field.html" %}{% endfor %}
         <div class="equipment__actions"><button class="common-style reverse equipment__button" type="submit">返却を記録</button><a class="common-style white equipment__button" href="{% url 'equipment:usage_detail' usage.pk %}">キャンセル</a></div>
     </form>
 </section>
