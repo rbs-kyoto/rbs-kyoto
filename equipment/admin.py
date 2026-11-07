@@ -1,5 +1,6 @@
 from django.contrib import admin
 
+from .events import Kind, record_event
 from .forms import EquipmentForm
 from .models import (
     Category,
@@ -86,10 +87,10 @@ class EquipmentAdmin(admin.ModelAdmin):
             obj.last_modified_by = request.user
         super().save_model(request, obj, form, change)
         if not change:
-            EquipmentHistory.objects.create(
-                equipment=obj,
-                changed_by=request.user,
-                field_name="登録",
+            record_event(
+                obj,
+                Kind.REGISTER,
+                request.user,
                 new_value=f"{obj.inventory_number} {obj.name}",
             )
             return
@@ -97,12 +98,13 @@ class EquipmentAdmin(admin.ModelAdmin):
             field = obj._meta.get_field(field_name)
             old_value = previous_values[field_name]
             new_value = getattr(obj, field_name)
-            EquipmentHistory.objects.create(
-                equipment=obj,
-                changed_by=request.user,
+            record_event(
+                obj,
+                Kind.STATUS if field_name == "condition" else Kind.UPDATE,
+                request.user,
                 field_name=field.verbose_name,
-                old_value=str(old_value) if old_value is not None else "",
-                new_value=str(new_value) if new_value is not None else "",
+                old_value=old_value,
+                new_value=new_value,
             )
 
 class ReturnRecordInline(admin.TabularInline):
@@ -144,11 +146,12 @@ class UsageRecordAdmin(admin.ModelAdmin):
 
 @admin.register(EquipmentHistory)
 class EquipmentHistoryAdmin(admin.ModelAdmin):
-    list_display = ("equipment", "field_name", "changed_by", "changed_at")
-    list_filter = ("field_name", "changed_at")
+    list_display = ("equipment", "kind", "field_name", "changed_by", "changed_at")
+    list_filter = ("kind", "changed_at")
     search_fields = ("equipment__inventory_number", "equipment__name", "field_name")
     readonly_fields = (
         "equipment",
+        "kind",
         "changed_at",
         "changed_by",
         "field_name",
@@ -162,6 +165,7 @@ class EquipmentHistoryAdmin(admin.ModelAdmin):
 
     def has_change_permission(self, request, obj=None):
         return False
+
 
 @admin.register(ReturnRecord)
 class ReturnRecordAdmin(admin.ModelAdmin):

@@ -479,8 +479,26 @@ class EquipmentReminderDelivery(models.Model):
 
 
 class EquipmentHistory(models.Model):
+    """Append-only log of everything that happens to an equipment record.
+
+    Write through ``equipment.events.record_event`` only.
+    """
+
+    class Kind(models.TextChoices):
+        REGISTER = "register", "登録"
+        UPDATE = "update", "項目変更"
+        LOAN = "loan", "貸出・持出"
+        RETURN = "return", "返却"
+        STATUS = "status", "状態変更"
+        UNREGISTER = "unregister", "登録解除"
+        REACTIVATE = "reactivate", "再有効化"
+        IMPORT = "import", "CSV取り込み"
+
     equipment = models.ForeignKey(
         Equipment, on_delete=models.CASCADE, related_name="history"
+    )
+    kind = models.CharField(
+        "種類", max_length=12, choices=Kind.choices, default=Kind.UPDATE
     )
     changed_at = models.DateTimeField("変更日時", auto_now_add=True)
     changed_by = models.ForeignKey(
@@ -497,6 +515,7 @@ class EquipmentHistory(models.Model):
 
     class Meta:
         ordering = ["-changed_at", "-pk"]
+        indexes = [models.Index(fields=["kind", "changed_at"])]
         verbose_name = "備品変更履歴"
         verbose_name_plural = "備品変更履歴"
 
