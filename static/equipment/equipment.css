@@ -67,8 +67,8 @@
 .equipment__table-wrap a,
 .equipment__simple-list li,
 .equipment__table-wrap tbody tr,
-.equipment__table-wrap tbody tr > td,
-.equipment__table-wrap tbody tr > td > *,
+.equipment__table-wrap tbody tr>td,
+.equipment__table-wrap tbody tr>td>*,
 .equipment__table-wrap tbody tr small {
     transition:
         color .25s ease,
@@ -270,12 +270,12 @@ body.dark-mode .equipment__status--unregistered {
     background: var(--Backgroundcolor);
 }
 
-.equipment__table-wrap tbody tr:hover > td {
+.equipment__table-wrap tbody tr:hover>td {
     background-color: var(--Hoverbackground);
 }
 
-.equipment__table-wrap tbody tr:hover > td,
-.equipment__table-wrap tbody tr:hover > td * {
+.equipment__table-wrap tbody tr:hover>td,
+.equipment__table-wrap tbody tr:hover>td * {
     color: var(--Hovertextcolor);
 }
 
@@ -749,6 +749,14 @@ body.dark-mode .equipment__status--unregistered {
     .equipment__details dt,
     .equipment__details dd {
         padding: .5rem 0;
+    }
+}
+
+@media (max-width: 480px) {
+    .equipment__section {
+        border: none;
+        background-color: transparent;
+        box-shadow: none;
     }
 }
 
