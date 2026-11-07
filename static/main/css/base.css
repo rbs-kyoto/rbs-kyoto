@@ -1117,6 +1117,7 @@ body.dark-mode .footer__social-icon-image--dark {
 }
 
 @media (prefers-reduced-motion: reduce) {
+
     .footer__social-icon-image,
     .footer__social-icon-fallback,
     .footer__social-links a {
@@ -1259,6 +1260,10 @@ body.dark-mode .footer__copyright {
     main {
         flex: 1;
         margin: .5rem 1rem;
+    }
+
+    main.equipment__content {
+        margin: 0;
     }
 
     ul.list {
