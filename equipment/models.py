@@ -38,6 +38,18 @@ class Category(models.Model):
         return f"{self.code}：{self.name}"
 
 
+class Manufacturer(models.Model):
+    name = models.CharField("メーカー名", max_length=100, unique=True)
+
+    class Meta:
+        ordering = ["name"]
+        verbose_name = "メーカー"
+        verbose_name_plural = "メーカー"
+
+    def __str__(self):
+        return self.name
+
+
 class Equipment(models.Model):
     class Condition(models.TextChoices):
         NORMAL = "normal", "正常"
@@ -75,7 +87,14 @@ class Equipment(models.Model):
         related_name="equipment",
     )
     name = models.CharField("備品名", max_length=200)
-    manufacturer = models.CharField("メーカー", max_length=100, blank=True)
+    manufacturer = models.ForeignKey(
+        Manufacturer,
+        verbose_name="メーカー",
+        on_delete=models.PROTECT,
+        null=True,
+        blank=True,
+        related_name="equipment",
+    )
     model_number = models.CharField("型番", max_length=100, blank=True)
     serial_number = models.CharField("製造番号", max_length=100, blank=True)
     receipt_number = models.CharField("レシート番号", max_length=100, blank=True)

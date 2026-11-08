@@ -55,3 +55,29 @@ class WebPushSubscription(models.Model):
 
     def __str__(self):
         return f"{self.user} - Push通知"
+
+
+class NotificationHistory(models.Model):
+    class Kind(models.TextChoices):
+        EQUIPMENT = "equipment", "返却予定"
+        NEWS = "news", "新着投稿"
+
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name="notification_history",
+    )
+    kind = models.CharField("種類", max_length=20, choices=Kind.choices)
+    title = models.CharField("タイトル", max_length=200)
+    body = models.CharField("本文", max_length=500, blank=True)
+    url = models.CharField("リンク先", max_length=500, blank=True)
+    sent_at = models.DateTimeField("送信日時", auto_now_add=True)
+
+    class Meta:
+        verbose_name = "通知履歴"
+        verbose_name_plural = "通知履歴"
+        ordering = ["-sent_at", "-pk"]
+        indexes = [models.Index(fields=["user", "-sent_at"])]
+
+    def __str__(self):
+        return f"{self.user} - {self.title}"
