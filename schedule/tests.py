@@ -1112,12 +1112,31 @@ class CopyAssignmentsTests(TestCase):
         self.assertContains(response, 'id="copy-source"')
         self.assertContains(response, "11/4 定例会（2人）")
 
-    def test_events_without_assignments_are_not_offered(self):
+    def test_without_candidates_the_section_stays_visible_but_disabled(self):
         self.event("割当なし", jst(2026, 11, 4, 16))
         response, sources = self.sources()
         self.assertEqual(sources, [])
-        self.assertNotContains(response, 'id="copy-source"')  # 候補がなければ、欄ごと出さない
-        self.assertNotContains(response, 'id="copy-sources"')
+        # 機能に気づけるよう、欄は出したままにして、無効にして理由を説明する
+        self.assertContains(response, "過去の予定から割当をコピー")
+        self.assertContains(response, "コピーできる予定がありません")
+        self.assertContains(response, "割当のある予定が、ほかにまだありません")
+        self.assertContains(response, 'data-copy-source disabled')
+        self.assertContains(response, 'data-copy-apply disabled')
+        self.assertNotContains(response, 'id="copy-sources"')  # 候補がないので、JSON は埋め込まない
+
+    def test_with_candidates_the_section_is_enabled(self):
+        self.event("定例会", jst(2026, 11, 4, 16), [(self.alice, "司会")])
+        response, _ = self.sources()
+        self.assertNotContains(response, "コピーできる予定がありません")
+        self.assertNotContains(response, 'data-copy-source disabled')
+        self.assertNotContains(response, 'data-copy-apply disabled')
+        self.assertContains(response, 'id="copy-sources"')
+
+    def test_editing_the_only_event_with_assignments_shows_the_disabled_section(self):
+        mine = self.event("定例会", jst(2026, 11, 4, 16), [(self.alice, "司会")])
+        response, sources = self.sources("schedule:event_edit", mine.pk)
+        self.assertEqual(sources, [])  # 自分自身はコピー元にならない
+        self.assertContains(response, "コピーできる予定がありません")
 
     def test_the_event_being_edited_is_not_its_own_source(self):
         mine = self.event("編集中", jst(2026, 11, 10, 13), [(self.alice, "")])
