@@ -13,7 +13,7 @@ from django.utils import timezone
 
 from equipment.models import Category, Equipment
 from places.models import Place
-from roll.models import RosterEntry
+from roll.models import Position, RosterEntry
 from schedule.models import Assignment, Event, EventEquipment
 
 DEMO_TITLES = ("【デモ】定例会", "【デモ】撮影", "【デモ】合宿")
@@ -26,6 +26,7 @@ class Command(BaseCommand):
         user = self._create_admin()
         self._create_events()
         self._create_assignments(user)
+        self._create_roster()
         self._create_equipment()
 
     def _create_admin(self):
@@ -133,3 +134,26 @@ class Command(BaseCommand):
             EventEquipment.objects.create(event=shoot, equipment=mic, quantity=2)
             EventEquipment.objects.create(event=shoot, equipment=tripod, quantity=2)
         self.stdout.write("デモの使用機材を設定しました。")
+
+    def _create_roster(self):
+        """名簿の表のフィルター・一括選択、割当のコピーを試せるよう、学年・組・役職つきのデモ部員を足す。"""
+        positions = {
+            name: Position.objects.get_or_create(name=f"【デモ】{name}")[0]
+            for name in ("部長", "撮影係", "音声係")
+        }
+        members = [
+            ("【デモ】1年A", "1", "1", ["撮影係"]),
+            ("【デモ】1年B", "1", "2", ["音声係"]),
+            ("【デモ】2年A", "2", "3", ["部長"]),
+            ("【デモ】2年B", "2", "3", ["撮影係"]),
+            ("【デモ】3年A", "3", "1", []),
+            ("【デモ】3年B", "3", "2", ["音声係", "撮影係"]),
+        ]
+        for name, grade, homeroom, position_names in members:
+            entry, created = RosterEntry.objects.get_or_create(
+                name=name,
+                defaults={"is_member": True, "grade": grade, "homeroom": homeroom},
+            )
+            if created:
+                entry.positions.set([positions[n] for n in position_names])
+        self.stdout.write("デモの部員(学年・組・役職つき)を設定しました。")
