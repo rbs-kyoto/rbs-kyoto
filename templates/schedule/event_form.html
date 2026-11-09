@@ -39,7 +39,7 @@
                         <option value="">予定を選択</option>
                         {% for source in copy_sources %}<option value="{{ source.id }}">{{ source.label }}</option>{% endfor %}
                     </select>
-                    <button class="common-style" type="button" data-copy-apply>反映</button>
+                    <button class="common-style white" type="button" data-copy-apply>反映</button>
                 </div>
                 <p class="schedule-roster__copy-status" role="status" aria-live="polite" data-copy-status></p>
             </div>
@@ -71,7 +71,7 @@
             <div class="schedule-roster__table-wrap">
                 <table class="schedule-roster__table">
                     <thead>
-                        <tr><th class="schedule-roster__check"><input type="checkbox" data-select-all aria-label="表示中の全員を選択・解除"></th><th>氏名</th><th>学年・組</th><th>役職</th><th>役割</th></tr>
+                        <tr><th class="schedule-roster__check"><label class="schedule-roster__select-all"><input type="checkbox" data-select-all aria-label="表示中の全員を選択・解除"><span>表示中の全員を選択</span></label></th><th>氏名</th><th>学年・組</th><th>役職</th><th>役割</th></tr>
                     </thead>
                     <tbody>
                         {% for row in roster.rows %}
@@ -85,10 +85,10 @@
                             data-label="{{ row.entry.name }}"
                             {% if row.checked %}data-was-checked="1"{% endif %}>
                             <td class="schedule-roster__check"><input type="checkbox" name="assign_member" value="{{ row.entry.pk }}" aria-label="{{ row.entry.name }}を割り当てる"{% if row.checked %} checked{% endif %}></td>
-                            <td>{{ row.entry.name }}{% if row.is_former_member %}<small class="schedule-roster__former">（放送部員ではありません）</small>{% endif %}</td>
-                            <td>{{ row.class_label|default:"—" }}</td>
-                            <td>{% for position in row.positions %}{{ position.name }}{% if not forloop.last %}、{% endif %}{% empty %}—{% endfor %}</td>
-                            <td><input class="schedule-roster__role" type="text" name="role_{{ row.entry.pk }}" value="{{ row.role }}" maxlength="100" placeholder="役割(例: カメラ)" aria-label="{{ row.entry.name }}の役割"></td>
+                            <td class="schedule-roster__name">{{ row.entry.name }}{% if row.is_former_member %}<small class="schedule-roster__former">（放送部員ではありません）</small>{% endif %}</td>
+                            <td class="schedule-roster__class">{{ row.class_label|default:"—" }}</td>
+                            <td class="schedule-roster__positions">{% for position in row.positions %}{{ position.name }}{% if not forloop.last %}、{% endif %}{% empty %}—{% endfor %}</td>
+                            <td class="schedule-roster__rolecell"><input class="schedule-roster__role" type="text" name="role_{{ row.entry.pk }}" value="{{ row.role }}" maxlength="100" placeholder="役割(例: カメラ)" aria-label="{{ row.entry.name }}の役割"></td>
                         </tr>
                         {% empty %}
                         <tr><td colspan="5">放送部員として登録されている名簿がありません。</td></tr>
@@ -124,7 +124,7 @@
                     {{ equipment_formset.empty_form.quantity }}
                 </div>
             </template>
-            <button class="common-style" type="button" data-add>+ 機材を追加</button>
+            <button class="common-style white" type="button" data-add>+ 機材を追加</button>
             <p class="schedule-form__note">機材アプリに登録済みの機材から選べます。予定の詳細で、予約できているか(他の予定との競合や在庫)が表示されます。同じ機材が競合しても保存はできます。</p>
         </fieldset>
 
@@ -133,8 +133,8 @@
         {% endif %}
 
         <div class="schedule-form__footer">
-            <a class="common-style" href="{% if event %}{% url 'schedule:event_detail' event.pk %}{% else %}{% url 'schedule:calendar' %}{% endif %}">キャンセル</a>
-            <button class="common-style" type="submit">保存</button>
+            <a class="common-style white" href="{% if event %}{% url 'schedule:event_detail' event.pk %}{% else %}{% url 'schedule:calendar' %}{% endif %}">キャンセル</a>
+            <button class="common-style reverse" type="submit">保存</button>
         </div>
     </form>
 </section>
