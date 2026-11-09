@@ -543,6 +543,133 @@ a.schedule-cell__day:hover {
     color: var(--Subtlecolor);
 }
 
+.visually-hidden {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip: rect(0 0 0 0);
+    white-space: nowrap;
+}
+
+/* 割当部員の表(名簿から選ぶ) */
+.schedule-roster {
+    display: flex;
+    flex-direction: column;
+    gap: .8rem;
+    margin: 0;
+    padding: 1rem;
+    border: var(--Bordercolor) solid .1rem;
+    border-radius: .3rem;
+    min-width: 0;
+}
+
+.schedule-roster legend {
+    padding: 0 .4rem;
+}
+
+.schedule-roster__filters {
+    display: flex;
+    flex-wrap: wrap;
+    gap: .5rem;
+}
+
+.schedule-roster__filters input[type="search"],
+.schedule-roster__filters select {
+    min-width: 0;
+    padding: .45rem .6rem;
+    border: var(--Bordercolor) solid .1rem;
+    border-radius: .2rem;
+    background-color: transparent;
+    color: var(--Textcolor);
+    font: inherit;
+    font-size: .85rem;
+}
+
+.schedule-roster__filters input[type="search"] {
+    flex: 1 1 10rem;
+}
+
+.schedule-roster__only-selected {
+    display: flex;
+    align-items: center;
+    gap: .3rem;
+    font-size: .85rem;
+}
+
+.schedule-roster__shown {
+    margin: 0;
+    color: var(--Subtlecolor);
+    font-size: .8rem;
+}
+
+.schedule-roster__table-wrap {
+    max-height: 22rem;
+    overflow: auto;
+    border: var(--Bordercolor) solid .1rem;
+    border-radius: .2rem;
+}
+
+.schedule-roster__table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: .85rem;
+}
+
+.schedule-roster__table th,
+.schedule-roster__table td {
+    padding: .4rem .5rem;
+    text-align: left;
+    border-bottom: var(--Bordercolor) solid .1rem;
+    white-space: nowrap;
+}
+
+.schedule-roster__table thead th {
+    position: sticky;
+    top: 0;
+    background-color: var(--Backgroundcolor);
+    color: var(--Subtlecolor);
+    font-weight: 400;
+}
+
+.schedule-roster__table tr[hidden] {
+    display: none;
+}
+
+.schedule-roster__table tr:has(input[name="assign_member"]:checked) {
+    background-color: color-mix(in srgb, var(--Textcolor) 8%, transparent);
+}
+
+/* 表の左上のチェック: 一部だけ選択されているときは、横線入りの四角にする */
+.schedule-roster__table input[data-select-all]:indeterminate {
+    mask-image: url("../img/checkbox-indeterminate.svg");
+    -webkit-mask-image: url("../img/checkbox-indeterminate.svg");
+    background-color: var(--Natural-themecolor);
+}
+
+.schedule-roster__check {
+    width: 2rem;
+    text-align: center !important;
+}
+
+.schedule-roster__role {
+    min-width: 9rem;
+    width: 100%;
+    padding: .35rem .5rem;
+    border: var(--Bordercolor) solid .1rem;
+    border-radius: .2rem;
+    background-color: transparent;
+    color: var(--Textcolor);
+    font: inherit;
+    font-size: .85rem;
+}
+
+.schedule-roster__former {
+    margin-left: .3rem;
+    color: #d97706;
+    font-size: .75rem;
+}
+
 /* フォーム */
 .schedule-form {
     display: flex;
