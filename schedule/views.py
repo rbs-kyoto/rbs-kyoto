@@ -4,6 +4,7 @@ from datetime import date, timedelta
 from django.contrib.auth.decorators import login_required, user_passes_test
 from django.core.exceptions import PermissionDenied
 from django.db import transaction
+from django.db.models import Count, Q
 from django.http import Http404
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
@@ -13,8 +14,10 @@ from django.views.decorators.http import require_POST
 
 from .equipment_status import event_statuses, upcoming_problems
 from .place_status import place_conflicts, upcoming_place_conflicts
+from roll.models import Position, RosterEntry
+
 from .forms import (
-    AssignmentFormSet,
+    AssignmentSelection,
     AttendanceForm,
     EventEquipmentFormSet,
     EventForm,
@@ -289,15 +292,84 @@ def event_respond(request, pk):
     return redirect(f"{reverse('schedule:event_detail', args=[event.pk])}?date={day.isoformat()}")
 
 
+def _roster_context(event, post=None):
+    """割当部員を選ぶ名簿の表に出す行と、フィルターの選択肢。
+
+    post があれば(入力エラーで再表示するとき)、その選択と役割を保つ。
+    すでに割り当てた人は、部員でなくなっていても表に残す。
+    """
+    assigned = {}
+    if event.pk:
+        assigned = {
+            a.member_id: a
+            for a in event.assignments.annotate(response_count=Count("attendances"))
+        }
+    entries = list(
+        RosterEntry.objects.filter(Q(is_member=True) | Q(pk__in=assigned)).prefetch_related(
+            "positions"
+        )
+    )
+
+    checked_ids = set()
+    if post is not None:
+        checked_ids = {int(v) for v in post.getlist("assign_member") if str(v).isdigit()}
+
+    rows = []
+    for entry in entries:
+        if post is not None:
+            checked = entry.pk in checked_ids
+            role = post.get(f"role_{entry.pk}", "")
+        else:
+            current = assigned.get(entry.pk)
+            checked = current is not None
+            role = current.role if current else ""
+        positions = list(entry.positions.all())
+        class_label = " ".join(
+            part
+            for part in (
+                f"{entry.grade}年" if entry.grade else "",
+                f"{entry.homeroom}組" if entry.homeroom else "",
+            )
+            if part
+        )
+        rows.append(
+            {
+                "entry": entry,
+                "checked": checked,
+                "role": role,
+                "class_label": class_label,
+                "positions": positions,
+                "position_ids": "," + ",".join(str(p.pk) for p in positions) + ",",
+                "response_count": assigned[entry.pk].response_count if entry.pk in assigned else 0,
+                "is_former_member": not entry.is_member,
+            }
+        )
+
+    position_ids = {p.pk for row in rows for p in row["positions"]}
+    return {
+        "rows": rows,
+        "grades": sorted({row["entry"].grade for row in rows if row["entry"].grade}),
+        "homerooms": sorted({row["entry"].homeroom for row in rows if row["entry"].homeroom}),
+        "positions": Position.objects.filter(pk__in=position_ids),
+        "types": [
+            (value, label)
+            for value, label in RosterEntry.EntryType.choices
+            if any(row["entry"].entry_type == value for row in rows)
+        ],
+        "checked_count": sum(1 for row in rows if row["checked"]),
+    }
+
+
 def _handle_event_form(request, event, initial=None):
-    """予定と割当部員(フォームセット)をまとめて検証・保存する。保存できたら予定を返す。"""
+    """予定・割当部員・使う機材をまとめて検証・保存する。保存できたら予定を返す。"""
+    posting = request.method == "POST"
     form = EventForm(request.POST or None, instance=event, initial=initial)
-    formset = AssignmentFormSet(request.POST or None, instance=event)
+    selection = AssignmentSelection(request.POST, event) if posting else None
     equipment_formset = EventEquipmentFormSet(request.POST or None, instance=event)
     if (
-        request.method == "POST"
+        posting
         and form.is_valid()
-        and formset.is_valid()
+        and selection.is_valid()
         and equipment_formset.is_valid()
     ):
         with transaction.atomic():
@@ -305,12 +377,21 @@ def _handle_event_form(request, event, initial=None):
             if saved.created_by_id is None:
                 saved.created_by = request.user
             saved.save()
-            formset.instance = saved
-            formset.save()
+            selection.save(saved)
             equipment_formset.instance = saved
             equipment_formset.save()
-        return form, formset, equipment_formset, saved
-    return form, formset, equipment_formset, None
+        return form, selection, equipment_formset, saved
+    return form, selection, equipment_formset, None
+
+
+def _form_context(request, event, form, selection, equipment_formset, page_event):
+    return {
+        "form": form,
+        "equipment_formset": equipment_formset,
+        "event": page_event,
+        "roster": _roster_context(event, request.POST if selection is not None else None),
+        "roster_errors": selection.errors if selection is not None else [],
+    }
 
 
 @login_required
@@ -325,18 +406,13 @@ def event_create(request):
             pass
 
     event = Event()
-    form, formset, equipment_formset, saved = _handle_event_form(request, event, initial)
+    form, selection, equipment_formset, saved = _handle_event_form(request, event, initial)
     if saved:
         return redirect("schedule:event_detail", pk=saved.pk)
     return render(
         request,
         "schedule/event_form.html",
-        {
-            "form": form,
-            "formset": formset,
-            "equipment_formset": equipment_formset,
-            "event": None,
-        },
+        _form_context(request, event, form, selection, equipment_formset, None),
     )
 
 
@@ -344,18 +420,13 @@ def event_create(request):
 @staff_required
 def event_edit(request, pk):
     event = get_object_or_404(Event, pk=pk)
-    form, formset, equipment_formset, saved = _handle_event_form(request, event)
+    form, selection, equipment_formset, saved = _handle_event_form(request, event)
     if saved:
         return redirect("schedule:event_detail", pk=saved.pk)
     return render(
         request,
         "schedule/event_form.html",
-        {
-            "form": form,
-            "formset": formset,
-            "equipment_formset": equipment_formset,
-            "event": event,
-        },
+        _form_context(request, event, form, selection, equipment_formset, event),
     )
 
 

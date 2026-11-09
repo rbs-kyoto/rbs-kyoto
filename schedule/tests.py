@@ -30,23 +30,21 @@ def jst(*args):
 
 
 def formset_data(rows=(), initial=0, equipment=()):
-    """割当部員・使用機材フォームセットの POST データ。
+    """割当部員(名簿の表のチェックと役割)・使用機材フォームセットの POST データ。
 
     rows は (member_pk, role)、equipment は (equipment_pk, quantity) の並び。
+    initial は以前のフォームセット用の引数で、いまは使わない。
     """
     data = {
-        "assignments-TOTAL_FORMS": str(len(rows)),
-        "assignments-INITIAL_FORMS": str(initial),
-        "assignments-MIN_NUM_FORMS": "0",
-        "assignments-MAX_NUM_FORMS": "1000",
         "equipment_items-TOTAL_FORMS": str(len(equipment)),
         "equipment_items-INITIAL_FORMS": "0",
         "equipment_items-MIN_NUM_FORMS": "0",
         "equipment_items-MAX_NUM_FORMS": "1000",
     }
-    for i, (member, role) in enumerate(rows):
-        data[f"assignments-{i}-member"] = str(member)
-        data[f"assignments-{i}-role"] = role
+    if rows:
+        data["assign_member"] = [str(member) for member, _ in rows]
+    for member, role in rows:
+        data[f"role_{member}"] = role
     for i, (item, quantity) in enumerate(equipment):
         data[f"equipment_items-{i}-equipment"] = str(item)
         data[f"equipment_items-{i}-quantity"] = str(quantity)
@@ -294,7 +292,7 @@ class AssignmentTests(TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertFalse(Event.objects.filter(title="NG").exists())
 
-    def test_same_member_twice_is_rejected(self):
+    def test_a_member_checked_twice_is_assigned_once(self):
         self.client.force_login(self.staff)
         response = self.client.post(
             reverse("schedule:event_create"),
@@ -305,8 +303,96 @@ class AssignmentTests(TestCase):
                 **formset_data([(self.alice.pk, "A"), (self.alice.pk, "B")]),
             },
         )
+        event = Event.objects.get(title="重複")
+        self.assertRedirects(response, reverse("schedule:event_detail", args=[event.pk]))
+        self.assertEqual(event.assignments.count(), 1)
+
+    def test_unknown_member_and_too_long_role_are_rejected(self):
+        self.client.force_login(self.staff)
+        base = {"title": "NG", "start": "2026-11-10T13:00", "recurrence": "none"}
+        unknown = self.client.post(
+            reverse("schedule:event_create"), {**base, **formset_data([(999999, "")])}
+        )
+        self.assertEqual(unknown.status_code, 200)
+        too_long = self.client.post(
+            reverse("schedule:event_create"), {**base, **formset_data([(self.alice.pk, "あ" * 101)])}
+        )
+        self.assertEqual(too_long.status_code, 200)
+        self.assertFalse(Event.objects.filter(title="NG").exists())
+        self.assertTrue(too_long.context["roster_errors"])
+
+    def test_editing_adds_removes_and_updates_assignments(self):
+        event, _ = self.create_event()  # alice(カメラ) と bob(音声)
+        carol = RosterEntry.objects.create(name="Carol", is_member=True)
+        Attendance.objects.create(
+            assignment=event.assignments.get(member=self.bob), date=date(2026, 11, 10), status="attend"
+        )
+        self.client.force_login(self.staff)
+        response = self.client.post(
+            reverse("schedule:event_edit", args=[event.pk]),
+            {
+                "title": event.title,
+                "start": "2026-11-10T13:00",
+                "recurrence": "none",
+                "ask_attendance": "on",
+                # alice は役割を変更、bob は外す、carol は追加
+                **formset_data([(self.alice.pk, "照明"), (carol.pk, "司会")]),
+            },
+        )
+        self.assertRedirects(response, reverse("schedule:event_detail", args=[event.pk]))
+        roles = {a.member.name: a.role for a in event.assignments.all()}
+        self.assertEqual(roles, {"Alice": "照明", "Carol": "司会"})
+        self.assertEqual(Attendance.objects.count(), 0)  # 外した人の回答も消える
+
+    def test_saving_without_any_check_removes_every_assignment(self):
+        event, _ = self.create_event()
+        self.client.force_login(self.staff)
+        self.client.post(
+            reverse("schedule:event_edit", args=[event.pk]),
+            {"title": event.title, "start": "2026-11-10T13:00", "recurrence": "none", **formset_data()},
+        )
+        self.assertEqual(event.assignments.count(), 0)
+
+    def test_existing_assignee_who_left_the_club_can_stay_but_is_flagged(self):
+        event, _ = self.create_event()
+        self.bob.is_member = False
+        self.bob.save()
+        self.client.force_login(self.staff)
+        page = self.client.get(reverse("schedule:event_edit", args=[event.pk]))
+        rows = {row["entry"].name: row for row in page.context["roster"]["rows"]}
+        self.assertIn("Bob", rows)
+        self.assertTrue(rows["Bob"]["checked"])
+        self.assertTrue(rows["Bob"]["is_former_member"])
+        self.assertContains(page, "放送部員ではありません")
+        # そのまま保存しても、割当は残る
+        self.client.post(
+            reverse("schedule:event_edit", args=[event.pk]),
+            {
+                "title": event.title,
+                "start": "2026-11-10T13:00",
+                "recurrence": "none",
+                **formset_data([(self.alice.pk, "カメラ"), (self.bob.pk, "音声")]),
+            },
+        )
+        self.assertEqual(event.assignments.count(), 2)
+
+    def test_invalid_form_keeps_the_selection_and_roles(self):
+        self.client.force_login(self.staff)
+        response = self.client.post(
+            reverse("schedule:event_create"),
+            {
+                "title": "",  # タイトル未入力で、フォームのエラー
+                "start": "2026-11-10T13:00",
+                "recurrence": "none",
+                **formset_data([(self.alice.pk, "カメラ")]),
+            },
+        )
         self.assertEqual(response.status_code, 200)
-        self.assertFalse(Event.objects.filter(title="重複").exists())
+        rows = {row["entry"].name: row for row in response.context["roster"]["rows"]}
+        self.assertTrue(rows["Alice"]["checked"])
+        self.assertEqual(rows["Alice"]["role"], "カメラ")
+        self.assertFalse(rows["Bob"]["checked"])
+        self.assertEqual(response.context["roster"]["checked_count"], 1)
 
     def test_detail_lists_assignees_to_logged_in_users(self):
         event, _ = self.create_event()
@@ -888,3 +974,68 @@ class PlaceIntegrationTests(TestCase):
         self.assertContains(response, 'data-places-api="/api/places/"')
         self.assertContains(response, f'data-event-id="{event.pk}"')
         self.assertContains(response, 'id="place-live-warning"')
+
+
+class RosterTableTests(TestCase):
+    def setUp(self):
+        from roll.models import Position
+
+        self.staff = get_user_model().objects.create_user("staff", password="pw", is_staff=True)
+        self.captain = Position.objects.create(name="部長")
+        self.sound = Position.objects.create(name="音声係")
+        self.a = RosterEntry.objects.create(
+            name="佐藤 花子", name_kana="さとう はなこ", is_member=True, grade="2", homeroom="3"
+        )
+        self.a.positions.add(self.captain, self.sound)
+        self.b = RosterEntry.objects.create(name="田中 太郎", is_member=True, grade="1", homeroom="1")
+        self.teacher = RosterEntry.objects.create(
+            name="先生", is_member=False, entry_type=RosterEntry.EntryType.FACULTY
+        )
+        self.client.force_login(self.staff)
+
+    def roster(self):
+        return self.client.get(reverse("schedule:event_create")).context["roster"]
+
+    def test_only_club_members_are_listed(self):
+        names = [row["entry"].name for row in self.roster()["rows"]]
+        self.assertEqual(sorted(names), sorted(["佐藤 花子", "田中 太郎"]))
+
+    def test_rows_carry_class_and_position_labels(self):
+        row = next(r for r in self.roster()["rows"] if r["entry"] == self.a)
+        self.assertEqual(row["class_label"], "2年 3組")
+        self.assertEqual({p.name for p in row["positions"]}, {"部長", "音声係"})
+        # フィルター用に、役職の id を「,1,3,」の形で持つ(順序は問わない)
+        self.assertTrue(row["position_ids"].startswith(",") and row["position_ids"].endswith(","))
+        self.assertEqual(
+            {int(v) for v in row["position_ids"].strip(",").split(",")},
+            {self.captain.pk, self.sound.pk},
+        )
+
+    def test_filter_options_only_include_what_exists(self):
+        roster = self.roster()
+        self.assertEqual(roster["grades"], ["1", "2"])
+        self.assertEqual(roster["homerooms"], ["1", "3"])
+        self.assertEqual({p.name for p in roster["positions"]}, {"部長", "音声係"})
+        self.assertEqual([value for value, _ in roster["types"]], ["student"])
+
+    def test_page_renders_filters_table_and_data_attributes(self):
+        response = self.client.get(reverse("schedule:event_create"))
+        for expected in (
+            'data-filter="q"', 'data-filter="grade"', 'data-filter="homeroom"',
+            'data-filter="position"', 'data-filter="type"', 'data-filter="selected"',
+            'data-bulk="select"', 'data-bulk="clear"',
+            f'name="assign_member" value="{self.a.pk}"', f'name="role_{self.a.pk}"',
+            'data-grade="2"', 'data-homeroom="3"', "佐藤 花子 さとう はなこ",
+        ):
+            self.assertContains(response, expected)
+        self.assertNotContains(response, "先生")  # 部員ではない人は出ない
+
+    def test_response_counts_are_exposed_for_the_unassign_confirmation(self):
+        event = Event.objects.create(title="撮影", start=jst(2026, 11, 10, 13), ask_attendance=True)
+        assignment = Assignment.objects.create(event=event, member=self.b)
+        Attendance.objects.create(assignment=assignment, date=date(2026, 11, 10), status="attend")
+        page = self.client.get(reverse("schedule:event_edit", args=[event.pk]))
+        row = next(r for r in page.context["roster"]["rows"] if r["entry"] == self.b)
+        self.assertEqual(row["response_count"], 1)
+        self.assertContains(page, 'data-responses="1"')
+        self.assertContains(page, 'data-was-checked="1"')

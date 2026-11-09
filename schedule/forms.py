@@ -85,25 +85,56 @@ class EventForm(forms.ModelForm):
         return cleaned
 
 
-class AssignmentForm(forms.ModelForm):
-    class Meta:
-        model = Assignment
-        fields = ["member", "role"]
-        widgets = {"role": forms.TextInput(attrs={"placeholder": "役割(例: カメラ)"})}
+class AssignmentSelection:
+    """名簿の表で選ばれた割当部員(チェックと役割)を、POST から読み取って検証・保存する。
 
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        self.fields["member"].queryset = RosterEntry.objects.filter(is_member=True)
-        self.fields["member"].empty_label = "部員を選択"
+    表は ``assign_member``(チェックされた名簿の id。複数)と ``role_<id>``(役割)で送られてくる。
+    新しく選べるのは放送部員だけ。すでに割り当てた人は、部員でなくなっていても残せる。
+    """
 
+    ROLE_MAX_LENGTH = Assignment._meta.get_field("role").max_length
 
-AssignmentFormSet = inlineformset_factory(
-    Event,
-    Assignment,
-    form=AssignmentForm,
-    extra=3,
-    can_delete=True,
-)
+    def __init__(self, data, event):
+        self.event = event
+        self.errors = []
+        self.selection = {}  # {名簿の id: 役割}
+        self._existing = (
+            set(event.assignments.values_list("member_id", flat=True)) if event.pk else set()
+        )
+
+        raw_ids = data.getlist("assign_member") if hasattr(data, "getlist") else []
+        ids = []
+        for raw in raw_ids:
+            if str(raw).isdigit() and int(raw) not in ids:
+                ids.append(int(raw))
+
+        found = {entry.pk: entry for entry in RosterEntry.objects.filter(pk__in=ids)}
+        for pk in ids:
+            entry = found.get(pk)
+            if entry is None:
+                self.errors.append("名簿にない部員が選ばれています。")
+                continue
+            if not entry.is_member and pk not in self._existing:
+                self.errors.append(f"{entry.name} さんは放送部員ではないため、割り当てられません。")
+                continue
+            role = (data.get(f"role_{pk}") or "").strip()
+            if len(role) > self.ROLE_MAX_LENGTH:
+                self.errors.append(
+                    f"{entry.name} さんの役割は{self.ROLE_MAX_LENGTH}文字以内にしてください。"
+                )
+                continue
+            self.selection[pk] = role
+
+    def is_valid(self):
+        return not self.errors
+
+    def save(self, event):
+        """選ばれていない人の割当を外し、選ばれた人の割当と役割を保存する。"""
+        event.assignments.exclude(member_id__in=self.selection).delete()
+        for member_id, role in self.selection.items():
+            Assignment.objects.update_or_create(
+                event=event, member_id=member_id, defaults={"role": role}
+            )
 
 
 class EventEquipmentForm(forms.ModelForm):
