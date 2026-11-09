@@ -568,6 +568,45 @@ a.schedule-cell__day:hover {
     padding: 0 .4rem;
 }
 
+.schedule-roster__copy {
+    display: flex;
+    flex-direction: column;
+    gap: .4rem;
+    padding-bottom: .6rem;
+    border-bottom: var(--Bordercolor) solid .1rem;
+    font-size: .85rem;
+}
+
+.schedule-roster__copy-row {
+    display: flex;
+    gap: .5rem;
+}
+
+.schedule-roster__copy-row select {
+    flex: 1 1 auto;
+    min-width: 0;
+    padding: .45rem .6rem;
+    border: var(--Bordercolor) solid .1rem;
+    border-radius: .2rem;
+    background-color: transparent;
+    color: var(--Textcolor);
+    font: inherit;
+    font-size: .85rem;
+}
+
+.schedule-roster__copy-row button:disabled,
+.schedule-roster__copy-row select:disabled {
+    opacity: .5;
+    cursor: not-allowed;
+}
+
+.schedule-roster__copy-status {
+    margin: 0;
+    min-height: 1.2em;
+    color: var(--Subtlecolor);
+    font-size: .8rem;
+}
+
 .schedule-roster__filters {
     display: flex;
     flex-wrap: wrap;

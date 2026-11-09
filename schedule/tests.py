@@ -1039,3 +1039,81 @@ class RosterTableTests(TestCase):
         self.assertEqual(row["response_count"], 1)
         self.assertContains(page, 'data-responses="1"')
         self.assertContains(page, 'data-was-checked="1"')
+
+
+class CopyAssignmentsTests(TestCase):
+    def setUp(self):
+        self.staff = get_user_model().objects.create_user("staff", password="pw", is_staff=True)
+        self.alice = RosterEntry.objects.create(name="Alice", is_member=True)
+        self.bob = RosterEntry.objects.create(name="Bob", is_member=True)
+        self.client.force_login(self.staff)
+
+    def event(self, title, start, members=()):
+        event = Event.objects.create(title=title, start=start)
+        for member, role in members:
+            Assignment.objects.create(event=event, member=member, role=role)
+        return event
+
+    def sources(self, url_name="schedule:event_create", *args):
+        response = self.client.get(reverse(url_name, args=args))
+        return response, response.context["copy_sources"]
+
+    def test_sources_hold_the_roles_by_member_id_and_a_readable_label(self):
+        past = self.event("定例会", jst(2026, 11, 4, 16), [(self.alice, "司会"), (self.bob, "")])
+        response, sources = self.sources()
+        self.assertEqual(len(sources), 1)
+        self.assertEqual(sources[0]["id"], past.pk)
+        self.assertEqual(sources[0]["label"], "11/4 定例会（2人）")
+        self.assertEqual(sources[0]["roles"], {str(self.alice.pk): "司会", str(self.bob.pk): ""})
+        # JS が読めるように、JSONとして埋め込まれ、選択欄も出る
+        self.assertContains(response, 'id="copy-sources"')
+        self.assertContains(response, 'id="copy-source"')
+        self.assertContains(response, "11/4 定例会（2人）")
+
+    def test_without_candidates_the_section_stays_visible_but_disabled(self):
+        self.event("割当なし", jst(2026, 11, 4, 16))
+        response, sources = self.sources()
+        self.assertEqual(sources, [])
+        # 機能に気づけるよう、欄は出したままにして、無効にして理由を説明する
+        self.assertContains(response, "過去の予定から割当をコピー")
+        self.assertContains(response, "コピーできる予定がありません")
+        self.assertContains(response, "割当のある予定が、ほかにまだありません")
+        self.assertContains(response, 'data-copy-source disabled')
+        self.assertContains(response, 'data-copy-apply disabled')
+        self.assertNotContains(response, 'id="copy-sources"')  # 候補がないので、JSON は埋め込まない
+
+    def test_with_candidates_the_section_is_enabled(self):
+        self.event("定例会", jst(2026, 11, 4, 16), [(self.alice, "司会")])
+        response, _ = self.sources()
+        self.assertNotContains(response, "コピーできる予定がありません")
+        self.assertNotContains(response, 'data-copy-source disabled')
+        self.assertNotContains(response, 'data-copy-apply disabled')
+        self.assertContains(response, 'id="copy-sources"')
+
+    def test_editing_the_only_event_with_assignments_shows_the_disabled_section(self):
+        mine = self.event("定例会", jst(2026, 11, 4, 16), [(self.alice, "司会")])
+        response, sources = self.sources("schedule:event_edit", mine.pk)
+        self.assertEqual(sources, [])  # 自分自身はコピー元にならない
+        self.assertContains(response, "コピーできる予定がありません")
+
+    def test_the_event_being_edited_is_not_its_own_source(self):
+        mine = self.event("編集中", jst(2026, 11, 10, 13), [(self.alice, "")])
+        other = self.event("別の予定", jst(2026, 11, 4, 16), [(self.bob, "")])
+        _, sources = self.sources("schedule:event_edit", mine.pk)
+        self.assertEqual([s["id"] for s in sources], [other.pk])
+
+    def test_newest_first_and_capped(self):
+        from schedule import views
+
+        for i in range(views.COPY_SOURCE_LIMIT + 5):
+            self.event(f"予定{i}", jst(2026, 1, 1, 9) + timezone.timedelta(days=i), [(self.alice, "")])
+        _, sources = self.sources()
+        self.assertEqual(len(sources), views.COPY_SOURCE_LIMIT)
+        self.assertEqual(sources[0]["label"].split(" ")[1].split("（")[0], f"予定{views.COPY_SOURCE_LIMIT + 4}")
+
+    def test_titles_with_markup_are_escaped_in_the_embedded_json(self):
+        self.event('</script><b>"危険"</b>', jst(2026, 11, 4, 16), [(self.alice, '"><img src=x>')])
+        response, _ = self.sources()
+        body = response.content.decode()
+        self.assertNotIn("</script><b>", body)
+        self.assertNotIn('"><img src=x>', body.split('id="copy-sources"')[1].split("</script>")[0])

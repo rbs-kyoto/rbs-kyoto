@@ -360,6 +360,35 @@ def _roster_context(event, post=None):
     }
 
 
+COPY_SOURCE_LIMIT = 40
+
+
+def _copy_sources(event):
+    """割当のコピー元にできる予定(割当のあるもの)を、開始が新しい順に返す。
+
+    フォームの JS が、選ばれた予定の割当(名簿の id と役割)を、表に反映するのに使う。
+    """
+    events = (
+        Event.objects.filter(assignments__isnull=False)
+        .exclude(pk=event.pk)
+        .distinct()
+        .order_by("-start", "-pk")
+        .prefetch_related("assignments")[:COPY_SOURCE_LIMIT]
+    )
+    sources = []
+    for source in events:
+        assignments = list(source.assignments.all())
+        local = timezone.localtime(source.start)
+        sources.append(
+            {
+                "id": source.pk,
+                "label": f"{local.month}/{local.day} {source.title}（{len(assignments)}人）",
+                "roles": {str(a.member_id): a.role for a in assignments},
+            }
+        )
+    return sources
+
+
 def _handle_event_form(request, event, initial=None):
     """予定・割当部員・使う機材をまとめて検証・保存する。保存できたら予定を返す。"""
     posting = request.method == "POST"
@@ -390,6 +419,7 @@ def _form_context(request, event, form, selection, equipment_formset, page_event
         "equipment_formset": equipment_formset,
         "event": page_event,
         "roster": _roster_context(event, request.POST if selection is not None else None),
+        "copy_sources": _copy_sources(event),
         "roster_errors": selection.errors if selection is not None else [],
     }
 
