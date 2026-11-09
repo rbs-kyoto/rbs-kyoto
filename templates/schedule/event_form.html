@@ -31,20 +31,18 @@
             <legend>割当部員（<span data-roster-count>{{ roster.checked_count }}</span>人選択中）</legend>
             {% for error in roster_errors %}<p class="schedule-form__error">{{ error }}</p>{% endfor %}
 
-            {% if copy_sources %}
             <div class="schedule-roster__copy">
                 <label for="copy-source">過去の予定から割当をコピー</label>
                 <div class="schedule-roster__copy-row">
-                    <select id="copy-source" data-copy-source>
-                        <option value="">予定を選択</option>
+                    <select id="copy-source" data-copy-source{% if not copy_sources %} disabled{% endif %}>
+                        <option value="">{% if copy_sources %}予定を選択{% else %}コピーできる予定がありません{% endif %}</option>
                         {% for source in copy_sources %}<option value="{{ source.id }}">{{ source.label }}</option>{% endfor %}
                     </select>
-                    <button class="common-style" type="button" data-copy-apply>反映</button>
+                    <button class="common-style" type="button" data-copy-apply{% if not copy_sources %} disabled{% endif %}>反映</button>
                 </div>
-                <p class="schedule-roster__copy-status" role="status" aria-live="polite" data-copy-status></p>
+                <p class="schedule-roster__copy-status" role="status" aria-live="polite" data-copy-status>{% if not copy_sources %}割当のある予定が、ほかにまだありません。割当を入れた予定ができると、ここから割当をコピーできます。{% endif %}</p>
             </div>
-            {{ copy_sources|json_script:"copy-sources" }}
-            {% endif %}
+            {% if copy_sources %}{{ copy_sources|json_script:"copy-sources" }}{% endif %}
 
             <div class="schedule-roster__filters">
                 <input type="search" data-filter="q" placeholder="名前で検索" aria-label="名前で検索">
