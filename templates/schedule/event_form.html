@@ -31,6 +31,21 @@
             <legend>割当部員（<span data-roster-count>{{ roster.checked_count }}</span>人選択中）</legend>
             {% for error in roster_errors %}<p class="schedule-form__error">{{ error }}</p>{% endfor %}
 
+            {% if copy_sources %}
+            <div class="schedule-roster__copy">
+                <label for="copy-source">過去の予定から割当をコピー</label>
+                <div class="schedule-roster__copy-row">
+                    <select id="copy-source" data-copy-source>
+                        <option value="">予定を選択</option>
+                        {% for source in copy_sources %}<option value="{{ source.id }}">{{ source.label }}</option>{% endfor %}
+                    </select>
+                    <button class="common-style" type="button" data-copy-apply>反映</button>
+                </div>
+                <p class="schedule-roster__copy-status" role="status" aria-live="polite" data-copy-status></p>
+            </div>
+            {{ copy_sources|json_script:"copy-sources" }}
+            {% endif %}
+
             <div class="schedule-roster__filters">
                 <input type="search" data-filter="q" placeholder="名前で検索" aria-label="名前で検索">
                 <select data-filter="grade" aria-label="学年">
@@ -222,6 +237,38 @@
             });
             refresh();
         });
+
+        // 過去の予定から、割当(選択と役割)を表に反映する。保存するまでは確定しない
+        const copyButton = box.querySelector("[data-copy-apply]");
+        const copySelect = box.querySelector("[data-copy-source]");
+        const copyData = document.getElementById("copy-sources");
+        if (copyButton && copySelect && copyData) {
+            const sources = JSON.parse(copyData.textContent);
+            const status = box.querySelector("[data-copy-status]");
+            copyButton.addEventListener("click", function () {
+                const source = sources.find(function (item) { return String(item.id) === copySelect.value; });
+                if (!source) {
+                    status.textContent = "コピー元の予定を選んでください。";
+                    return;
+                }
+                const current = rows.filter(isChecked).length;
+                if (current > 0 && !window.confirm("いまの選択（" + current + "人）を、「" + source.label + "」の割当で置き換えます。よろしいですか？")) {
+                    return;
+                }
+                const known = {};
+                rows.forEach(function (row) {
+                    const checkbox = row.querySelector('input[name="assign_member"]');
+                    known[checkbox.value] = true;
+                    const role = source.roles[checkbox.value];
+                    checkbox.checked = role !== undefined;
+                    row.querySelector(".schedule-roster__role").value = role || "";
+                });
+                const skipped = Object.keys(source.roles).filter(function (id) { return !known[id]; }).length;
+                refresh();
+                status.textContent = (Object.keys(source.roles).length - skipped) + "人を反映しました。保存すると確定します。"
+                    + (skipped ? "（放送部員でなくなった人など、" + skipped + "人はコピーできませんでした）" : "");
+            });
+        }
 
         // 外した人に出欠の回答があるときは、消えることを確認する
         const form = box.closest("form");
