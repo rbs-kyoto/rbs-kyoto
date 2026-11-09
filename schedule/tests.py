@@ -1023,7 +1023,7 @@ class RosterTableTests(TestCase):
         for expected in (
             'data-filter="q"', 'data-filter="grade"', 'data-filter="homeroom"',
             'data-filter="position"', 'data-filter="type"', 'data-filter="selected"',
-            'data-bulk="select"', 'data-bulk="clear"',
+            "data-select-all",
             f'name="assign_member" value="{self.a.pk}"', f'name="role_{self.a.pk}"',
             'data-grade="2"', 'data-homeroom="3"', "佐藤 花子 さとう はなこ",
         ):

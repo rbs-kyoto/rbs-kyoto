@@ -597,15 +597,8 @@ a.schedule-cell__day:hover {
     font-size: .85rem;
 }
 
-.schedule-roster__bulk {
-    display: flex;
-    flex-wrap: wrap;
-    align-items: center;
-    gap: .5rem;
-}
-
 .schedule-roster__shown {
-    margin-left: auto;
+    margin: 0;
     color: var(--Subtlecolor);
     font-size: .8rem;
 }
@@ -645,6 +638,13 @@ a.schedule-cell__day:hover {
 
 .schedule-roster__table tr:has(input[name="assign_member"]:checked) {
     background-color: color-mix(in srgb, var(--Textcolor) 8%, transparent);
+}
+
+/* 表の左上のチェック: 一部だけ選択されているときは、横線入りの四角にする */
+.schedule-roster__table input[data-select-all]:indeterminate {
+    mask-image: url("../img/checkbox-indeterminate.svg");
+    -webkit-mask-image: url("../img/checkbox-indeterminate.svg");
+    background-color: var(--Natural-themecolor);
 }
 
 .schedule-roster__check {

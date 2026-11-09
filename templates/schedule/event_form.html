@@ -51,16 +51,12 @@
                 </select>
                 <label class="schedule-roster__only-selected"><input type="checkbox" data-filter="selected"> 選択済みのみ</label>
             </div>
-            <div class="schedule-roster__bulk">
-                <button class="common-style" type="button" data-bulk="select">表示中をすべて選択</button>
-                <button class="common-style" type="button" data-bulk="clear">表示中の選択を解除</button>
-                <span class="schedule-roster__shown" aria-live="polite"><span data-roster-shown>{{ roster.rows|length }}</span>人を表示中</span>
-            </div>
+            <p class="schedule-roster__shown" aria-live="polite">表の左上のチェックで、表示中の人をまとめて選択・解除できます（<span data-roster-shown>{{ roster.rows|length }}</span>人を表示中）</p>
 
             <div class="schedule-roster__table-wrap">
                 <table class="schedule-roster__table">
                     <thead>
-                        <tr><th class="schedule-roster__check"><span class="visually-hidden">選択</span></th><th>氏名</th><th>学年・組</th><th>役職</th><th>役割</th></tr>
+                        <tr><th class="schedule-roster__check"><input type="checkbox" data-select-all aria-label="表示中の全員を選択・解除"></th><th>氏名</th><th>学年・組</th><th>役職</th><th>役割</th></tr>
                     </thead>
                     <tbody>
                         {% for row in roster.rows %}
@@ -85,7 +81,7 @@
                     </tbody>
                 </table>
             </div>
-            <p class="schedule-form__note">放送部員として名簿に登録されている人から選べます。絞り込んだ状態で「表示中をすべて選択」を押すと、まとめて割り当てられます。チェックを外すと、その人の出欠の回答も消えます。出欠を取る場合、回答できるのは、アカウントが名簿と連携している割当部員だけです。</p>
+            <p class="schedule-form__note">放送部員として名簿に登録されている人から選べます。絞り込んだ状態で、表の左上のチェックを入れると、表示中の人をまとめて割り当てられます。チェックを外すと、その人の出欠の回答も消えます。出欠を取る場合、回答できるのは、アカウントが名簿と連携している割当部員だけです。</p>
         </fieldset>
 
         <fieldset class="schedule-assign" data-formset="{{ equipment_formset.prefix }}">
@@ -182,6 +178,7 @@
         const count = box.querySelector("[data-roster-count]");
         const shown = box.querySelector("[data-roster-shown]");
         const isChecked = function (row) { return row.querySelector('input[name="assign_member"]').checked; };
+        const selectAll = box.querySelector("[data-select-all]");
 
         const visible = function (row) {
             const query = control("q").value.trim().toLowerCase();
@@ -204,6 +201,12 @@
             });
             shown.textContent = visibleCount;
             count.textContent = checkedCount;
+
+            const visibleRows = rows.filter(function (row) { return !row.hidden; });
+            const checkedVisible = visibleRows.filter(isChecked).length;
+            selectAll.disabled = visibleRows.length === 0;
+            selectAll.checked = visibleRows.length > 0 && checkedVisible === visibleRows.length;
+            selectAll.indeterminate = checkedVisible > 0 && checkedVisible < visibleRows.length;
         };
 
         box.querySelectorAll("[data-filter]").forEach(function (element) {
@@ -212,14 +215,12 @@
         rows.forEach(function (row) {
             row.querySelector('input[name="assign_member"]').addEventListener("change", refresh);
         });
-        box.querySelectorAll("[data-bulk]").forEach(function (button) {
-            button.addEventListener("click", function () {
-                const on = button.dataset.bulk === "select";
-                rows.forEach(function (row) {
-                    if (!row.hidden) row.querySelector('input[name="assign_member"]').checked = on;
-                });
-                refresh();
+        // 表の左上のチェック: 表示中の人を、まとめて選択・解除する。一部だけ選択のときは「半分チェック」にする
+        selectAll.addEventListener("change", function () {
+            rows.forEach(function (row) {
+                if (!row.hidden) row.querySelector('input[name="assign_member"]').checked = selectAll.checked;
             });
+            refresh();
         });
 
         // 外した人に出欠の回答があるときは、消えることを確認する
