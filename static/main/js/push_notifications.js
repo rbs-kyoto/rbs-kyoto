@@ -12,6 +12,8 @@
     const enabled = { equipment: false, news: false, schedule: false };
     const labels = { equipment: "返却予定", news: "新着投稿", schedule: "出欠リマインド" };
     let subscription = null;
+    // Whether the server already knows this browser's push subscription.
+    let serverSubscribed = false;
 
     function setStatus(type, message) {
         form.querySelector(`[data-notification-status="${type}"]`).textContent = message;
@@ -61,6 +63,7 @@
 
     async function loadPreferences() {
         if (!subscription) {
+            serverSubscribed = false;
             enabled.equipment = false;
             enabled.news = false;
             enabled.schedule = false;
@@ -70,6 +73,7 @@
         const url = new URL(preferencesUrl, window.location.origin);
         url.searchParams.set("endpoint", subscription.endpoint);
         const result = await readResponse(await fetch(url, { credentials: "same-origin" }));
+        serverSubscribed = Boolean(result.subscribed);
         enabled.equipment = Boolean(result.subscribed && result.equipment_reminders_enabled);
         enabled.news = Boolean(result.subscribed && result.news_notifications_enabled);
         enabled.schedule = Boolean(result.subscribed && result.schedule_reminders_enabled);
@@ -77,19 +81,24 @@
     }
 
     async function ensureSubscription() {
-        if (subscription) {
-            return;
+        if (!subscription) {
+            const permission = await Notification.requestPermission();
+            if (permission !== "granted") {
+                throw new Error("通知が許可されていません。ブラウザーの設定をご確認ください。");
+            }
+            const registration = await navigator.serviceWorker.ready;
+            subscription = await registration.pushManager.subscribe({
+                userVisibleOnly: true,
+                applicationServerKey: decodeApplicationServerKey(publicKey),
+            });
+            serverSubscribed = false;
         }
-        const permission = await Notification.requestPermission();
-        if (permission !== "granted") {
-            throw new Error("通知が許可されていません。ブラウザーの設定をご確認ください。");
+        // The browser may already hold a subscription the server never saved
+        // (for example from an earlier failed attempt), so register it again.
+        if (!serverSubscribed) {
+            await post(subscribeUrl, subscription.toJSON());
+            serverSubscribed = true;
         }
-        const registration = await navigator.serviceWorker.ready;
-        subscription = await registration.pushManager.subscribe({
-            userVisibleOnly: true,
-            applicationServerKey: decodeApplicationServerKey(publicKey),
-        });
-        await post(subscribeUrl, subscription.toJSON());
     }
 
     async function toggleNotification(type, button) {
@@ -113,9 +122,14 @@
                     : "通知を停止しました。",
             );
         } catch (error) {
+            if (error.status === 404) {
+                // The server lost this subscription; register it again next time.
+                serverSubscribed = false;
+            }
             if (error.status === 410 && subscription) {
                 await subscription.unsubscribe();
                 subscription = null;
+                serverSubscribed = false;
                 enabled.equipment = false;
                 enabled.news = false;
                 enabled.schedule = false;
