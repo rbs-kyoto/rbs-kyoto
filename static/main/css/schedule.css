@@ -1,20 +1,30 @@
+/* ========================================
+   共通
+======================================== */
+
 .schedule-section {
     width: min(100%, 1100px);
     margin: 0 auto;
     padding: 1rem;
 }
 
+/* ========================================
+   月表示ナビゲーション
+======================================== */
+
 .schedule-nav {
     display: flex;
     align-items: center;
     justify-content: space-between;
     gap: 1rem;
-    padding: .5rem 0 1rem;
+    padding: 1rem 0 1.2rem;
 }
 
 .schedule-nav__title {
     margin: 0;
-    font-size: 1.3rem;
+    font-size: 1.5rem;
+    font-weight: 650;
+    letter-spacing: .02em;
 }
 
 .schedule-nav__link {
@@ -30,53 +40,71 @@
 .schedule-grid {
     display: grid;
     grid-template-columns: repeat(7, minmax(0, 1fr));
-    border-top: var(--Bordercolor) solid .1rem;
-    border-left: var(--Bordercolor) solid .1rem;
+    overflow: hidden;
+    border-radius: 1.2rem;
+    background-color: var(--Backgroundcolor);
+    box-shadow: 0 .2rem 1rem color-mix(in srgb, var(--Textcolor) 5%, transparent);
+    padding: .5rem 1rem;
 }
 
 .schedule-grid__weekday {
-    padding: .4rem;
+    padding: .8rem .4rem;
     text-align: center;
     font-size: .85rem;
+    font-weight: 600;
     color: var(--Subtlecolor);
-    border-right: var(--Bordercolor) solid .1rem;
     border-bottom: var(--Bordercolor) solid .1rem;
 }
 
 .schedule-cell {
-    min-height: 6.5rem;
-    padding: .3rem;
-    border-right: var(--Bordercolor) solid .1rem;
-    border-bottom: var(--Bordercolor) solid .1rem;
     min-width: 0;
+    min-height: 8rem;
+    padding: .65rem .55rem;
+    border-bottom: var(--Bordercolor) solid .1rem;
+}
+
+.schedule-cell:nth-last-child(-n + 7) {
+    border-bottom: 0;
 }
 
 .schedule-cell.is-other-month {
-    opacity: .45;
+    opacity: .4;
 }
 
 .schedule-cell.is-today {
-    background-color: color-mix(in srgb, var(--Textcolor) 10%, transparent);
-}
-
-.schedule-cell.is-today .schedule-cell__day {
-    font-weight: 700;
-    text-decoration: underline;
+    background-color: color-mix(in srgb, var(--Textcolor) 7%, transparent);
 }
 
 .schedule-cell__head {
     display: flex;
-    justify-content: space-between;
-    align-items: center;
+    justify-content: flex-start;
+    align-items: flex-start;
+    min-height: 2rem;
 }
 
 .schedule-cell__day {
-    font-size: .85rem;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 2rem;
+    min-height: 2rem;
+    font-size: 1.35rem;
+    line-height: 1;
+    font-weight: 650;
     text-decoration: none;
+    font-variant-numeric: tabular-nums;
+    border-radius: .65rem;
+    transition: background-color .2s, color .2s;
 }
 
 a.schedule-cell__day:hover {
-    text-decoration: underline;
+    background-color: var(--Hoverbackground);
+    color: var(--Hovertextcolor);
+}
+
+.schedule-cell.is-today .schedule-cell__day {
+    font-weight: 750;
+    text-decoration: none;
 }
 
 .schedule-cell__day.is-sat,
@@ -90,10 +118,11 @@ a.schedule-cell__day:hover {
 }
 
 .schedule-cell__add {
+    margin-left: auto;
     color: var(--Subtlecolor);
     font-size: 1rem;
     line-height: 1;
-    padding: 0 .3rem;
+    padding: .3rem;
     opacity: 0;
     transition: opacity .2s;
 }
@@ -105,21 +134,25 @@ a.schedule-cell__day:hover {
 
 .schedule-cell__events {
     list-style: none;
-    margin: .2rem 0 0;
+    margin: .55rem 0 0;
     padding: 0;
     display: flex;
     flex-direction: column;
-    gap: .15rem;
+    gap: .25rem;
 }
 
 .schedule-event {
     display: flex;
     gap: .3rem;
     align-items: baseline;
-    padding: .1rem .25rem;
-    border-radius: .2rem;
-    font-size: .75rem;
-    line-height: 1.3;
+    min-width: 0;
+    padding: .25rem .35rem;
+    padding-bottom: .1rem;
+    border-radius: .4rem;
+    corner-shape: superellipse(1.4);
+    border: var(--Bordercolor) solid .1rem;
+    font-size: .7rem;
+    line-height: 1.4;
     overflow: hidden;
     transition: background-color .2s;
 }
@@ -146,17 +179,20 @@ a.schedule-cell__day:hover {
     white-space: nowrap;
 }
 
-/* 月/週の切り替え */
+/* ========================================
+   月・週の切り替え
+======================================== */
+
 .schedule-switch {
     display: inline-flex;
     border: var(--Bordercolor) solid .1rem;
-    border-radius: .3rem;
+    border-radius: .6rem;
     overflow: hidden;
     margin: .5rem 0 0;
 }
 
 .schedule-switch__link {
-    padding: .3rem 1.1rem;
+    padding: .4rem 1.1rem;
     font-size: .9rem;
     color: var(--Subtlecolor);
     transition: background-color .2s, color .2s;
@@ -172,24 +208,40 @@ a.schedule-cell__day:hover {
     text-align: center;
 }
 
-/* 週表示 */
+/* ========================================
+   週表示
+======================================== */
+
 .schedule-week {
     list-style: none;
     margin: 0;
     padding: 0;
     border-top: var(--Bordercolor) solid .1rem;
+    border-radius: 1rem;
+    overflow: hidden;
+    background-color: var(--Backgroundcolor);
+    box-shadow: 0 .2rem 1rem color-mix(in srgb, var(--Textcolor) 5%, transparent);
 }
 
 .schedule-week__day {
     display: grid;
-    grid-template-columns: 6.5rem 1fr;
+    grid-template-columns: 6.5rem minmax(0, 1fr);
     gap: .5rem 1rem;
-    padding: .8rem .5rem;
+    padding: 1rem .8rem;
     border-bottom: var(--Bordercolor) solid .1rem;
 }
 
+.schedule-week {
+    border-top: none;
+    padding: .5rem 1rem;
+}
+
+.schedule-week__day:last-child {
+    border-bottom: 0;
+}
+
 .schedule-week__day.is-today {
-    background-color: color-mix(in srgb, var(--Textcolor) 10%, transparent);
+    background-color: color-mix(in srgb, var(--Textcolor) 7%, transparent);
 }
 
 .schedule-week__head {
@@ -199,8 +251,8 @@ a.schedule-cell__day:hover {
 }
 
 .schedule-week__date {
-    font-size: 1.05rem;
-    font-weight: 600;
+    font-size: 1.15rem;
+    font-weight: 650;
 }
 
 .schedule-week__date small {
@@ -236,8 +288,8 @@ a.schedule-cell__day:hover {
     flex-wrap: wrap;
     align-items: baseline;
     gap: .1rem .7rem;
-    padding: .25rem .4rem;
-    border-radius: .2rem;
+    padding: .4rem .55rem;
+    border-radius: .5rem;
     transition: background-color .2s;
 }
 
@@ -269,7 +321,10 @@ a.schedule-cell__day:hover {
     padding: .25rem .4rem;
 }
 
-/* 詳細 */
+/* ========================================
+   詳細
+======================================== */
+
 .schedule-detail__list {
     display: grid;
     grid-template-columns: max-content 1fr;
@@ -317,7 +372,10 @@ a.schedule-cell__day:hover {
     text-decoration: underline;
 }
 
-/* 割当部員・出欠 */
+/* ========================================
+   割当部員・出欠
+======================================== */
+
 .schedule-people {
     padding: 1rem;
     border-top: var(--Bordercolor) solid .1rem;
@@ -376,16 +434,39 @@ a.schedule-cell__day:hover {
     border: .1rem solid currentColor;
 }
 
-.schedule-status--attend { color: #16a34a; }
-.schedule-status--absent { color: #ef4444; }
-.schedule-status--undecided { color: #d97706; }
-.schedule-status--none { color: var(--Subtlecolor); }
-.schedule-status--ok { color: #16a34a; }
-.schedule-status--lent { color: #2563eb; }
-.schedule-status--returned { color: var(--Subtlecolor); }
+.schedule-status--attend {
+    color: #16a34a;
+}
+
+.schedule-status--absent {
+    color: #ef4444;
+}
+
+.schedule-status--undecided {
+    color: #d97706;
+}
+
+.schedule-status--none {
+    color: var(--Subtlecolor);
+}
+
+.schedule-status--ok {
+    color: #16a34a;
+}
+
+.schedule-status--lent {
+    color: #2563eb;
+}
+
+.schedule-status--returned {
+    color: var(--Subtlecolor);
+}
+
 .schedule-status--conflict,
 .schedule-status--short,
-.schedule-status--unavailable { color: #ef4444; }
+.schedule-status--unavailable {
+    color: #ef4444;
+}
 
 .schedule-equipment {
     border-top: 0;
@@ -428,6 +509,10 @@ a.schedule-cell__day:hover {
     margin: 0;
     padding-left: 1.2rem;
 }
+
+/* ========================================
+   出欠回答
+======================================== */
 
 .schedule-respond {
     display: flex;
@@ -483,6 +568,10 @@ a.schedule-cell__day:hover {
     color: var(--Textcolor);
     font: inherit;
 }
+
+/* ========================================
+   割当フォーム
+======================================== */
 
 .schedule-assign {
     display: flex;
@@ -543,7 +632,10 @@ a.schedule-cell__day:hover {
     color: var(--Subtlecolor);
 }
 
-/* フォーム */
+/* ========================================
+   フォーム
+======================================== */
+
 .schedule-form {
     display: flex;
     flex-direction: column;
@@ -586,14 +678,54 @@ a.schedule-cell__day:hover {
     gap: 1rem;
 }
 
+/* ========================================
+   スマートフォン
+======================================== */
+
 @media (max-width: 700px) {
     .schedule-section {
         padding-inline: .4rem;
     }
 
+    /* 月表示 */
+
+    .schedule-nav {
+        gap: .5rem;
+        padding: .8rem 0 1rem;
+    }
+
+    .schedule-nav__title {
+        font-size: 1.2rem;
+        white-space: nowrap;
+    }
+
+    .schedule-nav__link {
+        font-size: .8rem;
+        white-space: nowrap;
+    }
+
+    .schedule-grid {
+        border-radius: .9rem;
+    }
+
+    .schedule-grid__weekday {
+        padding: .65rem .1rem;
+        font-size: .75rem;
+    }
+
     .schedule-cell {
         min-height: 5.5rem;
-        padding: .15rem .1rem;
+        padding: .35rem .2rem;
+    }
+
+    .schedule-cell__head {
+        min-height: 1.7rem;
+    }
+
+    .schedule-cell__day {
+        min-width: 1.7rem;
+        min-height: 1.7rem;
+        font-size: 1.05rem;
     }
 
     .schedule-event {
@@ -620,9 +752,31 @@ a.schedule-cell__day:hover {
         display: none;
     }
 
-    .schedule-week__day {
-        grid-template-columns: 1fr;
+    /* 週表示：日付を上、予定を下 */
+
+    .schedule-week {
+        border-radius: .9rem;
     }
+
+    .schedule-week__day {
+        grid-template-columns: minmax(0, 1fr);
+        gap: .6rem;
+        padding: .9rem .8rem;
+    }
+
+    .schedule-week__head {
+        align-items: center;
+    }
+
+    .schedule-week__date {
+        font-size: 1.1rem;
+    }
+
+    .schedule-week__events {
+        padding-left: .1rem;
+    }
+
+    /* 割当フォーム */
 
     .schedule-assign__row,
     .schedule-assign__row--equipment {
