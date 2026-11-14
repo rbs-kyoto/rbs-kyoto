@@ -25,15 +25,38 @@ from .models import (
     User,
     WebPushSubscription,
 )
+from urllib.parse import urlsplit
+from django.utils.http import url_has_allowed_host_and_scheme
+
+
+def get_login_redirect_url(request):
+    next_url = request.POST.get("next") or request.GET.get("next")
+
+    allowed_hosts = {
+        urlsplit(url).netloc
+        for url in settings.LOGIN_REDIRECT_ALLOWED_HOSTS
+    }
+
+    if next_url and url_has_allowed_host_and_scheme(
+        next_url,
+        allowed_hosts=allowed_hosts,
+        require_https=request.is_secure(),
+    ):
+        return next_url
+
+    return reverse("accounts:mypage")
 
 
 def login_view(request):
+    redirect_url = get_login_redirect_url(request)
+
     if request.user.is_authenticated:
-        return redirect("accounts:mypage")
+        return redirect(redirect_url)
 
     if request.method == "POST":
         username = request.POST.get("username", "")
         password = request.POST.get("password", "")
+
         user = authenticate(
             request,
             username=username,
@@ -42,15 +65,24 @@ def login_view(request):
 
         if user is not None:
             login(request, user)
-            return redirect("accounts:mypage")
+            return redirect(redirect_url)
 
         return render(
             request,
             "accounts/login.html",
-            {"error": "ユーザー名またはパスワードが正しくありません。"},
+            {
+                "error": "ユーザー名またはパスワードが正しくありません。",
+                "next": request.POST.get("next", ""),
+            },
         )
 
-    return render(request, "accounts/login.html")
+    return render(
+        request,
+        "accounts/login.html",
+        {
+            "next": request.GET.get("next", ""),
+        },
+    )
 
 @login_required
 def mypage(request):

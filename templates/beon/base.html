@@ -1,0 +1,239 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="theme-color" content="#620610">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-title" content="rbs京都">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <title>{% block title %}{% endblock %}｜rbs京都</title>
+    <link rel="apple-touch-icon" href="{{ pwa_icon_180_url }}">
+    <meta name="description" content="{% block description %}{% endblock %}">
+    <link rel="stylesheet" href="{% static 'beon/css/base.css' %}">
+    <link rel="stylesheet" href="{% static 'beon/css/session_ui.css' %}">
+    {% block extra_css %}{% endblock %}
+    <script src="{% static 'main/js/base.js' %}"></script>
+    <script src="{% static 'main/js/service_worker.js' %}" defer></script>
+    {% block extra_js %}{% endblock %}
+</head>
+<body>
+<div class="screen">
+    <div class="display">
+        {% if messages %}
+            <div class="beon-messages">
+                {% for message in messages %}<p class="{{ message.tags }}">{{ message }}</p>{% endfor %}
+            </div>
+        {% endif %}
+        <aside class="left-panel">
+            <section class="system-summary">
+                <div class="summary-heading">
+                    <span>放送状態</span>
+                    <strong class="status-ready">{{ common.broadcast_status|default:"待機" }}</strong>
+                </div>
+                <p>{% if beon_current_session %}現在のセッション：{{ beon_current_session.name }}{% else %}セッション未選択{% endif %}</p>
+            </section>
+
+            <section class="beon-user-panel">
+                <small>ログインユーザー</small>
+                <strong>{{ request.user.get_full_name|default:request.user.get_username }}</strong>
+                {% if beon_current_session %}
+                    <small>現在のセッション</small>
+                    <b>{{ beon_current_session.name }}</b>
+                    <small>あなたの担当</small>
+                    <strong class="beon-role">{{ beon_current_role|default:"担当未設定" }}</strong>
+                {% else %}
+                    <small>セッション未選択</small>
+                {% endif %}
+            </section>
+
+            <section class="left-divider">
+                <p>担当者状況</p>
+                {% for member in common.members %}
+                    <div class="member-status">
+                        <span>{{ member.name }}（{{ member.role }}）</span>
+                        <b class="{% if member.is_online %}online{% else %}offline{% endif %}">
+                            {% if member.is_online %}接続中{% else %}未接続{% endif %}
+                        </b>
+                    </div>
+                {% empty %}
+                    <div class="member-status"><span>チーフ</span><b class="offline">未接続</b></div>
+                    <div class="member-status"><span>ディレクター</span><b class="offline">未接続</b></div>
+                    <div class="member-status"><span>アナウンサー</span><b class="offline">未接続</b></div>
+                {% endfor %}
+            </section>
+
+            <section class="left-bottom">
+                <div><span>送出中</span><strong>{{ common.output_status|default:"なし" }}</strong></div>
+                <div><span>待機指示</span><strong>{{ common.waiting_count|default:"0" }}件</strong></div>
+                <div><span>未確認連絡</span><strong>{{ common.unread_count|default:"0" }}件</strong></div>
+            </section>
+        </aside>
+
+        <section class="main-panel">
+            {% block content %}{% endblock %}
+        </section>
+
+        <aside class="right-panel">
+            <div class="clock"><strong id="clock">--:--:--</strong></div>
+
+            <button class="declaration">
+                {{ common.operation_status|default:"待機中" }}
+            </button>
+
+            <!-- 現在のページ切り替えボタンは維持 -->
+            {% if beon_current_session %}
+            <nav class="information-types">
+                <button class="active" data-view="broadcast"><span></span>主放送</button>
+                <button data-view="earthquake"><span></span>緊急地震速報</button>
+                <button data-view="competition"><span></span>プログラム進行</button>
+                <button data-view="directions"><span></span>連絡・指示</button>
+                <button data-view="audio"><span></span>音声連絡</button>
+                <button data-view="system"><span></span>システム情報</button>
+            </nav>
+            {% endif %}
+            <div class="right-panel-brand">
+                <img src="{% static 'beon/img/beon.svg' %}" alt="be.ON">
+            </div>
+        </aside>
+
+        <footer class="bottom-panel">
+            <div class="session-actions">
+                {% if beon_current_session %}
+                    <form method="post" action="{% url 'beon:exit' %}"
+                        onsubmit="return confirm('現在のセッションから退出しますか？');">
+                        {% csrf_token %}
+                        <button class="session-exit" type="submit">セッション退出</button>
+                    </form>
+                {% endif %}
+
+                <button class="previous-page" type="button" data-page-prev>
+                    前ページへ
+                </button>
+            </div>
+
+            <nav class="footer-tools">
+                <a href="{% url 'beon:index' %}">一般</a>
+                <a href="">俯瞰映像</a>
+                <a href="{% url 'beon:weather' %}">天候情報</a>
+                <a href="{% url 'beon:settings' %}">設定</a>
+                {% if beon_current_session and request.user.is_staff %}
+                    <a href="{% url 'beon:assignment_edit' beon_current_session.pk %}">担当者変更</a>
+                {% endif %}
+                {% if request.user.is_superuser %}
+                    <a href="{% url 'admin:index' %}">管理ページ</a>
+                {% endif %}
+            </nav>
+
+            <div class="session-navigation">
+                <button class="next-page" type="button" data-page-next>
+                    次ページへ
+                </button>
+            </div>
+        </footer>
+    </div>
+</div>
+
+<script>
+(() => {
+    const clock = document.getElementById("clock");
+    const updateClock = () => {
+        if (!clock) return;
+        clock.textContent = new Intl.DateTimeFormat("ja-JP", {
+            hour: "2-digit", minute: "2-digit", second: "2-digit",
+            hour12: false
+        }).format(new Date());
+    };
+    updateClock();
+    setInterval(updateClock, 1000);
+
+    const viewButtons = Array.from(
+        document.querySelectorAll("[data-view]")
+    );
+
+    const views = Array.from(
+        document.querySelectorAll(".view")
+    );
+
+    const previousPageButton = document.querySelector("[data-page-prev]");
+    const nextPageButton = document.querySelector("[data-page-next]");
+
+    // 実際に表示対象が存在するページだけを取得
+    const pages = viewButtons
+        .map(button => ({
+            button,
+            view: document.getElementById(`${button.dataset.view}-view`)
+        }))
+        .filter(page => page.view);
+
+    let currentPage = Math.max(
+        0,
+        pages.findIndex(page =>
+            page.button.classList.contains("active") ||
+            page.view.classList.contains("active")
+        )
+    );
+
+    const showPage = (index) => {
+        if (index < 0 || index >= pages.length) return;
+
+        currentPage = index;
+
+        pages.forEach((page, i) => {
+            const active = i === currentPage;
+
+            page.button.classList.toggle("active", active);
+            page.view.classList.toggle("active", active);
+        });
+
+        if (previousPageButton) {
+            previousPageButton.disabled = currentPage === 0;
+        }
+
+        if (nextPageButton) {
+            nextPageButton.disabled = currentPage === pages.length - 1;
+        }
+    };
+
+    pages.forEach((page, index) => {
+        page.button.addEventListener("click", () => {
+            showPage(index);
+        });
+    });
+
+    previousPageButton?.addEventListener("click", () => {
+        showPage(currentPage - 1);
+    });
+
+    nextPageButton?.addEventListener("click", () => {
+        showPage(currentPage + 1);
+    });
+
+    if (pages.length) {
+        showPage(currentPage);
+    } else {
+        if (previousPageButton) previousPageButton.disabled = true;
+        if (nextPageButton) nextPageButton.disabled = true;
+    }
+
+    {% if beon_current_session %}
+    const heartbeatUrl = "{% url 'beon:heartbeat' %}";
+    const csrfToken = "{{ csrf_token }}";
+    const sendHeartbeat = () => {
+        fetch(heartbeatUrl, {
+            method: "POST",
+            headers: {
+                "X-CSRFToken": csrfToken,
+                "X-Requested-With": "XMLHttpRequest"
+            },
+            credentials: "same-origin"
+        }).catch(() => {});
+    };
+    sendHeartbeat();
+    setInterval(sendHeartbeat, 30000);
+    {% endif %}
+})();
+</script>
+</body>
+</html>

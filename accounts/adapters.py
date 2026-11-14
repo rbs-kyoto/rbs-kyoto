@@ -4,6 +4,10 @@ from allauth.socialaccount.models import SocialAccount
 from django.contrib import messages
 from django.shortcuts import redirect
 from accounts.models import User
+from allauth.account.adapter import DefaultAccountAdapter
+from django.conf import settings
+from django.shortcuts import resolve_url
+from django.utils.http import url_has_allowed_host_and_scheme
 
 class RakunanSocialAccountAdapter(DefaultSocialAccountAdapter):
 
@@ -76,3 +80,21 @@ class RakunanSocialAccountAdapter(DefaultSocialAccountAdapter):
         user.save(update_fields=["is_staff"])
 
         return user
+
+class RakunanAccountAdapter(DefaultAccountAdapter):
+
+    def get_login_redirect_url(self, request, redirect_url=None):
+        next_url = (
+            redirect_url
+            or request.POST.get("next")
+            or request.GET.get("next")
+        )
+
+        if next_url and url_has_allowed_host_and_scheme(
+            next_url,
+            allowed_hosts=settings.LOGIN_REDIRECT_ALLOWED_HOSTS,
+            require_https=request.is_secure(),
+        ):
+            return next_url
+
+        return resolve_url(settings.LOGIN_REDIRECT_URL)

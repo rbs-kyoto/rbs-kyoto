@@ -27,6 +27,10 @@ urlpatterns = [
     path("api/places/", include("places.api_urls")),
     path("", include("main.urls")),
     path("accounts/", include("allauth.urls")),
+    path(
+        "__beon__/",
+        include("beon.urls", namespace="beon"),
+    ),
 ]
 
 handler400 = "errors.views.bad_request"

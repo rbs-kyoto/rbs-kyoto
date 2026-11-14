@@ -13,6 +13,7 @@ https://docs.djangoproject.com/en/6.1/ref/settings/
 import os
 from pathlib import Path
 from dotenv import load_dotenv
+from urllib.parse import urlsplit
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -27,11 +28,14 @@ SECRET_KEY = os.getenv("SECRET_KEY")
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = os.getenv("DEBUG", "False").lower() == "true"
 
+ACCOUNT_ADAPTER = "accounts.adapters.RakunanAccountAdapter"
+
 ALLOWED_HOSTS = [
     host.strip()
     for host in os.getenv("ALLOWED_HOSTS", "").split(",")
     if host.strip()
 ]
+
 CANONICAL_HOST = (
     os.getenv("CANONICAL_HOST", "www.rbs-kyoto.org")
     .strip()
@@ -39,14 +43,48 @@ CANONICAL_HOST = (
     .rstrip("/")
     or "www.rbs-kyoto.org"
 )
+
 CANONICAL_DOMAIN = CANONICAL_HOST.removeprefix("www.")
+
+# 認証用ホスト
+AUTH_HOST = os.environ.get(
+    "AUTH_HOST",
+    "http://rbs-kyoto.test:8000" if DEBUG else "https://www.rbs-kyoto.org",
+).strip().rstrip("/")
+
+# BeONホスト
+BEON_HOST = os.environ.get(
+    "BEON_HOST",
+    "http://beon.rbs-kyoto.test:8001" if DEBUG else "https://beon.rbs-kyoto.org",
+).strip().rstrip("/")
+
+# ログイン
+LOGIN_URL = f"{AUTH_HOST}/accounts/login/"
+LOGOUT_REDIRECT_URL = LOGIN_URL
+LOGIN_REDIRECT_URL = "accounts:mypage"
+
+# 認証後のリダイレクト許可ホスト
+LOGIN_REDIRECT_ALLOWED_HOSTS = {
+    urlsplit(url).netloc
+    for url in (AUTH_HOST, BEON_HOST)
+    if url
+}
+
 ALLOWED_HOSTS = list(
     dict.fromkeys(
-        [*ALLOWED_HOSTS, CANONICAL_HOST, CANONICAL_DOMAIN, f"www.{CANONICAL_DOMAIN}"]
+        [
+            *ALLOWED_HOSTS,
+            CANONICAL_HOST,
+            CANONICAL_DOMAIN,
+            f"www.{CANONICAL_DOMAIN}",
+            "rbs-kyoto",
+            "beon.rbs-kyoto",
+            "beon.rbs-kyoto.org",
+            urlsplit(AUTH_HOST).hostname,
+            urlsplit(BEON_HOST).hostname,
+        ]
     )
 )
-
-# Application definition
 
 INSTALLED_APPS = [
     'daphne',
@@ -72,6 +110,7 @@ INSTALLED_APPS = [
     'places',
     'equipment',
     'roll',
+    'beon',
 ]
 
 ASGI_APPLICATION = 'config.asgi.application'
@@ -87,6 +126,7 @@ MIDDLEWARE = [
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
     "allauth.account.middleware.AccountMiddleware",
+    "beon.middleware.BeonHostMiddleware",
 ]
 
 ROOT_URLCONF = 'config.urls'
@@ -141,10 +181,6 @@ AUTH_PASSWORD_VALIDATORS = [
 
 
 AUTH_USER_MODEL = 'accounts.User'
-
-LOGIN_URL = "accounts:login"
-LOGIN_REDIRECT_URL = "accounts:mypage"
-LOGOUT_REDIRECT_URL = "accounts:login"
 
 SOCIALACCOUNT_LOGIN_ON_GET = True
 
@@ -222,3 +258,15 @@ CSRF_TRUSTED_ORIGINS = [
 
 SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
 USE_X_FORWARDED_HOST = True
+
+# Cookie共有
+COOKIE_DOMAIN = os.getenv(
+    "COOKIE_DOMAIN",
+    ".rbs-kyoto.test" if DEBUG else ".rbs-kyoto.org",
+).strip() or None
+
+SESSION_COOKIE_DOMAIN = COOKIE_DOMAIN
+CSRF_COOKIE_DOMAIN = COOKIE_DOMAIN
+
+SESSION_COOKIE_SECURE = not DEBUG
+CSRF_COOKIE_SECURE = not DEBUG

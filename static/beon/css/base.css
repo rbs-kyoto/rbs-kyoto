@@ -1,0 +1,729 @@
+@import url('https://fonts.googleapis.com/css2?family=Comfortaa:wght@300..700&family=Google+Sans:ital,opsz,wght@0,17..18,400..700;1,17..18,400..700&family=Material+Symbols+Rounded:opsz,wght,FILL,GRAD@20..48,400,0,0&family=Noto+Sans+JP:wght@100..900&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=DotGothic16&display=swap');
+
+:root {
+    font-family: "Noto Sans JP", "Yu Gothic", sans-serif;
+    color: #f5f5f5;
+}
+
+/* 基本カラーパラメータ */
+:root {
+    --Natural-black: #000;
+    --Natural-white: #fff;
+    --Natural-red: #ff0000;
+    --Natural-yellow: #ffff00;
+    --Natural-green: #00ff00;
+    --Natural-skyblue: #00ffff;
+    --Natural-blue: #0000ff;
+    --Natural-purple: #ff00ff;
+    --Gray-50: #fafafa;
+    --Gray-100: #f5f5f5;
+    --Gray-200: #eee;
+    --Gray-300: #e0e0e0;
+    --Gray-400: #bdbdbd;
+    --Gray-500: #9e9e9e;
+    --Gray-600: #757575;
+    --Gray-700: #616161;
+    --Gray-800: #424242;
+    --Gray-900: #212121;
+    --Gray-950: #0a0a0a;
+    --black-50: #0000000d;
+    --Black-t100: #0000001a;
+    --Black-t200: #00000033;
+    --Black-t300: #0000004d;
+    --Black-t400: #00000066;
+    --Black-t500: #00000080;
+    --Black-t600: #00000099;
+    --Black-t700: #000000b3;
+    --Black-t800: #000000cc;
+    --Black-t900: #000000e6;
+    --Black-t950: #000000f2;
+    --White-t50: #ffffff0d;
+    --White-t100: #ffffff1a;
+    --White-t200: #ffffff33;
+    --White-t300: #ffffff4d;
+    --White-t400: #ffffff66;
+    --White-t500: #ffffff80;
+    --White-t600: #ffffff99;
+    --White-t700: #ffffffb3;
+    --White-t800: #ffffffcc;
+    --White-t900: #ffffffe6;
+    --White-t950: #fffffff2;
+    --Red-50: #fef2f2;
+    --Red-100: #fee2e2;
+    --Red-200: #fecaca;
+    --Red-300: #fca5a5;
+    --Red-400: #f87171;
+    --Red-500: #ef4444;
+    --Red-600: #dc2626;
+    --Red-700: #b91c1c;
+    --Red-800: #991b1b;
+    --Red-900: #7f1d1d;
+    --Red-950: #450a0a;
+    --Yellow-50: #fefce8;
+    --Yellow-100: #fef9c3;
+    --Yellow-200: #fef08a;
+    --Yellow-300: #fde047;
+    --Yellow-400: #facc15;
+    --Yellow-500: #eab308;
+    --Yellow-600: #ca8a04;
+    --Yellow-700: #a16207;
+    --Yellow-800: #854d0e;
+    --Yellow-900: #713f12;
+    --Yellow-950: #422006;
+    --Green-50: #f0fdf4;
+    --Green-100: #dcfce7;
+    --Green-200: #bbf7d0;
+    --Green-300: #86efac;
+    --Green-400: #4ade80;
+    --Green-500: #22c55e;
+    --Green-600: #16a34a;
+    --Green-700: #15803d;
+    --Green-800: #166534;
+    --Green-900: #14532d;
+    --Green-950: #052e16;
+    --Skyblue-50: #f0f9ff;
+    --Skyblue-100: #e0f2fe;
+    --Skyblue-200: #bae6fd;
+    --Skyblue-300: #7dd3fc;
+    --Skyblue-400: #38bdf8;
+    --Skyblue-500: #0ea5e9;
+    --Skyblue-600: #0284c7;
+    --Skyblue-700: #0369a1;
+    --Skyblue-800: #075985;
+    --Skyblue-900: #0c4a6e;
+    --Skyblue-950: #082f49;
+    --Blue-50: #eff6ff;
+    --Blue-100: #dbeafe;
+    --Blue-200: #bfdbfe;
+    --Blue-300: #93c5fd;
+    --Blue-400: #60a5fa;
+    --Blue-500: #3b82f6;
+    --Blue-600: #2563eb;
+    --Blue-700: #1d4ed8;
+    --Blue-800: #1e40af;
+    --Blue-900: #1e3a8a;
+    --Blue-950: #172554;
+    --Purple-50: #faf5ff;
+    --Purple-100: #f3e8ff;
+    --Purple-200: #e9d5ff;
+    --Purple-300: #d8b4fe;
+    --Purple-400: #c084fc;
+    --Purple-500: #a855f7;
+    --Purple-600: #9333ea;
+    --Purple-700: #7e22ce;
+    --Purple-800: #6b21a8;
+    --Purple-900: #581c87;
+    --Purple-950: #3b0764;
+
+    --Natural-themecolor: #620610;
+    --themecolor-50: #f8f3f3;
+    --themecolor-100: #efe6e7;
+    --themecolor-200: #e2cdcf;
+    --themecolor-300: #d2b4b7;
+    --themecolor-400: #c29ba0;
+    --themecolor-500: #b18388;
+    --themecolor-600: #a16a72;
+    --themecolor-700: #91515c;
+    --themecolor-800: #803845;
+    --themecolor-900: #701f2f;
+    --themecolor-950: #691220;
+    --Natural-accentcolor: #;
+    --Backgroundcolor-light: #f3f5f7;
+    --Backgroundcolor: var(--Backgroundcolor-light);
+    --Textcolor: var(--Natural-themecolor);
+    --Surfacecolor: var(--Backgroundcolor);
+    --Bordercolor: var(--themecolor-200);
+    --Framebordercolor: var(--Gray-300);
+    --Subtlecolor: var(--themecolor-700);
+    --Arrowcolor: var(--themecolor-400);
+    --Badgebordercolor: var(--themecolor-300);
+    --Hoverbackground: var(--themecolor-200);
+    --Hovertextcolor: var(--Gray-900);
+    --Controlbackground: var(--Natural-white);
+    --Controlborder: var(--themecolor-300);
+    --Controlfocus: var(--Skyblue-500);
+    --Placeholdercolor: var(--themecolor-500);
+    --Shadowcolor: var(--Black-t200);
+    --Overlaycolor: var(--Black-t700);
+    --Codebackground: var(--themecolor-50);
+}
+
+* {
+    box-sizing: border-box;
+}
+
+body {
+    margin: 0;
+    min-height: 100vh;
+    background: url("../img/haikei.svg") center center / cover no-repeat fixed;
+    background-color: var(--Natural-themecolor);
+}
+
+button {
+    font: inherit;
+    cursor: pointer;
+}
+
+.screen {
+    width: 100%;
+    min-height: 100vh;
+    display: flex;
+    align-items: stretch;
+    justify-content: stretch;
+    padding: 1vw;
+}
+
+.display {
+    flex: 1;
+    width: 100%;
+    min-width: 0;
+    min-height: 0;
+    margin: 0;
+
+    display: grid;
+    grid-template-columns: 15.1% minmax(0, 1fr) 13.2%;
+    grid-template-rows: minmax(0, 1fr) 3.65rem;
+
+    overflow: hidden;
+    border: 0.35rem solid var(--Gray-950);
+    outline: 0.15rem solid var(--Gray-800);
+    background: var(--Gray-950);
+    box-shadow: 0 0 2rem var(--Black-t800);
+}
+
+/* 左側 */
+
+.left-panel {
+    grid-column: 1;
+    grid-row: 1;
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+    padding: 1rem 0.8rem;
+    background: var(--Gray-900);
+}
+
+.system-summary {
+    margin-bottom: 0.7rem;
+}
+
+.summary-heading {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    font-size: 1rem;
+    font-weight: 700;
+}
+
+.summary-heading strong {
+    padding: 0.15rem 0.45rem;
+    border: 0.15rem solid #e4d34d;
+    font-size: 0.9rem;
+}
+
+.status-ready {
+    background: #248a4b;
+}
+
+.system-summary p {
+    margin: 0.4rem 0;
+    font-size: 0.85rem;
+}
+
+.area-navigation,
+.report-list {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+}
+
+.area-navigation a,
+.report-list a {
+    display: block;
+    padding: 0.25rem 0.45rem;
+    color: #ccc;
+    font-size: 0.85rem;
+    text-decoration: none;
+}
+
+.area-navigation .selected,
+.report-list .selected {
+    background: #2161e8;
+    color: white;
+}
+
+.report-list {
+    margin-top: 1rem;
+    padding-top: 0.6rem;
+    border-top: 1px solid #555;
+}
+
+.report-list p,
+.left-divider p {
+    margin: 0 0 0.4rem;
+    font-size: 0.9rem;
+}
+
+.left-divider {
+    margin-top: 1rem;
+    padding-top: 0.6rem;
+    border-top: 1px solid #555;
+}
+
+.member-status {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin: 0.35rem 0;
+    font-size: 0.75rem;
+}
+
+.member-status b {
+    font-size: 0.7rem;
+}
+
+.online {
+    color: #75d995;
+}
+
+.offline {
+    color: #aaa;
+}
+
+.left-bottom {
+    margin-top: auto;
+    padding-top: 0.6rem;
+    border-top: 1px solid #555;
+}
+
+.left-bottom div {
+    display: flex;
+    justify-content: space-between;
+    gap: 0.3rem;
+    margin: 0.3rem 0;
+    font-size: 0.75rem;
+}
+
+.left-bottom strong {
+    color: #ddd;
+}
+
+/* 中央 */
+
+.main-panel {
+    grid-column: 2;
+    grid-row: 1;
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+    background: var(--Gray-950);
+    padding: 0.6rem 1rem 0.5rem;
+}
+
+.view {
+    display: none;
+    flex: 1;
+    min-height: 0;
+    flex-direction: column;
+}
+
+.view.active {
+    display: flex;
+}
+
+.main-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.5rem;
+    white-space: nowrap;
+}
+
+.main-header>strong {
+    font-size: clamp(0.8rem, 1.65vw, 1.5rem);
+}
+
+.demo-label {
+    border: 0.15rem solid #eee;
+    padding: 0.05rem 0.3rem;
+    font-size: clamp(0.6rem, 1.25vw, 1.2rem);
+    white-space: nowrap;
+    margin-left: auto;
+    text-align: right;
+}
+
+.broadcast-content,
+.earthquake-content {
+    flex: 1;
+    min-height: 0;
+    margin-top: 0.8rem;
+    overflow: hidden;
+}
+
+.broadcast-title {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    font-size: clamp(0.9rem, 1.6vw, 1.5rem);
+}
+
+.broadcast-title span {
+    color: #bbb;
+}
+
+.broadcast-title strong {
+    font-size: clamp(1.3rem, 2.3vw, 2.1rem);
+}
+
+.cue-card {
+    margin-top: 1rem;
+    border: 0.15rem solid #aaa;
+    padding: 0.8rem 1rem;
+}
+
+.cue-heading {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: clamp(0.75rem, 1.2vw, 1.1rem);
+}
+
+.cue-heading span {
+    color: #ccc;
+}
+
+.cue-heading strong {
+    color: #b8d6ff;
+}
+
+.cue-main {
+    margin: 1rem 0;
+    font-size: clamp(1rem, 1.8vw, 1.8rem);
+    line-height: 1.6;
+    font-weight: 800;
+}
+
+.cue-details {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 0.5rem;
+    border-top: 1px solid #555;
+    padding-top: 0.6rem;
+}
+
+.cue-details div {
+    display: flex;
+    flex-direction: column;
+    gap: 0.2rem;
+}
+
+.cue-details small {
+    color: #aaa;
+    font-size: 0.75rem;
+}
+
+.cue-details strong {
+    font-size: 0.9rem;
+}
+
+.waiting {
+    color: #f4d54e;
+}
+
+.countdown-area {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-top: 1.5rem;
+    padding: 0.6rem 0.8rem;
+    background: #171717;
+    border: 1px solid #444;
+}
+
+.countdown-area span {
+    color: #ccc;
+    font-size: 0.95rem;
+}
+
+.countdown-area strong {
+    font-size: 1.8rem;
+    font-variant-numeric: tabular-nums;
+}
+
+.instruction-area {
+    margin-top: 1rem;
+    font-size: 0.9rem;
+}
+
+.instruction-area p {
+    color: #aaa;
+    margin: 0 0 0.35rem;
+}
+
+.instruction-area strong {
+    font-size: clamp(0.8rem, 1.3vw, 1.15rem);
+}
+
+.main-bottom {
+    display: flex;
+    align-items: end;
+    justify-content: space-between;
+    gap: 1rem;
+}
+
+.main-bottom>strong {
+    border: 0.15rem solid #eee;
+    padding: 0 0.2rem;
+    font-size: clamp(0.75rem, 1.8vw, 1.8rem);
+    font-weight: 500;
+    white-space: nowrap;
+}
+
+.page-indicator {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+    font-size: 1rem;
+    white-space: nowrap;
+}
+
+.page-indicator button {
+    color: #ddd;
+    background: #111;
+    border: 1px solid #555;
+    padding: 0.15rem 0.7rem;
+    font-size: 1.3rem;
+}
+
+/* 地震速報 */
+
+.earthquake-heading {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    font-size: clamp(1rem, 1.7vw, 1.6rem);
+    font-weight: 800;
+}
+
+.earthquake-heading strong {
+    padding: 0.1rem 0.5rem;
+    border: 0.15rem solid #e8d34d;
+    color: #ffe05b;
+}
+
+.earthquake-message {
+    font-size: clamp(0.9rem, 1.7vw, 1.5rem);
+    line-height: 1.7;
+    font-weight: 800;
+}
+
+.earthquake-instruction {
+    margin-top: 2rem;
+}
+
+.earthquake-instruction p {
+    color: #bbb;
+    font-size: 0.9rem;
+}
+
+.earthquake-instruction strong {
+    font-size: clamp(0.85rem, 1.55vw, 1.4rem);
+    line-height: 1.8;
+}
+
+/* 右側 */
+
+.right-panel {
+    grid-column: 3;
+    grid-row: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 0.4rem;
+    min-width: 0;
+    padding: 0.5rem;
+    background: #f0f0f0;
+    color: #222;
+    border-left: 0.15rem solid #aaa;
+}
+
+.clock {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 0.35rem;
+    background: #000;
+    color: white;
+}
+
+.clock strong {
+    font-size: 1.5rem;
+    font-variant-numeric: tabular-nums;
+}
+
+.clock small {
+    font-size: 0.65rem;
+}
+
+.declaration {
+    padding: 0.45rem;
+    background: #ffdc37;
+    border: 1px solid #c5a928;
+    color: #222;
+    font-weight: 800;
+    font-size: 0.9rem;
+}
+
+.role-selector {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 0.2rem;
+}
+
+.role-selector button {
+    min-width: 0;
+    padding: 0.5rem 0.1rem;
+    background: #eee;
+    border: 1px solid #aaa;
+    color: #333;
+    font-size: 0.7rem;
+}
+
+.role-selector .active {
+    background: #269b56;
+    color: white;
+}
+
+.information-types {
+    display: flex;
+    flex-direction: column;
+    gap: 0.35rem;
+    margin-top: 0.5rem;
+}
+
+.information-types button {
+    position: relative;
+    min-height: 3.2rem;
+    padding: 0.3rem 0.3rem 0.3rem 1.2rem;
+    background: #eee;
+    border: 1px solid #bbb;
+    color: #333;
+    font-size: 0.8rem;
+    line-height: 1.3;
+    text-align: center;
+    font-weight: 600;
+}
+
+.information-types button span {
+    position: absolute;
+    top: 0.55rem;
+    bottom: 0.55rem;
+    left: 0.35rem;
+    width: 0.35rem;
+    background: #aaa;
+}
+
+.information-types button.active span {
+    background: #d71932;
+}
+
+/* 下部 */
+
+.bottom-panel {
+    grid-column: 1 / -1;
+    grid-row: 2;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.8rem;
+    padding: 0.35rem 0.8rem;
+    background: #eee;
+    border-top: 1px solid #aaa;
+}
+
+nav.footer-tools,
+.pagination {
+    display: flex;
+    align-items: center;
+    gap: 0.55rem;
+}
+
+nav.footer-tools a {
+    min-width: 5.4rem;
+    padding: 0.5rem 0.45rem;
+    background: linear-gradient(#f5edee, #d0979e);
+    border: 1px solid #ac656d;
+    color: #47020a;
+    font-size: 0.85rem;
+    font-weight: 600;
+}
+
+.pagination button {
+    padding: 0.5rem 0.7rem;
+    background: #eee;
+    border: 1px solid #ccc;
+    color: #999;
+    font-size: 0.9rem;
+}
+
+button:disabled {
+    cursor: default;
+    opacity: 0.65;
+}
+
+.right-panel {
+    display: flex;
+    flex-direction: column;
+}
+
+.right-panel-brand {
+    margin-top: auto;
+    padding: .5rem;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.right-panel-brand img {
+    display: block;
+    width: 100%;
+    height: auto;
+    object-fit: contain;
+}
+
+.page-indicator {
+    margin-left: auto;
+    text-align: right;
+}
+
+.view {
+    position: relative;
+}
+
+.view-label {
+    position: absolute;
+    top: 1vw;
+    right: 1vw;
+    z-index: 10;
+    color: var(--Yellow-300);
+    border: 0.25rem solid var(--Yellow-300);
+    padding: 0.2rem 0.8rem;
+    font-size: 2vw;
+    font-weight: 700;
+}
+
+/* 小さい画面 */
+
+@media (max-width: 850px) {
+    .screen {
+        display: block;
+        overflow-x: auto;
+        padding: 0.5rem;
+    }
+
+    .display {
+        width: 70rem;
+        min-height: 39.4rem;
+    }
+}

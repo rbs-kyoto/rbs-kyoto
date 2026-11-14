@@ -1,0 +1,167 @@
+/* 既存のbase.cssの配色・枠組みを維持し、追加機能だけを整える */
+.beon-user-panel {
+    display: flex;
+    flex-direction: column;
+    gap: 0.2rem;
+    padding: 0.55rem 0.45rem;
+    color: var(--Gray-100);
+    overflow-wrap: anywhere;
+}
+
+.beon-user-panel small {
+    color: #777;
+    font-size: 0.65rem;
+}
+
+.beon-user-panel>strong {
+    font-size: 0.85rem;
+}
+
+.beon-user-panel .beon-role {
+    color: #42db96;
+    font-size: 1.15rem;
+}
+
+.role-selector {
+    display: none;
+}
+
+/* 右側のページ切り替えボタンは従来どおり残す */
+.information-types {
+    margin-top: 0.5rem;
+}
+
+/* フッター：退出・ツール・次セッション */
+.bottom-panel {
+    justify-content: space-between;
+    gap: 0.6rem;
+}
+
+.session-actions,
+.session-navigation,
+.footer-tools {
+    display: flex;
+    align-items: center;
+    gap: 0.45rem;
+    min-width: 0;
+}
+
+.session-actions form,
+.session-navigation form {
+    margin: 0;
+}
+
+.session-exit,
+.next-session,
+.footer-tools a {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 2.35rem;
+    padding: 0.45rem 0.8rem;
+    border: 1px solid #aaa;
+    border-radius: 0;
+    font: inherit;
+    font-size: 0.82rem;
+    font-weight: 700;
+    text-decoration: none;
+    white-space: nowrap;
+}
+
+.session-exit {
+    background: #c62828;
+    border-color: #a51d1d;
+    color: #fff;
+}
+
+.next-session {
+    background: #248a4b;
+    border-color: #176b38;
+    color: #fff;
+}
+
+.footer-tools a {
+    background: #eee;
+    color: #333;
+}
+
+.selection-card {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    margin: 0.65rem 0;
+    padding: 0.85rem 1rem;
+    border: 1px solid #777;
+    color: #f5f5f5;
+    text-decoration: none;
+}
+
+.selection-card>div,
+.selection-card {
+    min-width: 0;
+}
+
+.selection-card strong {
+    font-size: 1.15rem;
+}
+
+.selection-card span {
+    display: block;
+    color: #bbb;
+    font-size: 0.8rem;
+}
+
+.selection-card button,
+.beon-form button {
+    padding: 0.55rem 1rem;
+    border: 1px solid #aaa;
+    background: #eee;
+    color: #222;
+    font: inherit;
+    font-weight: 700;
+}
+
+.beon-form {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+    max-width: 38rem;
+}
+
+.beon-form label {
+    display: flex;
+    flex-direction: column;
+    gap: 0.35rem;
+}
+
+.beon-form select {
+    min-height: 2.5rem;
+    padding: 0.4rem;
+    font: inherit;
+}
+
+@media (max-width: 850px) {
+    .bottom-panel {
+        min-width: 70rem;
+    }
+}
+
+
+.beon-messages {
+    position: absolute;
+    z-index: 5;
+    top: 1.5rem;
+    left: 50%;
+    transform: translateX(-50%);
+    width: min(42rem, 80%);
+    color: #222;
+}
+
+.beon-messages p {
+    margin: 0.25rem 0;
+    padding: 0.55rem 0.8rem;
+    background: #fff3cd;
+    border: 1px solid #d6bd68;
+    font-size: 0.85rem;
+}
