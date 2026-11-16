@@ -27,33 +27,61 @@
         <p class="schedule-form__warning" id="place-live-warning" role="status" hidden></p>
         <p class="schedule-form__note">場所は、<a href="{% url 'places:list' %}">場所の管理</a>で「予定の場所」にした場所から選べます。同じ場所に重なる予定があっても保存はできますが、詳細ページで警告します。</p>
 
-        <fieldset class="schedule-assign" data-formset="{{ formset.prefix }}">
-            <legend>割当部員</legend>
-            {{ formset.management_form }}
-            {{ formset.non_form_errors }}
-            <div class="schedule-assign__rows" data-rows>
-                {% for f in formset %}
-                <div class="schedule-assign__row">
-                    {{ f.id }}
-                    {{ f.member }}
-                    {{ f.role }}
-                    {% if f.instance.pk %}
-                    <label class="schedule-assign__delete">{{ f.DELETE }} 外す</label>
-                    {% endif %}
-                    {% for error in f.member.errors %}<p class="schedule-form__error">{{ error }}</p>{% endfor %}
-                    {% for error in f.role.errors %}<p class="schedule-form__error">{{ error }}</p>{% endfor %}
-                    {% for error in f.non_field_errors %}<p class="schedule-form__error">{{ error }}</p>{% endfor %}
-                </div>
-                {% endfor %}
+        <fieldset class="schedule-roster" data-roster>
+            <legend>割当部員（<span data-roster-count>{{ roster.checked_count }}</span>人選択中）</legend>
+            {% for error in roster_errors %}<p class="schedule-form__error">{{ error }}</p>{% endfor %}
+
+            <div class="schedule-roster__filters">
+                <input type="search" data-filter="q" placeholder="名前で検索" aria-label="名前で検索">
+                <select data-filter="grade" aria-label="学年">
+                    <option value="">学年: すべて</option>
+                    {% for grade in roster.grades %}<option value="{{ grade }}">{{ grade }}年</option>{% endfor %}
+                </select>
+                <select data-filter="homeroom" aria-label="組">
+                    <option value="">組: すべて</option>
+                    {% for homeroom in roster.homerooms %}<option value="{{ homeroom }}">{{ homeroom }}組</option>{% endfor %}
+                </select>
+                <select data-filter="position" aria-label="部内役職">
+                    <option value="">役職: すべて</option>
+                    {% for position in roster.positions %}<option value="{{ position.pk }}">{{ position.name }}</option>{% endfor %}
+                </select>
+                <select data-filter="type" aria-label="種別">
+                    <option value="">種別: すべて</option>
+                    {% for value, label in roster.types %}<option value="{{ value }}">{{ label }}</option>{% endfor %}
+                </select>
+                <label class="schedule-roster__only-selected"><input type="checkbox" data-filter="selected"> 選択済みのみ</label>
             </div>
-            <template data-empty>
-                <div class="schedule-assign__row">
-                    {{ formset.empty_form.member }}
-                    {{ formset.empty_form.role }}
-                </div>
-            </template>
-            <button class="common-style" type="button" data-add>+ 部員を追加</button>
-            <p class="schedule-form__note">放送部員として名簿に登録されている人から選べます。出欠を取る場合、回答できるのは、アカウントが名簿と連携している割当部員だけです。</p>
+            <p class="schedule-roster__shown" aria-live="polite">表の左上のチェックで、表示中の人をまとめて選択・解除できます（<span data-roster-shown>{{ roster.rows|length }}</span>人を表示中）</p>
+
+            <div class="schedule-roster__table-wrap">
+                <table class="schedule-roster__table">
+                    <thead>
+                        <tr><th class="schedule-roster__check"><input type="checkbox" data-select-all aria-label="表示中の全員を選択・解除"></th><th>氏名</th><th>学年・組</th><th>役職</th><th>役割</th></tr>
+                    </thead>
+                    <tbody>
+                        {% for row in roster.rows %}
+                        <tr data-row
+                            data-name="{{ row.entry.name }} {{ row.entry.name_kana }}"
+                            data-grade="{{ row.entry.grade }}"
+                            data-homeroom="{{ row.entry.homeroom }}"
+                            data-type="{{ row.entry.entry_type }}"
+                            data-positions="{{ row.position_ids }}"
+                            data-responses="{{ row.response_count }}"
+                            data-label="{{ row.entry.name }}"
+                            {% if row.checked %}data-was-checked="1"{% endif %}>
+                            <td class="schedule-roster__check"><input type="checkbox" name="assign_member" value="{{ row.entry.pk }}" aria-label="{{ row.entry.name }}を割り当てる"{% if row.checked %} checked{% endif %}></td>
+                            <td>{{ row.entry.name }}{% if row.is_former_member %}<small class="schedule-roster__former">（放送部員ではありません）</small>{% endif %}</td>
+                            <td>{{ row.class_label|default:"—" }}</td>
+                            <td>{% for position in row.positions %}{{ position.name }}{% if not forloop.last %}、{% endif %}{% empty %}—{% endfor %}</td>
+                            <td><input class="schedule-roster__role" type="text" name="role_{{ row.entry.pk }}" value="{{ row.role }}" maxlength="100" placeholder="役割(例: カメラ)" aria-label="{{ row.entry.name }}の役割"></td>
+                        </tr>
+                        {% empty %}
+                        <tr><td colspan="5">放送部員として登録されている名簿がありません。</td></tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            <p class="schedule-form__note">放送部員として名簿に登録されている人から選べます。絞り込んだ状態で、表の左上のチェックを入れると、表示中の人をまとめて割り当てられます。チェックを外すと、その人の出欠の回答も消えます。出欠を取る場合、回答できるのは、アカウントが名簿と連携している割当部員だけです。</p>
         </fieldset>
 
         <fieldset class="schedule-assign" data-formset="{{ equipment_formset.prefix }}">
@@ -140,6 +168,77 @@
         });
         check();
     }
+
+    // 割当部員の表: フィルター・一括選択・選択人数
+    (function () {
+        const box = document.querySelector("[data-roster]");
+        if (!box) return;
+        const rows = Array.from(box.querySelectorAll("[data-row]"));
+        const control = function (name) { return box.querySelector('[data-filter="' + name + '"]'); };
+        const count = box.querySelector("[data-roster-count]");
+        const shown = box.querySelector("[data-roster-shown]");
+        const isChecked = function (row) { return row.querySelector('input[name="assign_member"]').checked; };
+        const selectAll = box.querySelector("[data-select-all]");
+
+        const visible = function (row) {
+            const query = control("q").value.trim().toLowerCase();
+            if (query && row.dataset.name.toLowerCase().indexOf(query) === -1) return false;
+            if (control("grade").value && row.dataset.grade !== control("grade").value) return false;
+            if (control("homeroom").value && row.dataset.homeroom !== control("homeroom").value) return false;
+            if (control("type").value && row.dataset.type !== control("type").value) return false;
+            if (control("position").value && row.dataset.positions.indexOf("," + control("position").value + ",") === -1) return false;
+            if (control("selected").checked && !isChecked(row)) return false;
+            return true;
+        };
+        const refresh = function () {
+            let visibleCount = 0;
+            let checkedCount = 0;
+            rows.forEach(function (row) {
+                const show = visible(row);
+                row.hidden = !show;
+                if (show) visibleCount += 1;
+                if (isChecked(row)) checkedCount += 1;
+            });
+            shown.textContent = visibleCount;
+            count.textContent = checkedCount;
+
+            const visibleRows = rows.filter(function (row) { return !row.hidden; });
+            const checkedVisible = visibleRows.filter(isChecked).length;
+            selectAll.disabled = visibleRows.length === 0;
+            selectAll.checked = visibleRows.length > 0 && checkedVisible === visibleRows.length;
+            selectAll.indeterminate = checkedVisible > 0 && checkedVisible < visibleRows.length;
+        };
+
+        box.querySelectorAll("[data-filter]").forEach(function (element) {
+            element.addEventListener(element.type === "search" ? "input" : "change", refresh);
+        });
+        rows.forEach(function (row) {
+            row.querySelector('input[name="assign_member"]').addEventListener("change", refresh);
+        });
+        // 表の左上のチェック: 表示中の人を、まとめて選択・解除する。一部だけ選択のときは「半分チェック」にする
+        selectAll.addEventListener("change", function () {
+            rows.forEach(function (row) {
+                if (!row.hidden) row.querySelector('input[name="assign_member"]').checked = selectAll.checked;
+            });
+            refresh();
+        });
+
+        // 外した人に出欠の回答があるときは、消えることを確認する
+        const form = box.closest("form");
+        if (form) {
+            form.addEventListener("submit", function (event) {
+                const losing = rows.filter(function (row) {
+                    return row.dataset.wasChecked && !isChecked(row) && parseInt(row.dataset.responses, 10) > 0;
+                });
+                if (losing.length === 0) return;
+                const names = losing.map(function (row) { return row.dataset.label; }).join("、");
+                if (!window.confirm(names + " さんの割当を外すと、出欠の回答も消えます。よろしいですか？")) {
+                    event.preventDefault();
+                }
+            });
+        }
+        refresh();
+    })();
 
     document.querySelectorAll("[data-formset]").forEach(function (box) {
         const prefix = box.dataset.formset;
