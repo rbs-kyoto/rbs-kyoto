@@ -10,7 +10,7 @@
 <section class="news-all-section">
     <div class="section-heading">
         <h2 class="heading">News</h2>
-        {% if user.is_staff %}
+        {% if is_club_editor %}
         <a class="section-heading__link page-control-style-forward" href="{% url 'main:news_create' %}">
             新規作成
         </a>
@@ -34,7 +34,10 @@
                 {% if news.category %}
                 <span class="news-all__badge">{{ news.category }}</span>
                 {% endif %}
-                {% if user.is_staff and not news.is_active %}
+                {% if is_club_member and news.visibility != "public" %}
+                <span class="news-all__badge">{{ news.get_visibility_display }}</span>
+                {% endif %}
+                {% if is_club_editor and not news.is_active %}
                 <span class="news-all__badge news-all__draft-badge">非公開</span>
                 {% endif %}
             </div>

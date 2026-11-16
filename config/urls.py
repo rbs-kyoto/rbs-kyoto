@@ -1,13 +1,37 @@
 from django.conf import settings
 from django.conf.urls.static import static
 from django.contrib import admin
+from django.contrib.auth.views import redirect_to_login
+from django.core.exceptions import PermissionDenied
+from django.shortcuts import redirect
 from django.urls import include, path
+from django_ckeditor_5 import views as ckeditor_views
+from accounts.decorators import club_editor_required
 from errors import views as error_views
 from . import views as config_views
 
+
+def admin_login(request, extra_context=None):
+    """管理画面には専用のログイン画面を置かず、サイトのログイン画面を通す。
+
+    パスワードを試せる入口を1つにして、失敗回数の制限を必ず通るようにするため。
+    """
+    if not request.user.is_authenticated:
+        return redirect_to_login(request.get_full_path())
+    if request.user.is_active and request.user.is_staff:
+        return redirect("admin:index")
+    raise PermissionDenied
+
+
+admin.site.login = admin_login
+
 urlpatterns = [
     path("admin/", admin.site.urls),
-    path("ckeditor5/", include("django_ckeditor_5.urls")),
+    path(
+        "ckeditor5/image_upload/",
+        club_editor_required(ckeditor_views.upload_file),
+        name="ck_editor_5_upload_file",
+    ),
     path("accounts/", include("accounts.urls")),
     path("equipment/", include("equipment.urls")),
     path("roll/", include("roll.urls")),

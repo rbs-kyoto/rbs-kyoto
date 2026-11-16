@@ -3,11 +3,14 @@ import json
 from pathlib import Path
 from unittest.mock import patch
 
+from accounts.testing import make_member
 from django.conf import settings
 from django.contrib.auth import get_user_model
 from django.core.exceptions import ValidationError
 from django.core.files.uploadedfile import SimpleUploadedFile
-from django.test import TestCase, override_settings
+from django.db import connection
+from django.db.migrations.executor import MigrationExecutor
+from django.test import TestCase, TransactionTestCase, override_settings
 from django.urls import reverse
 from django.utils import timezone
 
@@ -77,7 +80,9 @@ class NewsListTests(TestCase):
         staff = get_user_model().objects.create_user(
             username="roll-app-staff",
             is_staff=True,
+            is_superuser=True,
         )
+        make_member(staff)
         self.client.force_login(staff)
         response = self.client.get(reverse("main:index"))
 
@@ -380,7 +385,9 @@ class NewsCreateTests(TestCase):
             username="editor",
             password="test-password",
             is_staff=True,
+            is_superuser=True,
         )
+        make_member(self.user)
         self.client.force_login(self.user)
         self.url = reverse("main:news_create")
 
@@ -392,6 +399,7 @@ class NewsCreateTests(TestCase):
                 "date": "2026-10-18",
                 "caption": "<p>本文</p>",
                 "is_active": "on",
+                "visibility": "public",
             },
         )
 
@@ -494,7 +502,7 @@ class NewsPushNotificationTests(TestCase):
                 title="限定公開",
                 date=date(2026, 11, 5),
                 caption="<p>本文</p>",
-                is_internal=True,
+                visibility="club",
             )
 
         send_push.assert_not_called()
@@ -513,3 +521,162 @@ class NewsPushNotificationTests(TestCase):
             news.save()
 
         send_push.assert_called_once()
+
+
+class NewsVisibilityTests(TestCase):
+    """お知らせの公開範囲(校外まで・部外まで・部内のみ)。"""
+
+    def setUp(self):
+        user_model = get_user_model()
+        self.non_member = user_model.objects.create_user(username="school-user")
+        self.member = user_model.objects.create_user(username="club-user")
+        make_member(self.member)
+        self.staff_member = user_model.objects.create_user(
+            username="club-staff", is_staff=True
+        )
+        make_member(self.staff_member)
+        self.editor = user_model.objects.create_superuser(
+            username="club-editor", password="pw"
+        )
+        common = {"date": date(2026, 11, 1), "caption": "<p>本文</p>"}
+        self.public = News.objects.create(title="校外向け記事", visibility="public", **common)
+        self.school = News.objects.create(title="部外向け記事", visibility="school", **common)
+        self.club = News.objects.create(title="部内向け記事", visibility="club", **common)
+        self.draft = News.objects.create(
+            title="下書き記事", visibility="public", is_active=False, **common
+        )
+
+    def titles_seen(self, url_name):
+        content = self.client.get(reverse(url_name)).content.decode()
+        return {
+            news.title
+            for news in (self.public, self.school, self.club, self.draft)
+            if news.title in content
+        }
+
+    def detail_status(self, news):
+        return self.client.get(reverse("main:news_detail", args=[news.pk])).status_code
+
+    def test_new_news_is_public_by_default(self):
+        self.assertEqual(News().visibility, "public")
+
+    def test_anonymous_visitor_sees_public_news_only(self):
+        for url_name in ("main:index", "main:news_all"):
+            with self.subTest(url=url_name):
+                self.assertEqual(self.titles_seen(url_name), {"校外向け記事"})
+        self.assertEqual(self.detail_status(self.public), 200)
+
+    def test_anonymous_visitor_is_asked_to_log_in_for_restricted_news(self):
+        for news in (self.school, self.club):
+            with self.subTest(news=news.title):
+                response = self.client.get(reverse("main:news_detail", args=[news.pk]))
+                self.assertRedirects(response, reverse("accounts:login"))
+
+    def test_non_member_sees_public_and_school_news(self):
+        self.client.force_login(self.non_member)
+
+        for url_name in ("main:index", "main:news_all"):
+            with self.subTest(url=url_name):
+                self.assertEqual(
+                    self.titles_seen(url_name), {"校外向け記事", "部外向け記事"}
+                )
+        self.assertEqual(self.detail_status(self.school), 200)
+        self.assertEqual(self.detail_status(self.club), 404)
+        self.assertEqual(self.detail_status(self.draft), 404)
+
+    def test_member_sees_all_published_news(self):
+        self.client.force_login(self.member)
+
+        self.assertEqual(
+            self.titles_seen("main:news_all"),
+            {"校外向け記事", "部外向け記事", "部内向け記事"},
+        )
+        self.assertEqual(self.detail_status(self.club), 200)
+        self.assertEqual(self.detail_status(self.draft), 404)
+
+    def test_staff_flag_alone_does_not_make_an_editor(self):
+        self.client.force_login(self.staff_member)
+
+        self.assertEqual(self.detail_status(self.draft), 404)
+        self.assertEqual(self.client.get(reverse("main:news_create")).status_code, 403)
+        self.assertEqual(
+            self.client.get(reverse("main:news_edit", args=[self.public.pk])).status_code,
+            403,
+        )
+
+    def test_editor_also_sees_drafts(self):
+        self.client.force_login(self.editor)
+
+        self.assertEqual(
+            self.titles_seen("main:news_all"),
+            {"校外向け記事", "部外向け記事", "部内向け記事", "下書き記事"},
+        )
+        self.assertEqual(self.detail_status(self.draft), 200)
+
+    def test_editor_chooses_visibility_in_the_form(self):
+        self.client.force_login(self.editor)
+
+        response = self.client.post(
+            reverse("main:news_create"),
+            {
+                "title": "部内連絡",
+                "date": "2026-11-16",
+                "caption": "<p>本文</p>",
+                "is_active": "on",
+                "visibility": "club",
+            },
+        )
+
+        news = News.objects.get(title="部内連絡")
+        self.assertRedirects(response, reverse("main:news_detail", args=[news.pk]))
+        self.assertEqual(news.visibility, "club")
+
+    @patch("main.signals.send_web_push")
+    def test_restricted_news_does_not_send_push_notifications(self, send_push):
+        WebPushSubscription.objects.create(
+            user=self.non_member,
+            endpoint="https://fcm.googleapis.com/fcm/send/visibility-test",
+            p256dh="key",
+            auth="auth",
+            news_notifications_enabled=True,
+        )
+
+        with self.captureOnCommitCallbacks(execute=True):
+            for visibility in ("school", "club"):
+                News.objects.create(
+                    title=f"{visibility} news",
+                    date=date(2026, 11, 2),
+                    caption="<p>本文</p>",
+                    visibility=visibility,
+                )
+
+        send_push.assert_not_called()
+
+
+class NewsVisibilityMigrationTests(TransactionTestCase):
+    """これまでの「限定公開」が、いちばん狭い「部内のみ」に移ること。"""
+
+    serialized_rollback = True
+
+    def migrate(self, targets):
+        executor = MigrationExecutor(connection)
+        executor.loader.build_graph()
+        executor.migrate(targets)
+        return MigrationExecutor(connection).loader.project_state(targets).apps
+
+    def tearDown(self):
+        self.migrate([("main", "0018_news_visibility")])
+        super().tearDown()
+
+    def test_internal_news_becomes_club_only(self):
+        old = self.migrate([("main", "0017_headerlogoschedule")])
+        OldNews = old.get_model("main", "News")
+        common = {"date": date(2026, 11, 1), "caption": "<p>本文</p>"}
+        open_pk = OldNews.objects.create(title="公開", is_internal=False, **common).pk
+        internal_pk = OldNews.objects.create(title="限定", is_internal=True, **common).pk
+
+        new = self.migrate([("main", "0018_news_visibility")])
+        NewNews = new.get_model("main", "News")
+
+        self.assertEqual(NewNews.objects.get(pk=open_pk).visibility, "public")
+        self.assertEqual(NewNews.objects.get(pk=internal_pk).visibility, "club")

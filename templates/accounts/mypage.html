@@ -137,6 +137,7 @@
             <p>送信済みの通知はまだありません。</p>
             {% endif %}
         </section>
+        {% if is_club_member %}
         <section class="mypage-card">
             <div class="mypage-card__header">
                 <h3>マニュアル</h3>
@@ -145,6 +146,7 @@
                 <a href="{% url 'manuals:manual_list' %}">マニュアル一覧を見る</a>
             </div>
         </section>
+        {% endif %}
         <section class="mypage-card">
             <div class="mypage-card__header">
                 <h3>アカウント</h3>

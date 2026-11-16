@@ -2,6 +2,7 @@ from datetime import date, datetime
 from io import StringIO
 from unittest import mock
 
+from accounts.testing import make_member
 from django.contrib.auth import get_user_model
 from django.core.management import call_command
 from django.core.management.base import CommandError
@@ -109,7 +110,9 @@ class ScheduleViewTests(TestCase):
     def setUp(self):
         User = get_user_model()
         self.member = User.objects.create_user("member", password="pw")
-        self.staff = User.objects.create_user("staff", password="pw", is_staff=True)
+        make_member(self.member)
+        self.staff = User.objects.create_user("staff", password="pw", is_staff=True, is_superuser=True)
+        make_member(self.staff)
         self.event = Event.objects.create(title="大会", start=jst(2026, 11, 10, 9, 0))
 
     def test_login_required(self):
@@ -130,7 +133,7 @@ class ScheduleViewTests(TestCase):
     def test_member_cannot_create(self):
         self.client.force_login(self.member)
         response = self.client.get(reverse("schedule:event_create"))
-        self.assertEqual(response.status_code, 302)
+        self.assertEqual(response.status_code, 403)
 
     def test_member_cannot_delete(self):
         self.client.force_login(self.member)
@@ -191,6 +194,7 @@ class ScheduleViewTests(TestCase):
 class WeekViewTests(TestCase):
     def setUp(self):
         self.member = get_user_model().objects.create_user("member", password="pw")
+        make_member(self.member)
         Event.objects.create(
             title="定例会",
             start=jst(2026, 11, 4, 16, 0),
@@ -251,7 +255,8 @@ class WeekViewTests(TestCase):
 class AssignmentTests(TestCase):
     def setUp(self):
         User = get_user_model()
-        self.staff = User.objects.create_user("staff", password="pw", is_staff=True)
+        self.staff = User.objects.create_user("staff", password="pw", is_staff=True, is_superuser=True)
+        make_member(self.staff)
         self.alice_user = User.objects.create_user("alice", password="pw")
         self.bob_user = User.objects.create_user("bob", password="pw")
         self.outsider_user = User.objects.create_user("outsider", password="pw")
@@ -392,8 +397,10 @@ class AttendanceTests(AssignmentTests):
 class EquipmentLinkTests(TestCase):
     def setUp(self):
         User = get_user_model()
-        self.staff = User.objects.create_user("staff", password="pw", is_staff=True)
+        self.staff = User.objects.create_user("staff", password="pw", is_staff=True, is_superuser=True)
+        make_member(self.staff)
         self.member = User.objects.create_user("member", password="pw")
+        make_member(self.member)
         category = Category.objects.get(code="A")
         self.mic = Equipment.objects.create(
             category=category, inventory_number="A-SCH-1", name="ワイヤレスマイク",
@@ -440,7 +447,7 @@ class EquipmentLinkTests(TestCase):
     def test_member_cannot_attach_equipment(self):
         self.client.force_login(self.member)
         response = self.client.post(reverse("schedule:event_create"), {"title": "x"})
-        self.assertEqual(response.status_code, 302)  # staff限定なのでログインへ
+        self.assertEqual(response.status_code, 403)  # 編集担当限定
         self.assertFalse(Event.objects.exists())
 
     def test_planned_equipment_without_conflict_is_ok(self):
@@ -766,8 +773,10 @@ class PlaceIntegrationTests(TestCase):
         from places.models import Place
 
         User = get_user_model()
-        self.staff = User.objects.create_user("staff", password="pw", is_staff=True)
+        self.staff = User.objects.create_user("staff", password="pw", is_staff=True, is_superuser=True)
+        make_member(self.staff)
         self.member = User.objects.create_user("member", password="pw")
+        make_member(self.member)
         self.school = Place.objects.create(name="校舎", is_venue=True)
         self.studio = Place.objects.create(name="放送室", parent=self.school, is_venue=True)
         self.gym = Place.objects.create(name="体育館", is_venue=True)

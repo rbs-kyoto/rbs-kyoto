@@ -1,8 +1,10 @@
 from datetime import date
 
-from django.contrib.auth.decorators import login_required
 from django.http import Http404
 from django.shortcuts import get_object_or_404, render
+
+from accounts.audience import is_club_editor
+from accounts.decorators import club_member_required
 
 from .models import Video
 from .utils import format_fiscal_year
@@ -10,12 +12,12 @@ from .utils import format_fiscal_year
 
 def _visible_videos(user):
     videos = Video.objects.select_related("group")
-    if not user.is_staff:
+    if not is_club_editor(user):
         videos = videos.filter(is_active=True)
     return videos
 
 
-@login_required
+@club_member_required
 def video_list(request):
     videos = _visible_videos(request.user)
     fiscal_year_counts = {}
@@ -46,7 +48,7 @@ def video_list(request):
     )
 
 
-@login_required
+@club_member_required
 def video_year_list(request, year):
     if not 1 <= year <= 9998:
         raise Http404
@@ -71,7 +73,7 @@ def video_year_list(request, year):
     )
 
 
-@login_required
+@club_member_required
 def video_detail(request, pk):
     video = get_object_or_404(_visible_videos(request.user), pk=pk)
     try:

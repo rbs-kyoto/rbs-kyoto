@@ -7,6 +7,7 @@ from django.urls import reverse
 from pywebpush import WebPushException
 from requests import RequestException
 
+from accounts.audience import Audience
 from accounts.models import NotificationHistory, WebPushSubscription
 from accounts.push import PushConfigurationError, record_notification, send_web_push
 from .models import News
@@ -24,7 +25,7 @@ def remember_previous_news_visibility(instance, **kwargs):
         instance._was_public = News.objects.filter(
             pk=instance.pk,
             is_active=True,
-            is_internal=False,
+            visibility=Audience.PUBLIC,
         ).exists()
 
 
@@ -32,8 +33,8 @@ def remember_previous_news_visibility(instance, **kwargs):
 def notify_subscribers_of_new_public_news(instance, created, **kwargs):
     if kwargs.get("raw", False):
         return
-    is_public = instance.is_active and not instance.is_internal
-    if not is_public or (not created and instance._was_public):
+    # 通知は誰にでも届きうるので、校外まで公開のお知らせだけを対象にする
+    if not instance.is_public or (not created and instance._was_public):
         return
     transaction.on_commit(
         lambda news_id=instance.pk: send_news_notifications(news_id)
@@ -44,7 +45,7 @@ def send_news_notifications(news_id):
     news = News.objects.filter(
         pk=news_id,
         is_active=True,
-        is_internal=False,
+        visibility=Audience.PUBLIC,
     ).first()
     if news is None:
         return

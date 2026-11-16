@@ -4,6 +4,8 @@ from django.core.validators import FileExtensionValidator
 from django_ckeditor_5.fields import CKEditor5Field
 from django.utils.html import strip_tags
 
+from accounts.audience import Audience
+
 from .sanitizers import sanitize_richtext
 
 
@@ -92,7 +94,17 @@ class News(models.Model):
     caption = CKEditor5Field("本文", config_name="extends")
     image = models.ImageField(upload_to="news/", blank=True, null=True)
     is_active = models.BooleanField(default=True)
-    is_internal = models.BooleanField(default=False)
+    # 誰まで見せるか。判定は accounts.audience の共通関数で行う。
+    visibility = models.CharField(
+        "公開範囲",
+        max_length=10,
+        choices=[
+            (Audience.PUBLIC.value, "校外まで(誰でも)"),
+            (Audience.SCHOOL.value, "部外まで(ログインした人)"),
+            (Audience.CLUB.value, "部内のみ(放送部員)"),
+        ],
+        default=Audience.PUBLIC.value,
+    )
 
     class Meta:
         ordering = ["-date"]
@@ -108,6 +120,11 @@ class News(models.Model):
         # 必ずここを通る。
         self.caption = sanitize_richtext(self.caption)
         super().save(*args, **kwargs)
+
+    @property
+    def is_public(self):
+        """校外の人にも見えている状態か(公開中で、公開範囲が校外まで)。"""
+        return self.is_active and self.visibility == Audience.PUBLIC
 
     @property
     def has_caption(self):
