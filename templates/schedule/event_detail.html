@@ -101,7 +101,7 @@
                 {% endfor %}
             </div>
             <input class="schedule-respond__comment" type="text" name="comment" maxlength="200" placeholder="遅刻・早退など(任意)" value="{{ form.initial.comment }}">
-            <button class="common-style" type="submit">回答する</button>
+            <button class="common-style reverse" type="submit">回答する</button>
         </form>
         {% endif %}
     </section>
@@ -146,7 +146,7 @@
     <div class="page_control schedule-detail__actions">
         <a class="page-control-style-back" href="{% url 'schedule:calendar' %}?year={{ event.start|date:'Y' }}&month={{ event.start|date:'n' }}">カレンダーへ</a>
         {% if user.is_staff %}
-        <a class="common-style" href="{% url 'schedule:event_edit' event.pk %}">編集</a>
+        <a class="common-style white" href="{% url 'schedule:event_edit' event.pk %}">編集</a>
         <form method="post" action="{% url 'schedule:event_delete' event.pk %}" onsubmit="return confirm('この予定を削除しますか？{% if event.recurrence != 'none' %}\n繰り返し予定はすべて削除されます。{% endif %}');">
             {% csrf_token %}
             <button class="common-style reverse" type="submit">削除</button>

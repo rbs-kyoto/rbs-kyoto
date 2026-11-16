@@ -686,6 +686,22 @@ a.schedule-cell__day:hover {
     background-color: var(--Natural-themecolor);
 }
 
+body.dark-mode .schedule-roster__table input[data-select-all]:indeterminate {
+    background-color: var(--Gray-50);
+}
+
+.schedule-roster__select-all {
+    display: flex;
+    align-items: center;
+    gap: .5rem;
+    margin: 0;
+    cursor: pointer;
+}
+
+.schedule-roster__select-all span {
+    display: none;
+}
+
 .schedule-roster__check {
     width: 2rem;
     text-align: center !important;
@@ -793,5 +809,98 @@ a.schedule-cell__day:hover {
     .schedule-assign__row,
     .schedule-assign__row--equipment {
         grid-template-columns: 1fr;
+    }
+}
+
+/* スマホ: 名簿の表を、1人=1枚のカードの形に組み替える(役割の入力欄が、横スクロールの先に隠れないように) */
+@media (max-width: 700px) {
+    .schedule-roster__table-wrap {
+        overflow-x: hidden;
+    }
+
+    .schedule-roster__table,
+    .schedule-roster__table thead,
+    .schedule-roster__table tbody {
+        display: block;
+    }
+
+    .schedule-roster__table thead tr {
+        display: flex;
+        align-items: center;
+        padding: .5rem .6rem;
+        border-bottom: var(--Bordercolor) solid .1rem;
+        background-color: var(--Backgroundcolor);
+    }
+
+    .schedule-roster__table thead th {
+        position: static;
+        border: 0;
+        padding: 0;
+    }
+
+    .schedule-roster__table thead th:not(.schedule-roster__check) {
+        display: none;
+    }
+
+    .schedule-roster__select-all span {
+        display: inline;
+        font-size: .85rem;
+    }
+
+    .schedule-roster__table tbody tr {
+        display: grid;
+        grid-template-columns: 2rem 1fr 1fr;
+        grid-template-areas:
+            "check name name"
+            "check class positions"
+            "check role role";
+        gap: .15rem .4rem;
+        padding: .6rem;
+        border-bottom: var(--Bordercolor) solid .1rem;
+    }
+
+    .schedule-roster__table tbody tr[hidden] {
+        display: none;
+    }
+
+    .schedule-roster__table tbody td {
+        display: block;
+        padding: 0;
+        border: 0;
+        white-space: normal;
+        min-width: 0;
+    }
+
+    .schedule-roster__table tbody td.schedule-roster__check {
+        grid-area: check;
+        width: auto;
+        padding-top: .1rem;
+    }
+
+    .schedule-roster__name {
+        grid-area: name;
+        font-weight: 600;
+        font-size: .95rem;
+    }
+
+    .schedule-roster__class {
+        grid-area: class;
+        color: var(--Subtlecolor);
+        font-size: .8rem;
+    }
+
+    .schedule-roster__positions {
+        grid-area: positions;
+        color: var(--Subtlecolor);
+        font-size: .8rem;
+    }
+
+    .schedule-roster__rolecell {
+        grid-area: role;
+        margin-top: .25rem;
+    }
+
+    .schedule-roster__role {
+        min-width: 0;
     }
 }
