@@ -33,7 +33,7 @@
                     <dt>保管数量</dt><dd>{{ equipment.stored_quantity }}{{ equipment.unit }}</dd>
                     <dt>貸出可能数量</dt><dd>{{ equipment.available_quantity }}{{ equipment.unit }}</dd>
                     <dt>利用状況</dt><dd>{{ equipment.usage_status }}</dd>
-                    <dt>管理担当者</dt><dd>{{ equipment.manager|default:"—" }}</dd>
+                    <dt>管理担当役職</dt><dd>{% if equipment.manager %}{{ equipment.manager }}{% with members=equipment.manager_members %}{% if members %}（{% for member in members %}{{ member.name }}{% if not forloop.last %}、{% endif %}{% endfor %}）{% endif %}{% endwith %}{% else %}—{% endif %}</dd>
                     <dt>保管場所</dt><dd>{{ equipment.location|default:"—" }}</dd>
                 </dl>
             </section>

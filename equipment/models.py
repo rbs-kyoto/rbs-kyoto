@@ -103,8 +103,8 @@ class Equipment(models.Model):
     )
     unit = models.CharField("単位", max_length=20, default="個")
     manager = models.ForeignKey(
-        "roll.RosterEntry",
-        verbose_name="管理担当者",
+        "roll.Position",
+        verbose_name="管理担当役職",
         on_delete=models.SET_NULL,
         null=True,
         blank=True,
@@ -293,6 +293,13 @@ class Equipment(models.Model):
                 2,
                 28,
             )
+
+    @property
+    def manager_members(self):
+        """Roster people currently holding the managing position."""
+        if self.manager_id is None:
+            return []
+        return list(self.manager.members.order_by("name"))
 
     def assign_identifiers(self):
         if not self.inventory_number:
