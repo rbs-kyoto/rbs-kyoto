@@ -83,8 +83,7 @@ class EquipmentForm(forms.ModelForm):
             if category:
                 try:
                     self.generated_inventory_number = generate_inventory_number(
-                        category.code,
-                        cleaned_data.get("purchased_on"),
+                        category.code
                     )
                 except ValidationError as error:
                     self.add_error("category", error)

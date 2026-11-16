@@ -1,33 +1,36 @@
 import re
-import string
-from datetime import date
 
 from django.core.exceptions import ValidationError
 from django.utils import timezone
 
 
-DAILY_SUFFIXES = string.ascii_lowercase[:25]
+SERIAL_DIGITS = 6
+MAX_SERIAL = 10**SERIAL_DIGITS - 1
+
+
+def fiscal_year_code(day):
+    """Return the last two digits of the fiscal year (April-March) of `day`."""
+    fiscal_year = day.year if day.month >= 4 else day.year - 1
+    return f"{fiscal_year % 100:02d}"
 
 
 def generate_inventory_number(category_code, registered_on=None):
+    """Build the next number as <category><fiscal yy><6-digit serial>, e.g. A-26000001."""
     from .models import Equipment
 
     registered_on = registered_on or timezone.localdate()
-    date_code = registered_on.strftime("%y%m%d")
-    prefix = f"-621{date_code}"
-    used_suffixes = set()
-
+    prefix = f"{category_code}-{fiscal_year_code(registered_on)}"
+    pattern = re.compile(re.escape(prefix) + rf"(\d{{{SERIAL_DIGITS}}})")
+    last_serial = 0
     for number in Equipment.objects.filter(
-        inventory_number__contains=prefix
+        inventory_number__startswith=prefix
     ).values_list("inventory_number", flat=True):
-        match = re.fullmatch(r"[A-Z]-621" + re.escape(date_code) + r"([a-y])", number)
+        match = pattern.fullmatch(number)
         if match:
-            used_suffixes.add(match.group(1))
+            last_serial = max(last_serial, int(match.group(1)))
 
-    suffix = next((letter for letter in DAILY_SUFFIXES if letter not in used_suffixes), None)
-    if suffix is None:
+    if last_serial >= MAX_SERIAL:
         raise ValidationError(
-            "この日付の備品番号は上限の25件に達しています。翌日以降に登録してください。"
+            "この分類・年度の備品番号は上限に達しています。"
         )
-
-    return f"{category_code}-621{date_code}{suffix}"
+    return f"{prefix}{last_serial + 1:0{SERIAL_DIGITS}d}"
