@@ -11,7 +11,7 @@
 <section class="schedule-section">
     <div class="section-heading">
         <h2 class="heading">Schedule</h2>
-        {% if user.is_staff %}
+        {% if is_club_editor %}
         <a class="section-heading__link page-control-style-forward" href="{% url 'schedule:event_create' %}">
             予定を追加
         </a>
@@ -67,7 +67,7 @@
                         {{ cell.date.day }}
                     </a>
 
-                    {% if user.is_staff %}
+                    {% if is_club_editor %}
                     <a
                         class="schedule-cell__add"
                         href="{% url 'schedule:event_create' %}?date={{ cell.date|date:'Y-m-d' }}"

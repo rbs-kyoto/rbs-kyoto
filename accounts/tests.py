@@ -1,21 +1,35 @@
 import json
 import base64
+from datetime import timedelta
 from types import SimpleNamespace
 from unittest.mock import patch
 
 from cryptography.hazmat.primitives import serialization
+from accounts.testing import make_member
 from django.contrib import admin
 from django.contrib.auth import get_user_model
 from django.test import RequestFactory
 from django.test import TestCase, override_settings
 from django.urls import reverse
+from django.utils import timezone
 from py_vapid import Vapid
 from pywebpush import WebPushException
 
+from .adapters import RakunanSocialAccountAdapter
+from .audience import (
+    Audience,
+    audience_of,
+    can_view,
+    is_club_editor,
+    is_club_member,
+    is_outside_school,
+    is_school_non_member,
+    visible_audiences,
+)
 from .push import PushConfigurationError, send_web_push
 from equipment.models import Category, Equipment, ReturnRecord, UsageRecord
 from roll.models import RosterEntry
-from .models import NotificationHistory, WebPushSubscription
+from .models import FailedAttempt, NotificationHistory, WebPushSubscription
 from .admin import (
     SuperuserGrantCredentialAdmin,
     SuperuserGrantCredentialAdminForm,
@@ -29,6 +43,7 @@ class SuperuserUnlockTests(TestCase):
             username="member",
             password="Member-pass-123",
         )
+        make_member(self.user)
         self.client.force_login(self.user)
         self.credential = SuperuserGrantCredential()
         self.credential.set_password("promotion-pass-123")
@@ -62,7 +77,7 @@ class SuperuserUnlockTests(TestCase):
         self.assertEqual(response.status_code, 302)
         self.assertIn(reverse("accounts:login"), response["Location"])
 
-    def test_promotion_password_is_limited_to_five_failed_attempts_per_session(self):
+    def test_promotion_password_is_limited_to_five_failed_attempts_per_account(self):
         for _ in range(5):
             response = self.client.post(self.url, {"password": "incorrect"})
             self.assertEqual(response.status_code, 400)
@@ -72,6 +87,52 @@ class SuperuserUnlockTests(TestCase):
         self.assertEqual(response.status_code, 429)
         self.user.refresh_from_db()
         self.assertFalse(self.user.is_superuser)
+
+    def test_promotion_limit_survives_logging_in_again(self):
+        for _ in range(5):
+            self.client.post(self.url, {"password": "incorrect"})
+
+        self.client.logout()
+        self.client.force_login(self.user)
+        response = self.client.post(self.url, {"password": "promotion-pass-123"})
+
+        self.assertEqual(response.status_code, 429)
+        self.user.refresh_from_db()
+        self.assertFalse(self.user.is_superuser)
+
+    def test_promotion_limit_is_lifted_after_an_hour(self):
+        for _ in range(5):
+            self.client.post(self.url, {"password": "incorrect"})
+        FailedAttempt.objects.update(
+            attempted_at=timezone.now() - timedelta(hours=1, minutes=1)
+        )
+
+        response = self.client.post(self.url, {"password": "promotion-pass-123"})
+
+        self.assertEqual(response.status_code, 200)
+
+    def test_promotion_limit_is_counted_per_account(self):
+        for _ in range(5):
+            self.client.post(self.url, {"password": "incorrect"})
+        other = get_user_model().objects.create_user(username="other-member")
+        make_member(other)
+        self.client.force_login(other)
+
+        response = self.client.post(self.url, {"password": "incorrect"})
+
+        self.assertEqual(response.status_code, 400)
+
+    def test_promotion_password_is_for_club_members_only(self):
+        outsider = get_user_model().objects.create_user(
+            username="non-member", is_staff=True
+        )
+        self.client.force_login(outsider)
+
+        response = self.client.post(self.url, {"password": "promotion-pass-123"})
+
+        self.assertEqual(response.status_code, 403)
+        outsider.refresh_from_db()
+        self.assertFalse(outsider.is_superuser)
 
     def test_credential_admin_form_stores_only_a_password_hash(self):
         form = SuperuserGrantCredentialAdminForm(data={"password": "new-secret-pass"})
@@ -128,6 +189,7 @@ class MypageEquipmentTests(TestCase):
         self.entry = RosterEntry.objects.create(
             name="本人",
             entry_type=RosterEntry.EntryType.STUDENT,
+            is_member=True,
             account=self.user,
         )
         self.other_entry = RosterEntry.objects.create(
@@ -490,3 +552,314 @@ class MypageNotificationHistoryTests(TestCase):
         response = self.client.get(reverse("accounts:mypage"))
 
         self.assertNotContains(response, "<script>alert(1)</script>")
+
+
+class AudienceTests(TestCase):
+    """校外・部外・部内の判定(accounts.audience)。"""
+
+    def setUp(self):
+        user_model = get_user_model()
+        self.non_member = user_model.objects.create_user(username="school-user")
+        self.member = user_model.objects.create_user(username="club-user")
+        make_member(self.member)
+
+    def test_anonymous_visitor_is_outside_school(self):
+        from django.contrib.auth.models import AnonymousUser
+
+        visitor = AnonymousUser()
+
+        self.assertEqual(audience_of(visitor), Audience.PUBLIC)
+        self.assertTrue(is_outside_school(visitor))
+        self.assertEqual(visible_audiences(visitor), [Audience.PUBLIC])
+
+    def test_logged_in_user_without_membership_is_school_non_member(self):
+        self.assertEqual(audience_of(self.non_member), Audience.SCHOOL)
+        self.assertTrue(is_school_non_member(self.non_member))
+        self.assertFalse(is_club_member(self.non_member))
+        self.assertEqual(
+            visible_audiences(self.non_member), [Audience.PUBLIC, Audience.SCHOOL]
+        )
+
+    def test_roster_entry_without_member_flag_is_not_a_member(self):
+        user = get_user_model().objects.create_user(username="teacher")
+        RosterEntry.objects.create(name="顧問でない先生", is_member=False, account=user)
+
+        self.assertTrue(is_school_non_member(user))
+
+    def test_linked_member_is_club_member(self):
+        self.assertEqual(audience_of(self.member), Audience.CLUB)
+        self.assertTrue(is_club_member(self.member))
+        self.assertTrue(can_view(self.member, Audience.CLUB))
+
+    def test_superuser_counts_as_club_member_and_editor(self):
+        admin_user = get_user_model().objects.create_superuser(
+            username="root", password="pw"
+        )
+
+        self.assertTrue(is_club_member(admin_user))
+        self.assertTrue(is_club_editor(admin_user))
+
+    def test_inactive_account_is_treated_as_outside_school(self):
+        self.member.is_active = False
+
+        self.assertTrue(is_outside_school(self.member))
+
+    def test_editor_needs_both_membership_and_staff_flag(self):
+        self.assertFalse(is_club_editor(self.member))
+
+        staff_only = get_user_model().objects.create_user(
+            username="staff-only", is_staff=True
+        )
+        self.assertFalse(is_club_editor(staff_only))
+
+        editor = get_user_model().objects.create_user(
+            username="editor", is_staff=True
+        )
+        make_member(editor)
+        self.assertTrue(is_club_editor(editor))
+
+
+class ClubOnlyAccessTests(TestCase):
+    """部外の人(ログイン済みの非部員)は、ニュース以外の部内ページに入れないこと。"""
+
+    MEMBER_URL_NAMES = [
+        "equipment:dashboard",
+        "equipment:list",
+        "equipment:register",
+        "equipment:lending",
+        "equipment:locations",
+        "equipment:settings",
+        "manuals:manual_list",
+        "video_archive:video_list",
+        "schedule:calendar",
+        "schedule:week",
+        "places_api:list",
+    ]
+    EDITOR_URL_NAMES = [
+        "roll:list",
+        "roll:import_csv",
+        "places:list",
+        "places:create",
+        "manuals:manual_create",
+        "schedule:event_create",
+        "main:news_create",
+    ]
+
+    def setUp(self):
+        user_model = get_user_model()
+        # 以前は「学校のGoogleアカウントなら全員スタッフ」だったので、
+        # スタッフ権限つきの非部員でも入れないことを確かめる
+        self.non_member = user_model.objects.create_user(
+            username="school-user", is_staff=True
+        )
+        self.member = user_model.objects.create_user(username="club-user")
+        make_member(self.member)
+        self.editor = user_model.objects.create_user(
+            username="club-editor", is_staff=True
+        )
+        make_member(self.editor)
+
+    def test_non_member_is_refused_everywhere_but_news(self):
+        self.client.force_login(self.non_member)
+
+        for name in self.MEMBER_URL_NAMES + self.EDITOR_URL_NAMES:
+            with self.subTest(url=name):
+                self.assertEqual(self.client.get(reverse(name)).status_code, 403)
+
+        self.assertEqual(self.client.get(reverse("main:news_all")).status_code, 200)
+        self.assertEqual(self.client.get(reverse("accounts:mypage")).status_code, 200)
+
+    def test_non_member_does_not_see_roster_names(self):
+        RosterEntry.objects.create(name="名簿の生徒", grade="2", homeroom="3")
+        self.client.force_login(self.non_member)
+
+        for name in ("equipment:list", "equipment:register", "equipment:lending_register"):
+            with self.subTest(url=name):
+                response = self.client.get(reverse(name))
+                self.assertEqual(response.status_code, 403)
+                self.assertNotContains(response, "名簿の生徒", status_code=403)
+
+    def test_non_member_cannot_upload_images(self):
+        self.client.force_login(self.non_member)
+
+        response = self.client.post(reverse("ck_editor_5_upload_file"))
+
+        self.assertEqual(response.status_code, 403)
+
+    def test_member_can_view_but_not_manage(self):
+        self.client.force_login(self.member)
+
+        for name in self.MEMBER_URL_NAMES:
+            with self.subTest(url=name):
+                self.assertEqual(self.client.get(reverse(name)).status_code, 200)
+        for name in self.EDITOR_URL_NAMES:
+            with self.subTest(url=name):
+                self.assertEqual(self.client.get(reverse(name)).status_code, 403)
+
+    def test_editor_can_manage(self):
+        self.client.force_login(self.editor)
+
+        for name in self.MEMBER_URL_NAMES + self.EDITOR_URL_NAMES:
+            with self.subTest(url=name):
+                self.assertEqual(self.client.get(reverse(name)).status_code, 200)
+
+    def test_anonymous_visitor_is_sent_to_login(self):
+        for name in self.MEMBER_URL_NAMES + self.EDITOR_URL_NAMES:
+            if name == "places_api:list":
+                continue  # APIはリダイレクトではなく401を返す
+            with self.subTest(url=name):
+                response = self.client.get(reverse(name))
+                self.assertEqual(response.status_code, 302)
+                self.assertIn(reverse("accounts:login"), response["Location"])
+        self.assertEqual(self.client.get(reverse("places_api:list")).status_code, 401)
+
+    def test_apps_on_homepage_are_listed_for_members_only(self):
+        equipment_url = reverse("equipment:dashboard")
+
+        self.assertNotContains(self.client.get(reverse("main:index")), equipment_url)
+
+        self.client.force_login(self.non_member)
+        self.assertNotContains(self.client.get(reverse("main:index")), equipment_url)
+
+        self.client.force_login(self.member)
+        self.assertContains(self.client.get(reverse("main:index")), equipment_url)
+
+
+class ClosedSignupTests(TestCase):
+    def test_signup_page_does_not_offer_a_form(self):
+        response = self.client.get("/accounts/signup/")
+
+        self.assertNotContains(response, 'name="password1"')
+
+    def test_posting_to_signup_does_not_create_an_account(self):
+        self.client.post(
+            "/accounts/signup/",
+            {
+                "username": "outsider",
+                "password1": "Zx-outsider-9981",
+                "password2": "Zx-outsider-9981",
+            },
+        )
+
+        self.assertFalse(get_user_model().objects.filter(username="outsider").exists())
+        response = self.client.get(reverse("accounts:mypage"))
+        self.assertEqual(response.status_code, 302)
+
+    def test_first_google_login_is_still_accepted(self):
+        adapter = RakunanSocialAccountAdapter()
+
+        self.assertTrue(adapter.is_open_for_signup(RequestFactory().get("/"), None))
+
+
+class LoginThrottleTests(TestCase):
+    def setUp(self):
+        self.url = reverse("accounts:login")
+        self.user = get_user_model().objects.create_user(
+            username="member", password="Member-pass-123"
+        )
+
+    def fail(self, username="member", times=5):
+        for _ in range(times):
+            response = self.client.post(
+                self.url, {"username": username, "password": "wrong"}
+            )
+            self.assertEqual(response.status_code, 200)
+
+    def test_sixth_attempt_is_refused_even_with_the_right_password(self):
+        self.fail()
+
+        response = self.client.post(
+            self.url, {"username": "member", "password": "Member-pass-123"}
+        )
+
+        self.assertEqual(response.status_code, 429)
+        self.assertContains(response, "一時的に受け付けを止めています", status_code=429)
+        self.assertEqual(self.client.get(reverse("accounts:mypage")).status_code, 302)
+
+    def test_limit_cannot_be_dodged_by_changing_letter_case_or_session(self):
+        self.fail()
+        self.client.cookies.clear()
+
+        response = self.client.post(
+            self.url, {"username": "MEMBER ", "password": "Member-pass-123"}
+        )
+
+        self.assertEqual(response.status_code, 429)
+
+    def test_other_accounts_are_not_affected(self):
+        get_user_model().objects.create_user(
+            username="another", password="Another-pass-123"
+        )
+        self.fail()
+
+        response = self.client.post(
+            self.url, {"username": "another", "password": "Another-pass-123"}
+        )
+
+        self.assertRedirects(response, reverse("accounts:mypage"))
+
+    def test_successful_login_resets_the_count(self):
+        self.fail(times=4)
+        self.client.post(self.url, {"username": "member", "password": "Member-pass-123"})
+        self.client.get(reverse("accounts:logout"))
+
+        self.fail(times=4)
+        response = self.client.post(
+            self.url, {"username": "member", "password": "Member-pass-123"}
+        )
+
+        self.assertRedirects(response, reverse("accounts:mypage"))
+
+    def test_limit_is_lifted_after_an_hour(self):
+        self.fail()
+        FailedAttempt.objects.update(
+            attempted_at=timezone.now() - timedelta(hours=1, minutes=1)
+        )
+
+        response = self.client.post(
+            self.url, {"username": "member", "password": "Member-pass-123"}
+        )
+
+        self.assertRedirects(response, reverse("accounts:mypage"))
+
+    def test_old_records_are_cleaned_up(self):
+        self.fail(username="someone-else", times=3)
+        FailedAttempt.objects.update(
+            attempted_at=timezone.now() - timedelta(hours=2)
+        )
+
+        self.fail(times=1)
+
+        self.assertEqual(FailedAttempt.objects.count(), 1)
+
+
+class AdminLoginTests(TestCase):
+    """管理画面には専用のログインフォームがなく、サイトのログイン(回数制限つき)を通ること。"""
+
+    def test_anonymous_visitor_is_sent_to_site_login(self):
+        response = self.client.get("/admin/login/")
+
+        self.assertEqual(response.status_code, 302)
+        self.assertTrue(response["Location"].startswith(reverse("accounts:login")))
+
+    def test_admin_login_does_not_accept_passwords(self):
+        get_user_model().objects.create_superuser(username="root", password="Root-pass-123")
+
+        response = self.client.post(
+            "/admin/login/", {"username": "root", "password": "Root-pass-123"}
+        )
+
+        self.assertEqual(response.status_code, 302)
+        self.assertEqual(self.client.get("/admin/").status_code, 302)
+
+    def test_non_staff_user_is_refused(self):
+        self.client.force_login(get_user_model().objects.create_user(username="plain"))
+
+        self.assertEqual(self.client.get("/admin/login/").status_code, 403)
+
+    def test_staff_user_goes_to_admin_index(self):
+        self.client.force_login(
+            get_user_model().objects.create_superuser(username="root", password="pw")
+        )
+
+        self.assertRedirects(self.client.get("/admin/login/"), "/admin/")

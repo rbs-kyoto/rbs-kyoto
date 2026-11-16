@@ -12,12 +12,13 @@ class NewsForm(forms.ModelForm):
             "caption",
             "image",
             "is_active",
-            "is_internal",
+            "visibility",
         ]
         widgets = {
             "title": forms.TextInput(attrs={"class": "site-form__input"}),
             "date": forms.DateInput(attrs={"type": "date", "class": "site-form__input"}),
             "category": forms.Select(attrs={"class": "site-form__input"}),
+            "visibility": forms.Select(attrs={"class": "site-form__input"}),
         }
         labels = {
             "title": "タイトル",
@@ -26,7 +27,7 @@ class NewsForm(forms.ModelForm):
             "caption": "本文",
             "image": "画像",
             "is_active": "公開する",
-            "is_internal": "限定公開にする",
+            "visibility": "公開範囲",
         }
         error_messages = {
             "title": {"required": "タイトルを入力してください。"},

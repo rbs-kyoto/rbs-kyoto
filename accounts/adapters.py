@@ -1,3 +1,4 @@
+from allauth.account.adapter import DefaultAccountAdapter
 from allauth.socialaccount.adapter import DefaultSocialAccountAdapter
 from allauth.exceptions import ImmediateHttpResponse
 from allauth.socialaccount.models import SocialAccount
@@ -5,7 +6,22 @@ from django.contrib import messages
 from django.shortcuts import redirect
 from accounts.models import User
 
+class ClosedSignupAccountAdapter(DefaultAccountAdapter):
+    """ユーザー名とパスワードでの自己登録(/accounts/signup/)を閉じる。
+
+    アカウントは、学校のGoogleアカウントでのログインか、管理画面からの作成でのみ増える。
+    """
+
+    def is_open_for_signup(self, request):
+        return False
+
+
 class RakunanSocialAccountAdapter(DefaultSocialAccountAdapter):
+
+    def is_open_for_signup(self, request, sociallogin):
+        # 学校のGoogleアカウントでの初回ログインは受け付ける。
+        # ドメインの確認は pre_social_login で行う。
+        return True
 
     def pre_social_login(self, request, sociallogin):
         email = (sociallogin.user.email or "").lower().strip()

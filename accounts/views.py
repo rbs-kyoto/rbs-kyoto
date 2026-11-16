@@ -18,8 +18,11 @@ from allauth.account.utils import perform_login
 from pywebpush import WebPushException
 from equipment.models import UsageRecord
 from roll.models import RosterEntry
+from . import throttle
+from .decorators import club_member_required
 from .push import PushConfigurationError, send_web_push
 from .models import (
+    FailedAttempt,
     NotificationHistory,
     SuperuserGrantCredential,
     User,
@@ -34,6 +37,20 @@ def login_view(request):
     if request.method == "POST":
         username = request.POST.get("username", "")
         password = request.POST.get("password", "")
+        # 同じユーザー名への失敗が続いたら、正しいパスワードかどうかを確かめずに止める
+        if throttle.is_blocked(FailedAttempt.Kind.LOGIN, username):
+            return render(
+                request,
+                "accounts/login.html",
+                {
+                    "error": (
+                        "ログインの失敗が続いたため、一時的に受け付けを止めています。"
+                        "1時間ほどおいてから、もう一度お試しください。"
+                    )
+                },
+                status=429,
+            )
+
         user = authenticate(
             request,
             username=username,
@@ -41,9 +58,11 @@ def login_view(request):
         )
 
         if user is not None:
+            throttle.clear(FailedAttempt.Kind.LOGIN, username)
             login(request, user)
             return redirect("accounts:mypage")
 
+        throttle.record_failure(FailedAttempt.Kind.LOGIN, username)
         return render(
             request,
             "accounts/login.html",
@@ -274,16 +293,18 @@ def push_subscription_preferences(request):
     return JsonResponse({"ok": True, "enabled": enabled})
 
 
-@login_required
+@club_member_required
 @require_POST
 def superuser_unlock(request):
     if request.user.is_superuser:
         return JsonResponse({"ok": True, "message": "すでにスーパーユーザーです。"})
 
-    attempts = request.session.get("superuser_unlock_attempts", 0)
-    if attempts >= 5:
+    if throttle.is_blocked(FailedAttempt.Kind.SUPERUSER_UNLOCK, request.user.pk):
         return JsonResponse(
-            {"ok": False, "message": "試行回数の上限に達しました。再ログインしてからお試しください。"},
+            {
+                "ok": False,
+                "message": "試行回数の上限に達しました。1時間ほどおいてからお試しください。",
+            },
             status=429,
         )
 
@@ -296,13 +317,13 @@ def superuser_unlock(request):
         )
 
     if not password or not credential.check_password(password):
-        request.session["superuser_unlock_attempts"] = attempts + 1
+        throttle.record_failure(FailedAttempt.Kind.SUPERUSER_UNLOCK, request.user.pk)
         return JsonResponse(
             {"ok": False, "message": "パスワードが正しくありません。"},
             status=400,
         )
 
-    request.session.pop("superuser_unlock_attempts", None)
+    throttle.clear(FailedAttempt.Kind.SUPERUSER_UNLOCK, request.user.pk)
     request.user.is_staff = True
     request.user.is_superuser = True
     request.user.save(update_fields=["is_staff", "is_superuser"])

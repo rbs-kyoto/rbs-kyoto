@@ -124,7 +124,7 @@
                 {% for reason in row.status.reasons %}
                 <span class="schedule-equipment__reason">{{ reason }}</span>
                 {% endfor %}
-                {% if user.is_staff and row.lending_url %}
+                {% if is_club_editor and row.lending_url %}
                 <a class="schedule-equipment__lend" href="{{ row.lending_url }}">貸出登録</a>
                 {% endif %}
             </li>
@@ -145,7 +145,7 @@
 
     <div class="page_control schedule-detail__actions">
         <a class="page-control-style-back" href="{% url 'schedule:calendar' %}?year={{ event.start|date:'Y' }}&month={{ event.start|date:'n' }}">カレンダーへ</a>
-        {% if user.is_staff %}
+        {% if is_club_editor %}
         <a class="common-style" href="{% url 'schedule:event_edit' event.pk %}">編集</a>
         <form method="post" action="{% url 'schedule:event_delete' event.pk %}" onsubmit="return confirm('この予定を削除しますか？{% if event.recurrence != 'none' %}\n繰り返し予定はすべて削除されます。{% endif %}');">
             {% csrf_token %}

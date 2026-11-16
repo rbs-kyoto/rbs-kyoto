@@ -15,7 +15,7 @@
             <span class="manual-detail__date">
                 {{ manual.uploaded_at|date:"Y.m.d" }} 更新
             </span>
-            {% if user.is_staff %}
+            {% if is_club_editor %}
             <a class="manual-detail__edit-link" href="{% url 'manuals:manual_edit' manual.pk %}">
                 編集する
             </a>

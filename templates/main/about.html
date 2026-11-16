@@ -17,7 +17,7 @@
         >
             <img src="{% static 'main/img/rbs.svg' %}" alt="rbs">
         </div>
-        {% if user.is_authenticated %}
+        {% if is_club_member %}
         <form
             class="about-unlock-form"
             data-superuser-unlock-form

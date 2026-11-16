@@ -2,6 +2,7 @@ from django.conf import settings
 from django.db import models
 from django.contrib.auth.models import AbstractUser
 from django.contrib.auth.hashers import check_password, make_password
+from django.utils import timezone
 
 class User(AbstractUser):
     display_name = models.CharField(
@@ -26,6 +27,26 @@ class SuperuserGrantCredential(models.Model):
 
     def check_password(self, raw_password):
         return check_password(raw_password, self.password_hash)
+
+
+class FailedAttempt(models.Model):
+    """パスワードを間違えた記録。総当たり防止(accounts.throttle)が使う。"""
+
+    class Kind(models.TextChoices):
+        LOGIN = "login", "ログイン"
+        SUPERUSER_UNLOCK = "superuser_unlock", "スーパーユーザー昇格"
+
+    kind = models.CharField("種類", max_length=32, choices=Kind.choices)
+    key = models.CharField("対象", max_length=150)
+    attempted_at = models.DateTimeField("日時", default=timezone.now)
+
+    class Meta:
+        verbose_name = "失敗した試行"
+        verbose_name_plural = "失敗した試行"
+        indexes = [models.Index(fields=["kind", "key", "attempted_at"])]
+
+    def __str__(self):
+        return f"{self.get_kind_display()} {self.key}"
 
 
 class WebPushSubscription(models.Model):

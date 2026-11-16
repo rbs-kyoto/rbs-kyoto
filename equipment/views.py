@@ -4,7 +4,6 @@ from io import BytesIO
 
 import qrcode
 from django.contrib import messages
-from django.contrib.auth.decorators import login_required
 from django.core.paginator import Paginator
 from django.db import IntegrityError, transaction
 from django.db.models import Count, F, Prefetch, Q, Sum
@@ -14,6 +13,7 @@ from django.urls import reverse
 from django.utils import timezone
 from qrcode.image.svg import SvgPathImage
 
+from accounts.decorators import club_member_required
 from places.models import Place
 from roll.models import RosterEntry
 
@@ -34,7 +34,7 @@ from .models import (
 )
 
 
-@login_required
+@club_member_required
 def dashboard(request):
     active_equipment = Equipment.objects.filter(is_active=True).select_related(
         "category"
@@ -90,7 +90,7 @@ def dashboard(request):
     return render(request, "equipment/dashboard.html", context)
 
 
-@login_required
+@club_member_required
 def equipment_list(request):
     archived = request.GET.get("archived") == "1"
     equipment = Equipment.objects.filter(is_active=not archived).select_related(
@@ -244,7 +244,7 @@ def equipment_list(request):
     )
 
 
-@login_required
+@club_member_required
 def equipment_create(request):
     if request.method == "POST":
         form = EquipmentForm(request.POST, request.FILES)
@@ -298,7 +298,7 @@ def _display_value(equipment, field_name):
     return str(value) if value is not None else ""
 
 
-@login_required
+@club_member_required
 def equipment_edit(request, pk):
     equipment = get_object_or_404(Equipment, pk=pk, is_active=True)
     original_values = {
@@ -344,7 +344,7 @@ def equipment_edit(request, pk):
     )
 
 
-@login_required
+@club_member_required
 def equipment_detail(request, pk):
     equipment = get_object_or_404(
         Equipment.objects.select_related(
@@ -367,7 +367,7 @@ def equipment_detail(request, pk):
     )
 
 
-@login_required
+@club_member_required
 def equipment_history(request, pk):
     equipment = get_object_or_404(Equipment, pk=pk)
     return render(
@@ -381,7 +381,7 @@ def equipment_history(request, pk):
     )
 
 
-@login_required
+@club_member_required
 def unregister_equipment(request, pk):
     if request.method != "POST":
         raise Http404
@@ -422,7 +422,7 @@ def unregister_equipment(request, pk):
     return redirect(f"{reverse('equipment:list')}?archived=1")
 
 
-@login_required
+@club_member_required
 def reactivate_equipment(request, pk):
     if request.method != "POST":
         raise Http404
@@ -447,7 +447,7 @@ def reactivate_equipment(request, pk):
     return redirect("equipment:detail", pk=pk)
 
 
-@login_required
+@club_member_required
 def scan(request):
     query = request.GET.get("q", "").strip()
     if query:
@@ -462,7 +462,7 @@ def scan(request):
     return render(request, "equipment/scan.html")
 
 
-@login_required
+@club_member_required
 def qr_lookup(request, token):
     equipment = get_object_or_404(
         Equipment, qr_token=token, is_active=True
@@ -505,7 +505,7 @@ def _qr_response(equipment, output_format):
     return response
 
 
-@login_required
+@club_member_required
 def qr_display(request, pk):
     equipment = get_object_or_404(Equipment, pk=pk)
     if not equipment.is_active and request.GET.get("show_archived") != "1":
@@ -513,7 +513,7 @@ def qr_display(request, pk):
     return render(request, "equipment/qr_display.html", {"equipment": equipment})
 
 
-@login_required
+@club_member_required
 def qr_download(request, pk, output_format="png"):
     equipment = get_object_or_404(Equipment, pk=pk)
     if not equipment.is_active and request.GET.get("show_archived") != "1":
@@ -523,7 +523,7 @@ def qr_download(request, pk, output_format="png"):
     return _qr_response(equipment, output_format)
 
 
-@login_required
+@club_member_required
 def usage_list(request):
     records = UsageRecord.objects.select_related("equipment", "created_by").prefetch_related(
         "returns"
@@ -551,7 +551,7 @@ def usage_list(request):
     )
 
 
-@login_required
+@club_member_required
 def usage_create(request):
     if request.method == "POST":
         form = UsageRecordForm(request.POST)
@@ -638,7 +638,7 @@ def usage_create(request):
     )
 
 
-@login_required
+@club_member_required
 def usage_detail(request, pk):
     usage = get_object_or_404(
         UsageRecord.objects.select_related("equipment", "created_by").prefetch_related(
@@ -649,7 +649,7 @@ def usage_detail(request, pk):
     return render(request, "equipment/usage_detail.html", {"usage": usage})
 
 
-@login_required
+@club_member_required
 def return_usage(request, pk):
     usage = get_object_or_404(
         UsageRecord.objects.select_related("equipment").prefetch_related("returns"),
@@ -697,7 +697,7 @@ def return_usage(request, pk):
     )
 
 
-@login_required
+@club_member_required
 def category_list(request):
     categories = Category.objects.annotate(
         equipment_count=Count(
@@ -711,7 +711,7 @@ def category_list(request):
     )
 
 
-@login_required
+@club_member_required
 def location_list(request):
     locations = Place.objects.filter(is_storage=True).select_related("parent").annotate(
         equipment_count=Count("equipment", filter=Q(equipment__is_active=True))
@@ -723,7 +723,7 @@ def location_list(request):
     )
 
 
-@login_required
+@club_member_required
 def location_create(request):
     if request.method == "POST":
         form = StorageLocationForm(request.POST)
@@ -740,7 +740,7 @@ def location_create(request):
     )
 
 
-@login_required
+@club_member_required
 def location_edit(request, pk):
     location = get_object_or_404(Place, pk=pk)
     if request.method == "POST":
@@ -758,7 +758,7 @@ def location_edit(request, pk):
     )
 
 
-@login_required
+@club_member_required
 def settings_view(request):
     design = QRDesign.current()
     if request.method == "POST":

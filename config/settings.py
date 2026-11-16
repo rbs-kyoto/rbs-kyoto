@@ -102,6 +102,7 @@ TEMPLATES = [
                 'django.contrib.auth.context_processors.auth',
                 'django.contrib.messages.context_processors.messages',
                 'main.context_processors.footer_content',
+                'accounts.context_processors.audience',
             ],
         },
     },
@@ -148,6 +149,8 @@ LOGOUT_REDIRECT_URL = "accounts:login"
 
 SOCIALACCOUNT_LOGIN_ON_GET = True
 
+# ユーザー名とパスワードでの自己登録は受け付けない(Googleログインと管理画面のみ)
+ACCOUNT_ADAPTER = "accounts.adapters.ClosedSignupAccountAdapter"
 SOCIALACCOUNT_ADAPTER = "accounts.adapters.RakunanSocialAccountAdapter"
 
 SOCIALACCOUNT_PROVIDERS = {
@@ -196,6 +199,9 @@ MAILERS = {
         'BACKEND': 'django.core.mail.backends.console.EmailBackend',
     },
 }
+
+# 本文への画像アップロードは部内の編集担当だけ。制限は config/urls.py で掛けている。
+CKEDITOR_5_FILE_UPLOAD_PERMISSION = "authenticated"
 
 CKEDITOR_5_CONFIGS = {
     "extends": {

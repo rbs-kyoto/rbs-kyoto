@@ -1,3 +1,4 @@
+from accounts.testing import make_member
 from django.contrib.auth import get_user_model
 from django.test import TestCase
 from django.urls import reverse
@@ -11,6 +12,7 @@ class ManualListTests(TestCase):
             username="member",
             password="test-password",
         )
+        make_member(self.user)
         self.manual = Manual.objects.create(title="部内案内")
 
     def test_manual_list_uses_archive_style_items(self):

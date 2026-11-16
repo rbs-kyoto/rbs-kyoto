@@ -1,3 +1,4 @@
+from accounts.testing import make_member
 from django.db import connection
 from django.db.migrations.executor import MigrationExecutor
 from django.test import TransactionTestCase
@@ -152,6 +153,7 @@ class PlaceApiTests(TestCase):
     def setUp(self):
         User = get_user_model()
         self.member = User.objects.create_user("member", password="pw")
+        make_member(self.member)
         self.school = Place.objects.create(name="校舎", is_venue=True, is_storage=False)
         self.studio = Place.objects.create(name="放送室", parent=self.school, is_venue=True, code="S1")
         self.shelf = Place.objects.create(name="棚A", parent=self.studio, is_venue=False)
@@ -238,12 +240,14 @@ class PlaceManagementTests(TestCase):
     def setUp(self):
         User = get_user_model()
         self.staff = User.objects.create_user("staff", password="pw", is_staff=True)
+        make_member(self.staff)
         self.member = User.objects.create_user("member", password="pw")
+        make_member(self.member)
 
     def test_only_staff_can_manage(self):
         self.client.force_login(self.member)
         for name in ("places:list", "places:create"):
-            self.assertEqual(self.client.get(reverse(name)).status_code, 302)
+            self.assertEqual(self.client.get(reverse(name)).status_code, 403)
 
     def test_staff_creates_a_venue_and_the_form_defaults_to_venue(self):
         self.client.force_login(self.staff)

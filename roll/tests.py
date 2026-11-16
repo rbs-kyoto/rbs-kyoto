@@ -1,3 +1,4 @@
+from accounts.testing import make_member
 from django.contrib.auth import get_user_model
 from django.core.files.uploadedfile import SimpleUploadedFile
 from django.test import TestCase
@@ -13,6 +14,7 @@ class RosterImportTests(TestCase):
             username="roll-staff",
             is_staff=True,
         )
+        make_member(self.staff)
         self.client.force_login(self.staff)
         self.position = Position.objects.create(name="部長")
 
@@ -146,7 +148,7 @@ class RosterImportTests(TestCase):
 
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, "出席番号は1以上の数字")
-        self.assertFalse(RosterEntry.objects.exists())
+        self.assertFalse(RosterEntry.objects.exclude(account=self.staff).exists())
 
     def test_import_reports_rows_with_more_values_than_headers(self):
         csv_content = "氏名,学年\n山田花子,2,余分な値\n"
@@ -158,7 +160,7 @@ class RosterImportTests(TestCase):
 
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, "ヘッダーより多くの列")
-        self.assertFalse(RosterEntry.objects.exists())
+        self.assertFalse(RosterEntry.objects.exclude(account=self.staff).exists())
 
     def test_import_rejects_grade_or_homeroom_outside_available_ranges(self):
         csv_content = (
@@ -174,7 +176,7 @@ class RosterImportTests(TestCase):
 
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, "学年（1〜6）")
-        self.assertFalse(RosterEntry.objects.exists())
+        self.assertFalse(RosterEntry.objects.exclude(account=self.staff).exists())
 
     def test_import_rejects_account_already_linked_to_another_entry(self):
         user = get_user_model().objects.create_user(username="already-linked")
@@ -226,8 +228,7 @@ class RosterAccessTests(TestCase):
 
         response = self.client.get(reverse("roll:list"))
 
-        self.assertEqual(response.status_code, 302)
-        self.assertIn("/accounts/login/", response["Location"])
+        self.assertEqual(response.status_code, 403)
 
     def test_roster_list_shows_members_roles_and_accounts(self):
         user = get_user_model().objects.create_user(username="roster-account")
@@ -235,6 +236,7 @@ class RosterAccessTests(TestCase):
             username="roster-staff",
             is_staff=True,
         )
+        make_member(staff)
         position = Position.objects.create(name="会計")
         member = RosterEntry.objects.create(
             name="部員一郎",
