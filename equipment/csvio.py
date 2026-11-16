@@ -13,7 +13,8 @@ from roll.models import Position
 
 from places.models import Place
 
-from .models import Category, Equipment, EquipmentHistory, Manufacturer
+from .events import Kind, record_event
+from .models import Category, Equipment, Manufacturer
 
 MAX_ROWS = 2000
 MAX_ERRORS = 20
@@ -328,9 +329,10 @@ def import_equipment_csv(uploaded_file, user):
                 equipment.created_by = user
                 equipment.last_modified_by = user
                 equipment.save()
-                EquipmentHistory.objects.create(
-                    equipment=equipment,
-                    changed_by=user,
+                record_event(
+                    equipment,
+                    Kind.IMPORT,
+                    user,
                     field_name="登録",
                     new_value=f"{equipment.inventory_number} {equipment.name}（CSVインポート）",
                 )
