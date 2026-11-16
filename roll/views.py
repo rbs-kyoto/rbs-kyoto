@@ -1,19 +1,17 @@
 import csv
 
-from django.contrib.auth.decorators import login_required
 from django.db.models import Q
 from django.shortcuts import render
 from django.urls import reverse
 
-from accounts.decorators import staff_required
+from accounts.decorators import club_editor_required
 
 from .forms import RosterImportForm
 from .importer import RosterImportError, import_roster_csv
 from .models import RosterEntry
 
 
-@login_required
-@staff_required
+@club_editor_required
 def roster_list(request):
     entries = RosterEntry.objects.select_related("account").prefetch_related("positions")
     entry_type = request.GET.get("type", "").strip()
@@ -47,8 +45,7 @@ def roster_list(request):
     )
 
 
-@login_required
-@staff_required
+@club_editor_required
 def import_csv(request):
     result = None
     error = None

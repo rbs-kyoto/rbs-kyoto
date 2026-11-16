@@ -2,6 +2,8 @@
 
 from datetime import date
 
+from accounts.audience import is_club_editor
+
 from .models import EventEquipment, UsageLink
 from .recurrence import expand
 
@@ -22,8 +24,8 @@ def parse_link_params(data):
 
 
 def link_usage(user, usage, data):
-    """貸出記録 usage を、予定の機材(その回)に結ぶ。staff のみ、機材が一致する場合のみ。"""
-    if not user.is_staff:
+    """貸出記録 usage を、予定の機材(その回)に結ぶ。編集担当のみ、機材が一致する場合のみ。"""
+    if not is_club_editor(user):
         return None
     parsed = parse_link_params(data)
     if parsed is None:

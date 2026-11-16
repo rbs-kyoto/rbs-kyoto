@@ -65,8 +65,8 @@ class HeaderLogoScheduleAdmin(admin.ModelAdmin):
 
 @admin.register(News)
 class NewsAdmin(admin.ModelAdmin):
-    list_display = ("title", "date", "category", "is_active", "is_internal")
-    list_filter = ("category", "is_active")
+    list_display = ("title", "date", "category", "is_active", "visibility")
+    list_filter = ("category", "is_active", "visibility")
     list_editable = ("is_active",)
     ordering = ("-date",)
 

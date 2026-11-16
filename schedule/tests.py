@@ -2,6 +2,7 @@ from datetime import date, datetime
 from io import StringIO
 from unittest import mock
 
+from accounts.testing import make_member
 from django.contrib.auth import get_user_model
 from django.core.management import call_command
 from django.core.management.base import CommandError
@@ -12,7 +13,7 @@ from django.utils import timezone
 from equipment.models import Category, Equipment, ReturnRecord, UsageRecord
 from roll.models import RosterEntry
 
-from accounts.models import WebPushSubscription
+from accounts.models import NotificationHistory, WebPushSubscription
 
 from .models import (
     Assignment,
@@ -107,7 +108,9 @@ class ScheduleViewTests(TestCase):
     def setUp(self):
         User = get_user_model()
         self.member = User.objects.create_user("member", password="pw")
-        self.staff = User.objects.create_user("staff", password="pw", is_staff=True)
+        make_member(self.member)
+        self.staff = User.objects.create_user("staff", password="pw", is_staff=True, is_superuser=True)
+        make_member(self.staff)
         self.event = Event.objects.create(title="大会", start=jst(2026, 11, 10, 9, 0))
 
     def test_login_required(self):
@@ -128,7 +131,7 @@ class ScheduleViewTests(TestCase):
     def test_member_cannot_create(self):
         self.client.force_login(self.member)
         response = self.client.get(reverse("schedule:event_create"))
-        self.assertEqual(response.status_code, 302)
+        self.assertEqual(response.status_code, 403)
 
     def test_member_cannot_delete(self):
         self.client.force_login(self.member)
@@ -189,6 +192,7 @@ class ScheduleViewTests(TestCase):
 class WeekViewTests(TestCase):
     def setUp(self):
         self.member = get_user_model().objects.create_user("member", password="pw")
+        make_member(self.member)
         Event.objects.create(
             title="定例会",
             start=jst(2026, 11, 4, 16, 0),
@@ -249,7 +253,8 @@ class WeekViewTests(TestCase):
 class AssignmentTests(TestCase):
     def setUp(self):
         User = get_user_model()
-        self.staff = User.objects.create_user("staff", password="pw", is_staff=True)
+        self.staff = User.objects.create_user("staff", password="pw", is_staff=True, is_superuser=True)
+        make_member(self.staff)
         self.alice_user = User.objects.create_user("alice", password="pw")
         self.bob_user = User.objects.create_user("bob", password="pw")
         self.outsider_user = User.objects.create_user("outsider", password="pw")
@@ -478,8 +483,10 @@ class AttendanceTests(AssignmentTests):
 class EquipmentLinkTests(TestCase):
     def setUp(self):
         User = get_user_model()
-        self.staff = User.objects.create_user("staff", password="pw", is_staff=True)
+        self.staff = User.objects.create_user("staff", password="pw", is_staff=True, is_superuser=True)
+        make_member(self.staff)
         self.member = User.objects.create_user("member", password="pw")
+        make_member(self.member)
         category = Category.objects.get(code="A")
         self.mic = Equipment.objects.create(
             category=category, inventory_number="A-SCH-1", name="ワイヤレスマイク",
@@ -526,7 +533,7 @@ class EquipmentLinkTests(TestCase):
     def test_member_cannot_attach_equipment(self):
         self.client.force_login(self.member)
         response = self.client.post(reverse("schedule:event_create"), {"title": "x"})
-        self.assertEqual(response.status_code, 302)  # staff限定なのでログインへ
+        self.assertEqual(response.status_code, 403)  # 編集担当限定
         self.assertFalse(Event.objects.exists())
 
     def test_planned_equipment_without_conflict_is_ok(self):
@@ -810,11 +817,53 @@ class AttendanceReminderTests(TestCase):
         with self.assertRaisesMessage(CommandError, "Web Push の設定を確認してください"):
             self.run_command(send=broken)
 
+    def test_delivery_is_recorded_once_in_the_notification_history(self):
+        self.subscribe(self.alice_user, "https://fcm.googleapis.com/a2", enabled=True)  # 2台目の端末
+        event = self.make_event(jst(2026, 11, 13, 16))
+        sender, _ = self.run_command()
+        self.assertEqual(sender.call_count, 2)  # 端末ごとに送る
+        history = NotificationHistory.objects.get()  # 履歴は1通につき1件
+        self.assertEqual(history.user, self.alice_user)
+        self.assertEqual(history.kind, NotificationHistory.Kind.SCHEDULE)
+        self.assertEqual(history.get_kind_display(), "出欠リマインド")
+        self.assertEqual(history.title, "出欠のお願い")
+        self.assertIn("撮影", history.body)
+        self.assertEqual(history.url, f"/schedule/{event.pk}/?date=2026-11-13")
+
+    def test_each_stage_leaves_its_own_history_entry(self):
+        self.make_event(jst(2026, 11, 13, 16))
+        self.run_command()
+        later = timezone.make_aware(datetime(2026, 11, 12, 9, 0))
+        with mock.patch("django.utils.timezone.now", return_value=later), mock.patch(
+            SEND, return_value=True
+        ):
+            call_command("send_attendance_reminders", stdout=StringIO(), stderr=StringIO())
+        self.assertEqual(NotificationHistory.objects.count(), 2)  # 3日前と前日
+
+    def test_nothing_is_recorded_when_delivery_fails_or_expires(self):
+        self.make_event(jst(2026, 11, 13, 16))
+        self.run_command(send=lambda sub, payload: False)  # 購読の失効
+        self.assertEqual(NotificationHistory.objects.count(), 0)
+
+    def test_network_errors_are_counted_as_failures_not_crashes(self):
+        from requests.exceptions import ConnectionError as RequestsConnectionError
+
+        self.make_event(jst(2026, 11, 13, 16))
+
+        def offline(subscription, payload):
+            raise RequestsConnectionError("network down")
+
+        with self.assertRaisesMessage(CommandError, "1 件の送信に失敗しました"):
+            self.run_command(send=offline)
+        self.assertEqual(AttendanceReminderDelivery.objects.count(), 0)
+        self.assertEqual(NotificationHistory.objects.count(), 0)
+
     def test_dry_run_sends_nothing_and_records_nothing(self):
         self.make_event(jst(2026, 11, 13, 16))
         sender, output = self.run_command("--dry-run")
         self.assertEqual(sender.call_count, 0)
         self.assertEqual(AttendanceReminderDelivery.objects.count(), 0)
+        self.assertEqual(NotificationHistory.objects.count(), 0)
         self.assertIn("[dry-run] Alice", output)
 
     @override_settings(
@@ -852,8 +901,10 @@ class PlaceIntegrationTests(TestCase):
         from places.models import Place
 
         User = get_user_model()
-        self.staff = User.objects.create_user("staff", password="pw", is_staff=True)
+        self.staff = User.objects.create_user("staff", password="pw", is_staff=True, is_superuser=True)
+        make_member(self.staff)
         self.member = User.objects.create_user("member", password="pw")
+        make_member(self.member)
         self.school = Place.objects.create(name="校舎", is_venue=True)
         self.studio = Place.objects.create(name="放送室", parent=self.school, is_venue=True)
         self.gym = Place.objects.create(name="体育館", is_venue=True)

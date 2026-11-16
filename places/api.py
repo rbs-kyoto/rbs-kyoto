@@ -1,4 +1,4 @@
-"""場所マスターの JSON API(読み取り専用。ログイン済みのセッションで利用する)。"""
+"""場所マスターの JSON API(読み取り専用。放送部員のログイン済みセッションで利用する)。"""
 
 from datetime import datetime, time, timedelta
 from functools import wraps
@@ -8,6 +8,8 @@ from django.shortcuts import get_object_or_404
 from django.utils import timezone
 from django.utils.dateparse import parse_date, parse_datetime
 from django.views.decorators.http import require_GET
+
+from accounts.audience import is_club_member
 
 from .models import Place
 from .services import find_conflicts, serialize_place, serialize_use
@@ -20,6 +22,8 @@ def api_login_required(view):
     def wrapper(request, *args, **kwargs):
         if not request.user.is_authenticated:
             return JsonResponse({"error": "ログインが必要です。"}, status=401)
+        if not is_club_member(request.user):
+            return JsonResponse({"error": "放送部員のみ利用できます。"}, status=403)
         return view(request, *args, **kwargs)
 
     return wrapper

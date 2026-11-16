@@ -74,11 +74,10 @@
                 </label>
             </div>
 
-            <div class="site-form__field site-form__field--checkbox">
-                <label for="{{ form.is_internal.id_for_label }}">
-                    {{ form.is_internal }}
-                    限定公開にする
-                </label>
+            <div class="site-form__field">
+                <label for="{{ form.visibility.id_for_label }}">公開範囲</label>
+                {{ form.visibility }}
+                {% if form.visibility.errors %}<span class="site-form__errors">{{ form.visibility.errors|join:" " }}</span>{% endif %}
             </div>
         </div>
 

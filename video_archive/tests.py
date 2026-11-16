@@ -2,6 +2,7 @@ from datetime import date
 from io import BytesIO
 from tempfile import TemporaryDirectory
 
+from accounts.testing import make_member
 from django.core.exceptions import ValidationError
 from django.core.files.uploadedfile import SimpleUploadedFile
 from django.contrib.auth import get_user_model
@@ -19,6 +20,7 @@ class VideoListTests(TestCase):
             username="member",
             password="test-password",
         )
+        make_member(self.user)
         self.active_video = Video.objects.create(
             title="公開動画",
             url="https://www.youtube.com/watch?v=abcdefghijk",
@@ -39,6 +41,7 @@ class VideoListTests(TestCase):
         self.url = reverse("video_archive:video_list")
 
     def test_homepage_links_to_video_archive(self):
+        self.client.force_login(self.user)
         response = self.client.get(reverse("main:index"))
 
         self.assertContains(response, "Video Archive")
@@ -81,8 +84,8 @@ class VideoListTests(TestCase):
         self.assertContains(response, self.previous_fiscal_year_video.title)
 
     def test_staff_can_see_inactive_videos(self):
-        self.user.is_staff = True
-        self.user.save(update_fields=["is_staff"])
+        self.user.is_superuser = True
+        self.user.save(update_fields=["is_superuser"])
         self.client.force_login(self.user)
 
         response = self.client.get(

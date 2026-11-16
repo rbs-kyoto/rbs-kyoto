@@ -9,7 +9,7 @@
 <section class="manual-list-section">
     <div class="section-heading">
         <h2 class="heading">Manual</h2>
-        {% if user.is_staff %}
+        {% if is_club_editor %}
         <a class="section-heading__link page-control-style-forward" href="{% url 'manuals:manual_create' %}">
             新規作成
         </a>
@@ -28,7 +28,7 @@
                 <h3 class="manual-list__title">{{ manual.title }}</h3>
                 <span class="manual-list__date">{{ manual.uploaded_at|date:"Y.m.d" }}</span>
             </div>
-            {% if user.is_staff and not manual.is_active %}
+            {% if is_club_editor and not manual.is_active %}
             <span class="manual-list__badge">非公開</span>
             {% endif %}
             <span class="manual-list__link">詳細を見る</span>

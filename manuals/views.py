@@ -1,9 +1,9 @@
-from django.contrib.auth.decorators import login_required, user_passes_test
 from django.http import Http404
 from django.shortcuts import get_object_or_404, redirect, render
-from .models import Manual
+from accounts.audience import is_club_editor
+from accounts.decorators import club_editor_required, club_member_required
 
-staff_required = user_passes_test(lambda user: user.is_staff)
+from .models import Manual
 
 SORT_OPTIONS = {
     "date": "-uploaded_at",
@@ -12,10 +12,10 @@ SORT_OPTIONS = {
 DEFAULT_SORT = "order"
 
 
-@login_required
+@club_member_required
 def manual_list(request):
     manuals = Manual.objects.all()
-    if not request.user.is_staff:
+    if not is_club_editor(request.user):
         manuals = manuals.filter(is_active=True)
 
     sort = request.GET.get("sort")
@@ -31,10 +31,10 @@ def manual_list(request):
     )
 
 
-@login_required
+@club_member_required
 def manual_detail(request, pk):
     manual = get_object_or_404(Manual, pk=pk)
-    if not manual.is_active and not request.user.is_staff:
+    if not manual.is_active and not is_club_editor(request.user):
         raise Http404
 
     return render(
@@ -44,8 +44,7 @@ def manual_detail(request, pk):
     )
 
 
-@login_required
-@staff_required
+@club_editor_required
 def manual_create(request):
     if request.method == "POST":
         manual = Manual(
@@ -61,8 +60,7 @@ def manual_create(request):
     return render(request, "manuals/manual_form.html", {"manual": None})
 
 
-@login_required
-@staff_required
+@club_editor_required
 def manual_edit(request, pk):
     manual = get_object_or_404(Manual, pk=pk)
 

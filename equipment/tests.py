@@ -4,6 +4,7 @@ from io import StringIO
 from unittest.mock import patch
 
 import qrcode
+from accounts.testing import make_member
 from django.contrib.auth import get_user_model
 from django.core.management import call_command
 from django.test import TestCase, override_settings
@@ -193,6 +194,7 @@ class EquipmentWorkflowTests(TestCase):
             username="inventory-user",
             password="test-password-123",
         )
+        make_member(self.user)
         self.client.force_login(self.user)
         self.category_a = Category.objects.get(code="A")
         self.responsible_person = RosterEntry.objects.create(

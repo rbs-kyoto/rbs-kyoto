@@ -1,7 +1,6 @@
 import calendar
 from datetime import date, timedelta
 
-from django.contrib.auth.decorators import login_required, user_passes_test
 from django.core.exceptions import PermissionDenied
 from django.db import transaction
 from django.db.models import Count, Q
@@ -11,6 +10,8 @@ from django.urls import reverse
 from django.utils import timezone
 from django.utils.http import urlencode
 from django.views.decorators.http import require_POST
+
+from accounts.decorators import club_editor_required, club_member_required
 
 from .equipment_status import event_statuses, upcoming_problems
 from .place_status import place_conflicts, upcoming_place_conflicts
@@ -24,8 +25,6 @@ from .forms import (
 )
 from .models import Attendance, Event
 from .recurrence import expand
-
-staff_required = user_passes_test(lambda user: user.is_staff)
 
 WEEKDAYS = ["月", "火", "水", "木", "金", "土", "日"]
 
@@ -61,7 +60,7 @@ def _occurrences_by_day(range_start, range_end):
     return by_day
 
 
-@login_required
+@club_member_required
 def calendar_month(request):
     year, month = _month_param(request)
     today = timezone.localdate()
@@ -109,7 +108,7 @@ def _date_param(request):
         return timezone.localdate()
 
 
-@login_required
+@club_member_required
 def calendar_week(request):
     """指定した日を含む週(月曜始まり)を、日ごとに縦に並べて表示する。"""
     today = timezone.localdate()
@@ -187,7 +186,7 @@ def _lending_url(item, occurrence, day):
     return f"{reverse('equipment:lending_register')}?{urlencode(params)}"
 
 
-@login_required
+@club_member_required
 def event_detail(request, pk):
     event = get_object_or_404(Event, pk=pk)
     day = _occurrence_date(event, request.GET.get("date"))
@@ -262,7 +261,7 @@ def event_detail(request, pk):
     )
 
 
-@login_required
+@club_member_required
 @require_POST
 def event_respond(request, pk):
     event = get_object_or_404(Event, pk=pk)
@@ -394,8 +393,7 @@ def _form_context(request, event, form, selection, equipment_formset, page_event
     }
 
 
-@login_required
-@staff_required
+@club_editor_required
 def event_create(request):
     initial = {}
     day = request.GET.get("date")
@@ -416,8 +414,7 @@ def event_create(request):
     )
 
 
-@login_required
-@staff_required
+@club_editor_required
 def event_edit(request, pk):
     event = get_object_or_404(Event, pk=pk)
     form, selection, equipment_formset, saved = _handle_event_form(request, event)
@@ -430,8 +427,7 @@ def event_edit(request, pk):
     )
 
 
-@login_required
-@staff_required
+@club_editor_required
 @require_POST
 def event_delete(request, pk):
     event = get_object_or_404(Event, pk=pk)
