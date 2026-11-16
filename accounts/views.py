@@ -432,9 +432,7 @@ def google_link_confirm(request):
         if request.POST.get("action") == "confirm":
             sociallogin.connect(request, user)
             user.email = email
-            if not user.is_staff:
-                user.is_staff = True
-                user.save(update_fields=["is_staff"])
+            user.save(update_fields=["email"])
             request.session.pop("google_link_sociallogin", None)
             request.session.pop("google_link_user_id", None)
             return perform_login(

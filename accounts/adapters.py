@@ -35,11 +35,6 @@ class RakunanSocialAccountAdapter(DefaultSocialAccountAdapter):
             )
 
         if sociallogin.is_existing:
-            user = sociallogin.user
-            if not user.is_staff:
-                user.is_staff = True
-                user.save(update_fields=["is_staff"])
-
             return
 
         google_username = email.split("@", 1)[0]
@@ -85,10 +80,3 @@ class RakunanSocialAccountAdapter(DefaultSocialAccountAdapter):
             raise ImmediateHttpResponse(
                 redirect("accounts:google_link_confirm")
             )
-
-    def save_user(self, request, sociallogin, form=None):
-        user = super().save_user(request, sociallogin, form)
-        user.is_staff = True
-        user.save(update_fields=["is_staff"])
-
-        return user

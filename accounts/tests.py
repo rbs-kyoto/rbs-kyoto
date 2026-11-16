@@ -865,3 +865,56 @@ class AdminLoginTests(TestCase):
         )
 
         self.assertRedirects(self.client.get("/admin/login/"), "/admin/")
+
+
+@override_settings(
+    SOCIALACCOUNT_PROVIDERS={
+        "google": {"APP": {"client_id": "dummy", "secret": "dummy", "key": ""}}
+    }
+)
+class GoogleLoginStaffTests(TestCase):
+    """Googleでログインしても、スタッフ権限は自動では付かないこと。"""
+
+    def google_login(self, email, uid):
+        from allauth.core import context as allauth_context
+        from allauth.socialaccount.adapter import get_adapter
+        from allauth.socialaccount.helpers import complete_social_login
+        from allauth.socialaccount.models import SocialAccount, SocialLogin
+        from django.contrib.auth.models import AnonymousUser
+        from django.contrib.messages.storage.fallback import FallbackStorage
+        from django.contrib.sessions.backends.db import SessionStore
+
+        request = RequestFactory().get("/accounts/google/login/callback/")
+        request.session = SessionStore()
+        request._messages = FallbackStorage(request)
+        request.user = AnonymousUser()
+        with allauth_context.request_context(request):
+            provider = get_adapter().get_provider(request, "google")
+            sociallogin = SocialLogin(
+                user=get_user_model()(email=email),
+                account=SocialAccount(
+                    provider="google", uid=uid, extra_data={"email": email}
+                ),
+                provider=provider,
+            )
+            sociallogin.state = {}
+            return complete_social_login(request, sociallogin)
+
+    def test_new_school_account_is_created_without_staff_flag(self):
+        self.google_login("newbie@rakunan-h.ed.jp", "uid-1")
+
+        user = get_user_model().objects.get(email="newbie@rakunan-h.ed.jp")
+        self.assertFalse(user.is_staff)
+        self.assertTrue(is_school_non_member(user))
+
+    def test_non_school_account_is_refused(self):
+        self.google_login("someone@gmail.com", "uid-2")
+
+        self.assertFalse(get_user_model().objects.filter(email="someone@gmail.com").exists())
+
+    def test_returning_user_is_not_promoted_to_staff(self):
+        self.google_login("again@rakunan-h.ed.jp", "uid-3")
+        self.google_login("again@rakunan-h.ed.jp", "uid-3")
+
+        user = get_user_model().objects.get(email="again@rakunan-h.ed.jp")
+        self.assertFalse(user.is_staff)
