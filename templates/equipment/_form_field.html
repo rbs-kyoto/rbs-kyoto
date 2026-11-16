@@ -1,5 +1,9 @@
 <div class="equipment__field {% if field.errors %}equipment__field--error{% endif %}">
-    {{ field.label_tag }}{{ field }}
+    {% if field.field.info_text %}
+    <div class="equipment__label-row">{{ field.label_tag }}<button type="button" class="equipment__info-button" aria-expanded="false" aria-controls="{{ field.auto_id }}_info" aria-label="「{{ field.label }}」の説明">i</button></div>
+    <div class="equipment__info-text" id="{{ field.auto_id }}_info" role="note" hidden>{{ field.field.info_text }}</div>
+    {% else %}{{ field.label_tag }}{% endif %}
+    {{ field }}
     {% if field.help_text %}<small>{{ field.help_text }}</small>{% endif %}
     {% for error in field.errors %}<span class="equipment__error">{{ error }}</span>{% endfor %}
 </div>

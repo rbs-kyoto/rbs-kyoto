@@ -7,7 +7,7 @@
     <p class="equipment__muted">読み取りやすさを優先し、余白は2以上にしてください。設定は全ての備品QRコードに適用されます。</p>
     <form method="post" class="equipment__form">{% csrf_token %}
         {% if form.non_field_errors %}<div class="equipment__errors">{{ form.non_field_errors }}</div>{% endif %}
-        {% for field in form %}<div class="equipment__field {% if field.errors %}equipment__field--error{% endif %}">{{ field.label_tag }}{{ field }}{% for error in field.errors %}<span class="equipment__error">{{ error }}</span>{% endfor %}</div>{% endfor %}
+        {% for field in form %}{% include "equipment/_form_field.html" %}{% endfor %}
         <div class="equipment__actions"><button class="common-style reverse equipment__button" type="submit">設定を保存</button></div>
     </form>
 </section>

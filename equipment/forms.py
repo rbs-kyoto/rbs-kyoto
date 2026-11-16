@@ -10,12 +10,26 @@ from .models import (
     ReturnRecord,
     UsageRecord,
 )
+from . import help_texts
 from .numbering import generate_inventory_number
 from places.models import Place
 from roll.models import Position, RosterEntry
 
 
-class EquipmentForm(forms.ModelForm):
+class InfoTextMixin:
+    """Attach the explanation shown behind each field's "i" button."""
+
+    info_texts = {}
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        for name, field in self.fields.items():
+            field.info_text = self.info_texts.get(name, "")
+
+
+class EquipmentForm(InfoTextMixin, forms.ModelForm):
+    info_texts = help_texts.EQUIPMENT
+
     new_manufacturer = forms.CharField(
         label="新しいメーカーを追加",
         max_length=100,
@@ -116,7 +130,9 @@ class EquipmentForm(forms.ModelForm):
         return quantity
 
 
-class UsageRecordForm(forms.ModelForm):
+class UsageRecordForm(InfoTextMixin, forms.ModelForm):
+    info_texts = help_texts.USAGE
+
     destination_selection = forms.ChoiceField(
         label="貸出・持出先",
         choices=(),
@@ -222,7 +238,9 @@ class UsageRecordForm(forms.ModelForm):
         return usage
 
 
-class ReturnRecordForm(forms.ModelForm):
+class ReturnRecordForm(InfoTextMixin, forms.ModelForm):
+    info_texts = help_texts.RETURN
+
     class Meta:
         model = ReturnRecord
         fields = [
@@ -242,7 +260,9 @@ class ReturnRecordForm(forms.ModelForm):
         }
 
 
-class StorageLocationForm(forms.ModelForm):
+class StorageLocationForm(InfoTextMixin, forms.ModelForm):
+    info_texts = help_texts.LOCATION
+
     class Meta:
         model = Place
         fields = ["name", "code", "parent", "description", "notes", "is_active"]
@@ -270,7 +290,9 @@ class StorageLocationForm(forms.ModelForm):
         return parent
 
 
-class QRDesignForm(forms.ModelForm):
+class QRDesignForm(InfoTextMixin, forms.ModelForm):
+    info_texts = help_texts.QR_DESIGN
+
     color_validator = RegexValidator(
         regex=r"^#[0-9a-fA-F]{6}$",
         message="色は #RRGGBB 形式で入力してください。",
@@ -305,7 +327,9 @@ class QRDesignForm(forms.ModelForm):
         return cleaned_data
 
 
-class EquipmentImportForm(forms.Form):
+class EquipmentImportForm(InfoTextMixin, forms.Form):
+    info_texts = help_texts.IMPORT
+
     csv_file = forms.FileField(
         label="CSVファイル",
         help_text="UTF-8またはShift-JIS形式、10MB以下。",
