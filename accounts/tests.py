@@ -13,7 +13,8 @@ from py_vapid import Vapid
 from pywebpush import WebPushException
 
 from .push import PushConfigurationError, send_web_push
-from equipment.models import Category, Equipment, ReturnRecord, UsageRecord
+from equipment.models import Category, Equipment, Loan, ReturnRecord
+from equipment.testing import make_usage
 from roll.models import RosterEntry
 from .models import NotificationHistory, WebPushSubscription
 from .admin import (
@@ -143,16 +144,16 @@ class MypageEquipmentTests(TestCase):
             quantity=2,
             unit="本",
         )
-        self.own_usage = UsageRecord.objects.create(
+        self.own_usage = make_usage(
             equipment=self.equipment,
-            usage_type=UsageRecord.UsageType.LENDING,
+            usage_type=Loan.UsageType.LENDING,
             destination=str(self.entry),
             destination_entry=self.entry,
             quantity=2,
         )
-        UsageRecord.objects.create(
+        make_usage(
             equipment=self.equipment,
-            usage_type=UsageRecord.UsageType.LENDING,
+            usage_type=Loan.UsageType.LENDING,
             destination=str(self.other_entry),
             destination_entry=self.other_entry,
             quantity=1,
@@ -160,7 +161,7 @@ class MypageEquipmentTests(TestCase):
         self.client.force_login(self.user)
 
     def test_mypage_lists_only_the_current_users_unreturned_equipment(self):
-        ReturnRecord.objects.create(usage=self.own_usage, quantity=1)
+        ReturnRecord.objects.create(line=self.own_usage, quantity=1)
 
         response = self.client.get(reverse("accounts:mypage"))
 
@@ -170,7 +171,7 @@ class MypageEquipmentTests(TestCase):
         self.assertNotContains(response, "別の人")
 
     def test_mypage_does_not_show_fully_returned_equipment(self):
-        ReturnRecord.objects.create(usage=self.own_usage, quantity=2)
+        ReturnRecord.objects.create(line=self.own_usage, quantity=2)
 
         response = self.client.get(reverse("accounts:mypage"))
 

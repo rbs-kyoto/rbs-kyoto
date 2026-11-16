@@ -12,6 +12,7 @@ def record_event(
     old_value="",
     new_value="",
     reason="",
+    loan_line=None,
 ):
     """Append one entry to the equipment's history.
 
@@ -28,4 +29,5 @@ def record_event(
         old_value="" if old_value is None else str(old_value),
         new_value="" if new_value is None else str(new_value),
         reason=reason,
+        loan_line=loan_line,
     )

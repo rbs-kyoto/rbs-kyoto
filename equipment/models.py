@@ -8,6 +8,8 @@ from django.core.exceptions import ValidationError
 from django.core.validators import MinValueValidator, RegexValidator
 from django.db import models
 from django.db.models import Sum
+from django.db.models.signals import post_delete
+from django.dispatch import receiver
 from django.utils import timezone
 
 from .numbering import generate_inventory_number
@@ -136,6 +138,10 @@ class Equipment(models.Model):
         REPAIR = "repair", "修理中"
         BROKEN = "broken", "故障"
         DISABLED = "disabled", "使用停止"
+        LOST = "lost", "紛失"
+
+    # Only these can be lent. 修理中・故障・使用停止・紛失 cannot.
+    LOANABLE_CONDITIONS = frozenset({"normal", "inspection"})
 
     class Currency(models.TextChoices):
         JPY = "JPY", "円"
@@ -288,87 +294,33 @@ class Equipment(models.Model):
     def __str__(self):
         return f"{self.inventory_number} {self.name}"
 
-    @property
-    def outstanding_quantity(self):
-        usage_records = getattr(self, "usage_cache", None)
-        if usage_records is None:
-            returned = (
-                ReturnRecord.objects.filter(usage__equipment=self).aggregate(
-                    total=Sum("quantity")
-                )["total"]
-                or 0
-            )
-            lent = self.usage_records.aggregate(total=Sum("quantity"))["total"] or 0
-        else:
-            returned_records = [
-                returned
-                for usage in usage_records
-                for returned in usage.returns.all()
-            ]
-            returned = sum(record.quantity for record in returned_records)
-            lent = sum(usage.quantity for usage in usage_records)
-        return max(lent - returned, 0)
+    def _lines(self):
+        # Uses the prefetch cache when the caller prefetched "loan_lines__returns".
+        return list(self.loan_lines.all())
 
     @property
-    def unavailable_return_quantity(self):
-        usage_records = getattr(self, "usage_cache", None)
-        if usage_records is not None:
-            return sum(
-                returned.quantity
-                for usage in usage_records
-                for returned in usage.returns.all()
-                if returned.condition
-                in {
-                    ReturnRecord.Condition.DAMAGED,
-                    ReturnRecord.Condition.FAULTY,
-                    ReturnRecord.Condition.MISSING,
-                }
-            )
-        return (
-            ReturnRecord.objects.filter(
-                usage__equipment=self,
-                condition__in=[
-                    ReturnRecord.Condition.DAMAGED,
-                    ReturnRecord.Condition.FAULTY,
-                    ReturnRecord.Condition.MISSING,
-                ]
-            ).aggregate(total=Sum("quantity"))["total"]
-            or 0
-        )
+    def outstanding_quantity(self):
+        """Units currently out: lent minus returned, summed over open lines."""
+        return sum(line.remaining_quantity for line in self._lines())
+
+    @property
+    def stored_quantity(self):
+        return max(self.quantity - self.outstanding_quantity, 0)
 
     @property
     def available_quantity(self):
-        if self.condition in {
-            self.Condition.REPAIR,
-            self.Condition.BROKEN,
-            self.Condition.DISABLED,
-        }:
+        if self.condition not in self.LOANABLE_CONDITIONS:
             return 0
         return self.stored_quantity
 
     @property
-    def stored_quantity(self):
-        return min(
-            self.quantity,
-            max(
-                self.quantity
-                - self.outstanding_quantity
-                - self.unavailable_return_quantity,
-                0,
-            ),
-        )
-
-    @property
     def usage_status(self):
-        usage_records = getattr(self, "usage_cache", None)
-        if usage_records is None:
-            usage_records = self.usage_records.prefetch_related("returns").all()
-        current = [record for record in usage_records if record.remaining_quantity]
+        current = [line for line in self._lines() if line.remaining_quantity]
         if not current:
             return "保管中" if self.stored_quantity else "在庫なし"
         if (
             self.stored_quantity == 0
-            and len({record.usage_type for record in current}) == 1
+            and len({line.usage_type for line in current}) == 1
         ):
             return current[0].get_usage_type_display()
         return "一部貸出・持出中"
@@ -424,7 +376,171 @@ class Equipment(models.Model):
         self._original_model_id = self.model_id
 
 
+class Loan(models.Model):
+    """One lending/carry-out operation: who, where to, when. Items are in lines."""
+
+    class UsageType(models.TextChoices):
+        LENDING = "lending", "貸出中"
+        CARRY_OUT = "carry_out", "持出中"
+
+    usage_type = models.CharField("区分", max_length=12, choices=UsageType.choices)
+    destination = models.CharField(
+        "貸出・持出先",
+        max_length=200,
+        help_text="貸出時点の表示名のスナップショット。名簿の変更後も記録として残す。",
+    )
+    destination_entry = models.ForeignKey(
+        "roll.RosterEntry",
+        verbose_name="名簿上の貸出・持出先",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="equipment_loans",
+    )
+    responsible_person = models.ForeignKey(
+        "roll.RosterEntry",
+        verbose_name="責任者",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="responsible_loans",
+    )
+    recipient = models.CharField("受取担当者", max_length=100, blank=True)
+    started_at = models.DateTimeField("開始日時", default=timezone.now)
+    due_at = models.DateTimeField("返却予定日時", null=True, blank=True)
+    purpose = models.CharField("用途", max_length=250, blank=True)
+    notes = models.TextField("備考", blank=True)
+    created_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        verbose_name="登録者",
+        on_delete=models.SET_NULL,
+        null=True,
+        related_name="created_equipment_loans",
+    )
+    created_at = models.DateTimeField("登録日時", auto_now_add=True)
+
+    class Meta:
+        ordering = ["-started_at", "-pk"]
+        verbose_name = "貸出・持出"
+        verbose_name_plural = "貸出・持出"
+
+    def __str__(self):
+        return f"{self.get_usage_type_display()} {self.destination}"
+
+    @property
+    def remaining_quantity(self):
+        return sum(line.remaining_quantity for line in self.lines.all())
+
+    @property
+    def is_overdue(self):
+        return bool(
+            self.remaining_quantity and self.due_at and self.due_at < timezone.now()
+        )
+
+    @property
+    def status(self):
+        lines = list(self.lines.all())
+        if not any(line.remaining_quantity for line in lines):
+            return "返却済み"
+        if self.is_overdue:
+            return "期限超過"
+        if any(line.returned_quantity for line in lines):
+            return "一部返却"
+        return self.get_usage_type_display()
+
+
+class LoanLine(models.Model):
+    """An item (and how many of it) that is part of a loan."""
+
+    loan = models.ForeignKey(Loan, on_delete=models.CASCADE, related_name="lines")
+    equipment = models.ForeignKey(
+        Equipment, on_delete=models.CASCADE, related_name="loan_lines"
+    )
+    quantity = models.PositiveIntegerField(
+        "数量", validators=[MinValueValidator(1)]
+    )
+
+    class Meta:
+        ordering = ["-loan__started_at", "-loan_id", "-pk"]
+        verbose_name = "貸出明細"
+        verbose_name_plural = "貸出明細"
+        constraints = [
+            models.CheckConstraint(
+                condition=models.Q(quantity__gte=1),
+                name="equipment_loanline_quantity_at_least_one",
+            ),
+        ]
+
+    def __str__(self):
+        return f"{self.equipment} - {self.loan.destination}"
+
+    def get_usage_type_display(self):
+        return self.loan.get_usage_type_display()
+
+    @property
+    def returned_quantity(self):
+        return sum(record.quantity for record in self.returns.all())
+
+    @property
+    def remaining_quantity(self):
+        return max(self.quantity - self.returned_quantity, 0)
+
+    @property
+    def is_overdue(self):
+        return bool(
+            self.remaining_quantity
+            and self.loan.due_at
+            and self.loan.due_at < timezone.now()
+        )
+
+    @property
+    def status(self):
+        if not self.remaining_quantity:
+            return "返却済み"
+        if self.is_overdue:
+            return "期限超過"
+        if self.returned_quantity:
+            return "一部返却"
+        return self.loan.get_usage_type_display()
+
+
+LOAN_ATTRIBUTES = frozenset(
+    {
+        "usage_type",
+        "destination",
+        "destination_entry",
+        "destination_entry_id",
+        "responsible_person",
+        "recipient",
+        "started_at",
+        "due_at",
+        "purpose",
+        "notes",
+        "created_by",
+        "created_at",
+    }
+)
+
+
+def _loan_attribute(name):
+    # Read straight from the header, so lists and templates can treat a line
+    # like a lending record (line.destination, line.due_at, ...).
+    return property(lambda self: getattr(self.loan, name))
+
+
+for _name in LOAN_ATTRIBUTES:
+    setattr(LoanLine, _name, _loan_attribute(_name))
+
+
+@receiver(post_delete, sender=LoanLine)
+def delete_loan_without_lines(sender, instance, **kwargs):
+    """A loan whose last line is gone (e.g. its item was deleted) has no meaning."""
+    Loan.objects.filter(pk=instance.loan_id, lines__isnull=True).delete()
+
+
 class UsageRecord(models.Model):
+    """Legacy lending record, replaced by Loan/LoanLine. Kept only until removal."""
+
     class UsageType(models.TextChoices):
         LENDING = "lending", "貸出中"
         CARRY_OUT = "carry_out", "持出中"
@@ -512,13 +628,14 @@ class UsageRecord(models.Model):
 
 class ReturnRecord(models.Model):
     class Condition(models.TextChoices):
-        NORMAL = "normal", "正常"
-        DAMAGED = "damaged", "破損"
+        NORMAL = "normal", "問題なし"
+        INSPECTION = "inspection", "要点検"
         FAULTY = "faulty", "故障"
-        MISSING = "missing", "不足"
+        MISSING = "missing", "紛失"
+        DAMAGED = "damaged", "破損"  # legacy; new returns use 故障
 
-    usage = models.ForeignKey(
-        UsageRecord, on_delete=models.CASCADE, related_name="returns"
+    line = models.ForeignKey(
+        LoanLine, on_delete=models.CASCADE, related_name="returns"
     )
     quantity = models.PositiveIntegerField(
         "返却数量", validators=[MinValueValidator(1)]
@@ -528,7 +645,7 @@ class ReturnRecord(models.Model):
     condition = models.CharField(
         "返却時の状態", max_length=10, choices=Condition.choices, default=Condition.NORMAL
     )
-    condition_details = models.TextField("破損・故障内容", blank=True)
+    condition_details = models.TextField("故障・紛失の内容", blank=True)
     notes = models.TextField("備考", blank=True)
     processed_by = models.ForeignKey(
         settings.AUTH_USER_MODEL,
@@ -551,7 +668,7 @@ class ReturnRecord(models.Model):
         ]
 
     def __str__(self):
-        return f"{self.usage.equipment} - {self.quantity}{self.usage.equipment.unit}"
+        return f"{self.line.equipment} - {self.quantity}{self.line.equipment.unit}"
 
 
 class EquipmentReminderDelivery(models.Model):
@@ -560,8 +677,8 @@ class EquipmentReminderDelivery(models.Model):
         on_delete=models.CASCADE,
         related_name="equipment_reminders",
     )
-    usage = models.ForeignKey(
-        UsageRecord,
+    line = models.ForeignKey(
+        LoanLine,
         on_delete=models.CASCADE,
         related_name="reminder_deliveries",
     )
@@ -574,7 +691,7 @@ class EquipmentReminderDelivery(models.Model):
             models.UniqueConstraint(
                 fields=[
                     "subscription",
-                    "usage",
+                    "line",
                     "due_at_snapshot",
                     "days_until_due",
                 ],
@@ -606,6 +723,14 @@ class EquipmentHistory(models.Model):
     )
     kind = models.CharField(
         "種類", max_length=12, choices=Kind.choices, default=Kind.UPDATE
+    )
+    loan_line = models.ForeignKey(
+        LoanLine,
+        verbose_name="貸出明細",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="events",
     )
     changed_at = models.DateTimeField("変更日時", auto_now_add=True)
     changed_by = models.ForeignKey(

@@ -9,7 +9,7 @@ from requests import RequestException
 
 from accounts.models import NotificationHistory
 from accounts.push import PushConfigurationError, record_notification, send_web_push
-from equipment.models import EquipmentReminderDelivery, UsageRecord
+from equipment.models import EquipmentReminderDelivery, LoanLine
 
 
 REMINDER_DAYS_BEFORE_DUE = {7, 3, 1, 0}
@@ -39,15 +39,15 @@ class Command(BaseCommand):
 
         today = timezone.localdate()
         usages = (
-            UsageRecord.objects.filter(
-                due_at__date__lte=today + timedelta(days=7),
-                destination_entry__account__push_subscriptions__isnull=False,
-                destination_entry__account__push_subscriptions__equipment_reminders_enabled=True,
+            LoanLine.objects.filter(
+                loan__due_at__date__lte=today + timedelta(days=7),
+                loan__destination_entry__account__push_subscriptions__isnull=False,
+                loan__destination_entry__account__push_subscriptions__equipment_reminders_enabled=True,
             )
-            .select_related("equipment", "destination_entry__account")
+            .select_related("equipment__model", "loan__destination_entry__account")
             .prefetch_related(
                 "returns",
-                "destination_entry__account__push_subscriptions",
+                "loan__destination_entry__account__push_subscriptions",
             )
             .distinct()
         )
@@ -75,7 +75,7 @@ class Command(BaseCommand):
                         f"{body} "
                         f"未返却：{usage.remaining_quantity}{usage.equipment.unit}"
                     ),
-                    "url": reverse("equipment:usage_detail", args=[usage.pk]),
+                    "url": reverse("equipment:usage_detail", args=[usage.loan_id]),
                 }
             )
 
@@ -85,7 +85,7 @@ class Command(BaseCommand):
             for subscription in subscriptions:
                 already_sent = EquipmentReminderDelivery.objects.filter(
                     subscription=subscription,
-                    usage=usage,
+                    line=usage,
                     due_at_snapshot=usage.due_at,
                     days_until_due=days_until_due,
                 ).exists()
@@ -111,7 +111,7 @@ class Command(BaseCommand):
 
                 EquipmentReminderDelivery.objects.get_or_create(
                     subscription=subscription,
-                    usage=usage,
+                    line=usage,
                     due_at_snapshot=usage.due_at,
                     days_until_due=days_until_due,
                 )

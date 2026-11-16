@@ -9,11 +9,12 @@ from .models import (
     EquipmentModel,
     Manufacturer,
     QRDesign,
+    Loan,
     ReturnRecord,
-    UsageRecord,
 )
 from . import help_texts
 from .numbering import generate_inventory_number
+from .services import allowed_next_statuses
 from places.models import Place
 from roll.models import Position, RosterEntry
 
@@ -104,6 +105,15 @@ class EquipmentForm(InfoTextMixin, forms.ModelForm):
             is_active=True, is_storage=True
         )
         self.fields["location"].required = False
+        if self.instance.pk:
+            # A status can only move along the allowed transitions.
+            current = self.instance.condition
+            allowed = {current, *allowed_next_statuses(current)}
+            self.fields["condition"].choices = [
+                (value, label)
+                for value, label in Equipment.Condition.choices
+                if value in allowed
+            ]
         self.order_fields([*self.Meta.fields, "new_manufacturer"])
 
     def clean_new_manufacturer(self):
@@ -170,19 +180,23 @@ class EquipmentForm(InfoTextMixin, forms.ModelForm):
     def clean_quantity(self):
         quantity = self.cleaned_data["quantity"]
         if self.instance.pk:
-            committed = (
-                self.instance.outstanding_quantity
-                + self.instance.unavailable_return_quantity
-            )
+            committed = self.instance.outstanding_quantity
             if quantity < committed:
                 raise forms.ValidationError(
-                    f"貸出中・使用不可の数量（{committed}）を下回る数量には変更できません。"
+                    f"貸出中の数量（{committed}）を下回る数量には変更できません。"
                 )
         return quantity
 
 
-class UsageRecordForm(InfoTextMixin, forms.ModelForm):
+class LoanForm(InfoTextMixin, forms.ModelForm):
+    """Lend one item (the form for several items arrives with the cart UI)."""
+
     info_texts = help_texts.USAGE
+
+    equipment = forms.ModelChoiceField(
+        queryset=Equipment.objects.none(), label="備品"
+    )
+    quantity = forms.IntegerField(min_value=1, label="数量")
 
     destination_selection = forms.ChoiceField(
         label="貸出・持出先",
@@ -196,13 +210,11 @@ class UsageRecordForm(InfoTextMixin, forms.ModelForm):
     )
 
     class Meta:
-        model = UsageRecord
+        model = Loan
         fields = [
-            "equipment",
             "usage_type",
             "responsible_person",
             "recipient",
-            "quantity",
             "started_at",
             "due_at",
             "purpose",
@@ -235,7 +247,9 @@ class UsageRecordForm(InfoTextMixin, forms.ModelForm):
                 "notes",
             ]
         )
-        self.fields["equipment"].queryset = Equipment.objects.filter(is_active=True)
+        self.fields["equipment"].queryset = Equipment.objects.filter(
+            is_active=True
+        ).select_related("model__category")
         self.fields["responsible_person"].queryset = RosterEntry.objects.exclude(
             entry_type=RosterEntry.EntryType.ORGANIZATION
         ).order_by("name")
@@ -279,14 +293,20 @@ class UsageRecordForm(InfoTextMixin, forms.ModelForm):
                 cleaned_data["destination"] = str(destination_entry)
         return cleaned_data
 
-    def save(self, commit=True):
-        usage = super().save(commit=False)
-        usage.destination_entry = self.cleaned_data.get("destination_entry")
-        usage.destination = self.cleaned_data["destination"]
-        if commit:
-            usage.save()
-            self.save_m2m()
-        return usage
+    def loan_fields(self):
+        """Header values to pass to services.create_loan."""
+        data = self.cleaned_data
+        return {
+            "usage_type": data["usage_type"],
+            "destination": data["destination"],
+            "destination_entry": data.get("destination_entry"),
+            "responsible_person": data.get("responsible_person"),
+            "recipient": data.get("recipient", ""),
+            "started_at": data["started_at"],
+            "due_at": data.get("due_at"),
+            "purpose": data.get("purpose", ""),
+            "notes": data.get("notes", ""),
+        }
 
 
 class ReturnRecordForm(InfoTextMixin, forms.ModelForm):
@@ -309,6 +329,15 @@ class ReturnRecordForm(InfoTextMixin, forms.ModelForm):
             "condition_details": forms.Textarea(attrs={"rows": 3}),
             "notes": forms.Textarea(attrs={"rows": 3}),
         }
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        # 破損 is kept only for old records; new returns use 故障.
+        self.fields["condition"].choices = [
+            (value, label)
+            for value, label in ReturnRecord.Condition.choices
+            if value != ReturnRecord.Condition.DAMAGED
+        ]
 
 
 class StorageLocationForm(InfoTextMixin, forms.ModelForm):

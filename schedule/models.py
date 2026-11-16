@@ -168,8 +168,8 @@ class UsageLink(models.Model):
     )
     date = models.DateField("対象日")
     usage = models.OneToOneField(
-        "equipment.UsageRecord",
-        verbose_name="貸出・持出記録",
+        "equipment.LoanLine",
+        verbose_name="貸出・持出記録(明細)",
         on_delete=models.CASCADE,
         related_name="schedule_link",
     )
