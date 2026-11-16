@@ -1,10 +1,12 @@
 from django import forms
 from django.core.exceptions import ValidationError
+from django.core.files.uploadedfile import UploadedFile
 from django.core.validators import RegexValidator
 
 from .models import (
     Category,
     Equipment,
+    EquipmentModel,
     Manufacturer,
     QRDesign,
     ReturnRecord,
@@ -28,8 +30,27 @@ class InfoTextMixin:
 
 
 class EquipmentForm(InfoTextMixin, forms.ModelForm):
+    """Registers/edits one item together with the 機種 it belongs to.
+
+    The 機種 fields are declared here; saving finds or creates the matching
+    機種, so editing an item never changes its sibling items.
+    """
+
     info_texts = help_texts.EQUIPMENT
 
+    category = forms.ModelChoiceField(
+        queryset=Category.objects.all(), label="分類"
+    )
+    name = forms.CharField(label="備品名", max_length=200)
+    manufacturer = forms.ModelChoiceField(
+        queryset=Manufacturer.objects.all(),
+        required=False,
+        empty_label="---------",
+        label="メーカー",
+    )
+    model_number = forms.CharField(label="型番", max_length=100, required=False)
+    unit = forms.CharField(label="単位", max_length=20, initial="個")
+    image = forms.ImageField(label="画像", required=False)
     new_manufacturer = forms.CharField(
         label="新しいメーカーを追加",
         max_length=100,
@@ -68,15 +89,21 @@ class EquipmentForm(InfoTextMixin, forms.ModelForm):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        if not self.instance.pk:
-            self.fields["category"].queryset = Category.objects.all()
+        if self.instance.pk:
+            model = self.instance.model
+            self.initial.update(
+                category=model.category_id,
+                name=model.name,
+                manufacturer=model.manufacturer_id,
+                model_number=model.model_number,
+                unit=model.unit,
+                image=model.image,
+            )
         self.fields["manager"].queryset = Position.objects.filter(is_active=True)
         self.fields["location"].queryset = Place.objects.filter(
             is_active=True, is_storage=True
         )
         self.fields["location"].required = False
-        self.fields["manufacturer"].queryset = Manufacturer.objects.all()
-        self.fields["manufacturer"].empty_label = "---------"
         self.order_fields([*self.Meta.fields, "new_manufacturer"])
 
     def clean_new_manufacturer(self):
@@ -105,16 +132,40 @@ class EquipmentForm(InfoTextMixin, forms.ModelForm):
         equipment = super().save(commit=False)
         if not self.instance.pk and hasattr(self, "generated_inventory_number"):
             equipment.inventory_number = self.generated_inventory_number
-        manufacturer = self.cleaned_data.get("manufacturer")
+        cleaned = self.cleaned_data
+        manufacturer = cleaned.get("manufacturer")
         if manufacturer is not None and manufacturer.pk is None:
             manufacturer, _ = Manufacturer.objects.get_or_create(
                 name=manufacturer.name
             )
-        equipment.manufacturer = manufacturer
+        model = EquipmentModel.objects.resolve(
+            category=cleaned["category"],
+            name=cleaned["name"],
+            manufacturer=manufacturer,
+            model_number=cleaned.get("model_number", ""),
+            unit=cleaned["unit"],
+        )
+        self._apply_image(model, cleaned.get("image"))
+        equipment.model = model
         if commit:
             equipment.save()
             self.save_m2m()
         return equipment
+
+    @staticmethod
+    def _apply_image(model, image):
+        """The photo belongs to the 機種, so an upload/clear applies to it."""
+        if isinstance(image, UploadedFile):
+            model.image = image
+            model.save(update_fields=["image"])
+        elif image is False:
+            if model.image:
+                model.image = ""
+                model.save(update_fields=["image"])
+        elif image and not model.image:
+            # Unchanged photo carried over when the item moves to another 機種.
+            model.image = image.name
+            model.save(update_fields=["image"])
 
     def clean_quantity(self):
         quantity = self.cleaned_data["quantity"]
