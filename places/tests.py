@@ -239,7 +239,7 @@ class PlaceApiTests(TestCase):
 class PlaceManagementTests(TestCase):
     def setUp(self):
         User = get_user_model()
-        self.staff = User.objects.create_user("staff", password="pw", is_staff=True)
+        self.staff = User.objects.create_user("staff", password="pw", is_staff=True, is_superuser=True)
         make_member(self.staff)
         self.member = User.objects.create_user("member", password="pw")
         make_member(self.member)

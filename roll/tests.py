@@ -13,6 +13,7 @@ class RosterImportTests(TestCase):
         self.staff = get_user_model().objects.create_user(
             username="roll-staff",
             is_staff=True,
+            is_superuser=True,
         )
         make_member(self.staff)
         self.client.force_login(self.staff)
@@ -235,6 +236,7 @@ class RosterAccessTests(TestCase):
         staff = get_user_model().objects.create_user(
             username="roster-staff",
             is_staff=True,
+            is_superuser=True,
         )
         make_member(staff)
         position = Position.objects.create(name="会計")

@@ -111,7 +111,7 @@ class ScheduleViewTests(TestCase):
         User = get_user_model()
         self.member = User.objects.create_user("member", password="pw")
         make_member(self.member)
-        self.staff = User.objects.create_user("staff", password="pw", is_staff=True)
+        self.staff = User.objects.create_user("staff", password="pw", is_staff=True, is_superuser=True)
         make_member(self.staff)
         self.event = Event.objects.create(title="大会", start=jst(2026, 11, 10, 9, 0))
 
@@ -255,7 +255,7 @@ class WeekViewTests(TestCase):
 class AssignmentTests(TestCase):
     def setUp(self):
         User = get_user_model()
-        self.staff = User.objects.create_user("staff", password="pw", is_staff=True)
+        self.staff = User.objects.create_user("staff", password="pw", is_staff=True, is_superuser=True)
         make_member(self.staff)
         self.alice_user = User.objects.create_user("alice", password="pw")
         self.bob_user = User.objects.create_user("bob", password="pw")
@@ -397,7 +397,7 @@ class AttendanceTests(AssignmentTests):
 class EquipmentLinkTests(TestCase):
     def setUp(self):
         User = get_user_model()
-        self.staff = User.objects.create_user("staff", password="pw", is_staff=True)
+        self.staff = User.objects.create_user("staff", password="pw", is_staff=True, is_superuser=True)
         make_member(self.staff)
         self.member = User.objects.create_user("member", password="pw")
         make_member(self.member)
@@ -773,7 +773,7 @@ class PlaceIntegrationTests(TestCase):
         from places.models import Place
 
         User = get_user_model()
-        self.staff = User.objects.create_user("staff", password="pw", is_staff=True)
+        self.staff = User.objects.create_user("staff", password="pw", is_staff=True, is_superuser=True)
         make_member(self.staff)
         self.member = User.objects.create_user("member", password="pw")
         make_member(self.member)

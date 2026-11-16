@@ -200,7 +200,7 @@ MAILERS = {
     },
 }
 
-# 本文への画像アップロードは部内の編集担当だけ。制限は config/urls.py で掛けている。
+# 本文への画像アップロードは編集担当(スーパーユーザー)だけ。制限は config/urls.py で掛けている。
 CKEDITOR_5_FILE_UPLOAD_PERMISSION = "authenticated"
 
 CKEDITOR_5_CONFIGS = {

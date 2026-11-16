@@ -80,6 +80,7 @@ class NewsListTests(TestCase):
         staff = get_user_model().objects.create_user(
             username="roll-app-staff",
             is_staff=True,
+            is_superuser=True,
         )
         make_member(staff)
         self.client.force_login(staff)
@@ -384,6 +385,7 @@ class NewsCreateTests(TestCase):
             username="editor",
             password="test-password",
             is_staff=True,
+            is_superuser=True,
         )
         make_member(self.user)
         self.client.force_login(self.user)
@@ -529,10 +531,13 @@ class NewsVisibilityTests(TestCase):
         self.non_member = user_model.objects.create_user(username="school-user")
         self.member = user_model.objects.create_user(username="club-user")
         make_member(self.member)
-        self.editor = user_model.objects.create_user(
-            username="club-editor", is_staff=True
+        self.staff_member = user_model.objects.create_user(
+            username="club-staff", is_staff=True
         )
-        make_member(self.editor)
+        make_member(self.staff_member)
+        self.editor = user_model.objects.create_superuser(
+            username="club-editor", password="pw"
+        )
         common = {"date": date(2026, 11, 1), "caption": "<p>本文</p>"}
         self.public = News.objects.create(title="校外向け記事", visibility="public", **common)
         self.school = News.objects.create(title="部外向け記事", visibility="school", **common)
@@ -588,6 +593,16 @@ class NewsVisibilityTests(TestCase):
         )
         self.assertEqual(self.detail_status(self.club), 200)
         self.assertEqual(self.detail_status(self.draft), 404)
+
+    def test_staff_flag_alone_does_not_make_an_editor(self):
+        self.client.force_login(self.staff_member)
+
+        self.assertEqual(self.detail_status(self.draft), 404)
+        self.assertEqual(self.client.get(reverse("main:news_create")).status_code, 403)
+        self.assertEqual(
+            self.client.get(reverse("main:news_edit", args=[self.public.pk])).status_code,
+            403,
+        )
 
     def test_editor_also_sees_drafts(self):
         self.client.force_login(self.editor)

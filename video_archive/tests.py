@@ -84,8 +84,8 @@ class VideoListTests(TestCase):
         self.assertContains(response, self.previous_fiscal_year_video.title)
 
     def test_staff_can_see_inactive_videos(self):
-        self.user.is_staff = True
-        self.user.save(update_fields=["is_staff"])
+        self.user.is_superuser = True
+        self.user.save(update_fields=["is_superuser"])
         self.client.force_login(self.user)
 
         response = self.client.get(

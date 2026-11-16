@@ -2,7 +2,7 @@
 
     school_required      : 部外・部内(ログインしていれば誰でも)
     club_member_required : 部内(放送部員)のみ
-    club_editor_required : 部内の編集担当のみ
+    club_editor_required : 編集担当(スーパーユーザー)のみ
 
 校外(未ログイン)でも見せてよいページには、何も付けない。
 """

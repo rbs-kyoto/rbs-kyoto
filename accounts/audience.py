@@ -8,9 +8,8 @@
     部内 (CLUB)   : 放送部員。名簿(roll)でアカウントが連携され、
                     「放送部員」にチェックが付いている人。スーパーユーザーも含む。
 
-部内のうち、編集までできる人を「編集担当」と呼ぶ(is_club_editor)。
-部員であり、かつスタッフ権限(is_staff)を持つ人のこと。
-スタッフ権限だけあっても、部員でなければ何も編集できない。
+編集までできる人を「編集担当」と呼ぶ(is_club_editor)。スーパーユーザーだけがなれる。
+スタッフ権限(is_staff)は、学校のGoogleアカウントなら全員に付くので、判定には使わない。
 """
 
 from django.db import models
@@ -59,8 +58,8 @@ def is_club_member(user):
 
 
 def is_club_editor(user):
-    """部内の編集担当か(部員で、スタッフ権限を持つ人。スーパーユーザーも含む)。"""
-    return is_club_member(user) and (user.is_staff or user.is_superuser)
+    """編集担当か(スーパーユーザーだけ)。"""
+    return is_club_member(user) and user.is_superuser
 
 
 def visible_audiences(user):

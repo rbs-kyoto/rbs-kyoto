@@ -62,10 +62,12 @@
             <nav class="global-header__menu" aria-label="メインメニュー">
                 <a href="{% url 'main:about' %}">About</a>
                 <a href="{% url 'main:news_all' %}">News</a>
-                {% if is_club_editor %}
+                {% if is_club_member %}
                     <a href="{% url 'manuals:manual_list' %}">Manual</a>
                     <a href="{% url 'video_archive:video_list' %}">Video Archive</a>
                     <a href="{% url 'equipment:dashboard' %}">Equipment</a>
+                {% endif %}
+                {% if is_club_editor %}
                     <a href="{% url 'roll:list' %}">Roll</a>
                 {% endif %}
                 {% if is_club_member %}

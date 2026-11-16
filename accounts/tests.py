@@ -604,19 +604,19 @@ class AudienceTests(TestCase):
 
         self.assertTrue(is_outside_school(self.member))
 
-    def test_editor_needs_both_membership_and_staff_flag(self):
+    def test_only_superusers_are_editors(self):
         self.assertFalse(is_club_editor(self.member))
 
-        staff_only = get_user_model().objects.create_user(
-            username="staff-only", is_staff=True
+        staff_member = get_user_model().objects.create_user(
+            username="staff-member", is_staff=True
         )
-        self.assertFalse(is_club_editor(staff_only))
+        make_member(staff_member)
+        self.assertFalse(is_club_editor(staff_member))
 
-        editor = get_user_model().objects.create_user(
-            username="editor", is_staff=True
+        admin_user = get_user_model().objects.create_superuser(
+            username="editor", password="pw"
         )
-        make_member(editor)
-        self.assertTrue(is_club_editor(editor))
+        self.assertTrue(is_club_editor(admin_user))
 
 
 class ClubOnlyAccessTests(TestCase):
@@ -652,12 +652,14 @@ class ClubOnlyAccessTests(TestCase):
         self.non_member = user_model.objects.create_user(
             username="school-user", is_staff=True
         )
-        self.member = user_model.objects.create_user(username="club-user")
-        make_member(self.member)
-        self.editor = user_model.objects.create_user(
-            username="club-editor", is_staff=True
+        # スタッフ権限つきの部員も、編集はできない(編集はスーパーユーザーだけ)
+        self.member = user_model.objects.create_user(
+            username="club-user", is_staff=True
         )
-        make_member(self.editor)
+        make_member(self.member)
+        self.editor = user_model.objects.create_superuser(
+            username="club-editor", password="pw"
+        )
 
     def test_non_member_is_refused_everywhere_but_news(self):
         self.client.force_login(self.non_member)
