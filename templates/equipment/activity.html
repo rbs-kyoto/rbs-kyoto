@@ -1,0 +1,35 @@
+{% extends "equipment/base.html" %}
+
+{% block title %}操作履歴{% endblock %}
+{% block equipment_content %}
+<section class="equipment__section">
+    <div class="equipment__section-heading"><h2>操作履歴</h2></div>
+    <p class="equipment__muted">備品の登録・変更・貸出・返却・状態変更などを、新しい順に表示します。</p>
+    <form method="get" class="equipment__filters">
+        <label>キーワード<input type="search" name="q" value="{{ selected.q }}" placeholder="備品番号・備品名・項目・理由"></label>
+        <label>種類<select name="kind"><option value="">すべて</option>{% for value, label in kinds %}<option value="{{ value }}" {% if selected.kind == value %}selected{% endif %}>{{ label }}</option>{% endfor %}</select></label>
+        <label>実行者<select name="user"><option value="">すべて</option>{% for actor in actors %}<option value="{{ actor.pk }}" {% if selected.user == actor.pk|stringformat:"s" %}selected{% endif %}>{{ actor }}</option>{% endfor %}</select></label>
+        <label>期間（開始）<input type="date" name="from" value="{{ selected.from }}"></label>
+        <label>期間（終了）<input type="date" name="to" value="{{ selected.to }}"></label>
+        <button class="common-style reverse equipment__button" type="submit">絞り込む</button>
+    </form>
+    <div class="equipment__list-toolbar"><span>{{ page_obj.start_index }}–{{ page_obj.end_index }}件 / {{ page_obj.paginator.count }}件</span></div>
+    <div class="equipment__table-wrap"><table>
+        <thead><tr><th>日時</th><th>備品</th><th>種類</th><th>項目</th><th>変更前</th><th>変更後</th><th>理由</th><th>実行者</th></tr></thead>
+        <tbody>{% for event in page_obj %}<tr>
+            <td>{{ event.changed_at|date:"Y/m/d H:i" }}</td>
+            <td><a href="{% url 'equipment:detail' event.equipment.pk %}?show_archived=1">{{ event.equipment.inventory_number }} {{ event.equipment.name }}</a></td>
+            <td>{{ event.get_kind_display }}</td><td>{{ event.field_name }}</td>
+            <td>{{ event.old_value|default:"—" }}</td><td>{{ event.new_value|default:"—" }}</td>
+            <td>{{ event.reason|default:"—" }}</td><td>{{ event.changed_by|default:"—" }}</td>
+        </tr>{% empty %}<tr><td colspan="8" class="equipment__empty">該当する履歴はありません。</td></tr>{% endfor %}</tbody>
+    </table></div>
+    {% if page_obj.has_other_pages %}
+    <nav class="equipment__pagination" aria-label="ページ送り">
+        {% if page_obj.has_previous %}<a class="equipment__page-arrow" href="?{{ query_string }}&page={{ page_obj.previous_page_number }}" aria-label="前のページ">‹</a>{% endif %}
+        <span class="equipment__page-number is-current">{{ page_obj.number }} / {{ page_obj.paginator.num_pages }}</span>
+        {% if page_obj.has_next %}<a class="equipment__page-arrow" href="?{{ query_string }}&page={{ page_obj.next_page_number }}" aria-label="次のページ">›</a>{% endif %}
+    </nav>
+    {% endif %}
+</section>
+{% endblock %}

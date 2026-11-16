@@ -5,6 +5,7 @@
 <section class="equipment__section">
     <div class="equipment__section-heading"><h2>貸出・持出一覧</h2><a class="common-style reverse equipment__button" href="{% url 'equipment:lending_register' %}">貸出・持出を登録</a></div>
     <form method="get" class="equipment__filters">
+        <label>キーワード<input type="search" name="q" value="{{ query }}" placeholder="貸出先・受取担当者・備品番号・備品名"></label>
         <label>区分<select name="type"><option value="">すべて</option>{% for value, label in usage_types %}<option value="{{ value }}" {% if selected_type == value %}selected{% endif %}>{{ label }}</option>{% endfor %}</select></label>
         <label>状況<select name="status"><option value="">すべて</option><option value="open" {% if selected_status == "open" %}selected{% endif %}>利用中</option><option value="overdue" {% if selected_status == "overdue" %}selected{% endif %}>期限超過</option><option value="closed" {% if selected_status == "closed" %}selected{% endif %}>返却済み</option></select></label>
         <button class="common-style reverse equipment__button" type="submit">絞り込む</button>

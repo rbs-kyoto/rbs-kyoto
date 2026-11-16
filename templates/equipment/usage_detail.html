@@ -12,8 +12,30 @@
         <dt>備考</dt><dd>{{ loan.notes|linebreaksbr|default:"—" }}</dd>
         <dt>登録者 / 登録日時</dt><dd>{{ loan.created_by|default:"—" }} / {{ loan.created_at|date:"Y/m/d H:i" }}</dd>
     </dl>
+    {% if loan.remaining_quantity %}
+    <h3 class="equipment__subheading">まとめて返却</h3>
+    <form method="post" action="{% url 'equipment:return_all' loan.pk %}" class="equipment__form">
+        {% csrf_token %}
+        <div class="equipment__table-wrap"><table>
+            <thead><tr><th>返却</th><th>備品</th><th>未返却</th><th>返却時の状態</th><th>内容（故障・紛失・要点検のとき）</th></tr></thead>
+            <tbody>
+            {% for line in loan.lines.all %}{% if line.remaining_quantity %}
+            <tr>
+                <td><input type="checkbox" name="return_{{ line.pk }}" value="1" checked aria-label="{{ line.equipment.name }}を返却"></td>
+                <td>{{ line.equipment.inventory_number }} {{ line.equipment.name }}</td>
+                <td>{{ line.remaining_quantity }}{{ line.equipment.unit }}</td>
+                <td><select name="condition_{{ line.pk }}" aria-label="{{ line.equipment.name }}の状態">{% for value, label in return_conditions %}<option value="{{ value }}">{{ label }}</option>{% endfor %}</select></td>
+                <td><input type="text" name="details_{{ line.pk }}" maxlength="200" aria-label="{{ line.equipment.name }}の内容"></td>
+            </tr>
+            {% endif %}{% endfor %}
+            </tbody>
+        </table></div>
+        <div class="equipment__field"><label for="return-confirmed-by">返却確認者</label><input type="text" id="return-confirmed-by" name="confirmed_by" maxlength="100"></div>
+        <div class="equipment__actions"><button class="common-style reverse equipment__button" type="submit">チェックした備品を返却</button></div>
+    </form>
+    {% endif %}
     {% for line in loan.lines.all %}
-    <h3><a href="{% url 'equipment:detail' line.equipment.pk %}">{{ line.equipment.inventory_number }} {{ line.equipment.name }}</a></h3>
+    <h3 class="equipment__subheading"><a href="{% url 'equipment:detail' line.equipment.pk %}">{{ line.equipment.inventory_number }} {{ line.equipment.name }}</a></h3>
     <p>{{ line.quantity }}{{ line.equipment.unit }}（未返却 {{ line.remaining_quantity }}{{ line.equipment.unit }} · {{ line.status }}）
         {% if line.remaining_quantity %}<a class="common-style reverse equipment__button" href="{% url 'equipment:return' line.pk %}">返却を記録</a>{% endif %}</p>
     <div class="equipment__table-wrap"><table><thead><tr><th>返却日時</th><th>数量</th><th>状態</th><th>確認者</th><th>処理者</th><th>詳細</th></tr></thead><tbody>

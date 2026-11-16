@@ -189,14 +189,22 @@ class EquipmentForm(InfoTextMixin, forms.ModelForm):
 
 
 class LoanForm(InfoTextMixin, forms.ModelForm):
-    """Lend one item (the form for several items arrives with the cart UI)."""
+    """Header of a loan (who, where to, when). The items are chosen in the cart."""
 
     info_texts = help_texts.USAGE
 
-    equipment = forms.ModelChoiceField(
-        queryset=Equipment.objects.none(), label="備品"
+    destination_search = forms.CharField(
+        label="貸出・持出先を検索",
+        required=False,
+        widget=forms.TextInput(
+            attrs={
+                "type": "search",
+                "data-filter-select": "id_destination_selection",
+                "autocomplete": "off",
+                "placeholder": "名前・学年・組で絞り込み",
+            }
+        ),
     )
-    quantity = forms.IntegerField(min_value=1, label="数量")
 
     destination_selection = forms.ChoiceField(
         label="貸出・持出先",
@@ -234,22 +242,18 @@ class LoanForm(InfoTextMixin, forms.ModelForm):
         super().__init__(*args, **kwargs)
         self.order_fields(
             [
-                "equipment",
                 "usage_type",
+                "destination_search",
                 "destination_selection",
                 "other_destination",
                 "responsible_person",
                 "recipient",
-                "quantity",
                 "started_at",
                 "due_at",
                 "purpose",
                 "notes",
             ]
         )
-        self.fields["equipment"].queryset = Equipment.objects.filter(
-            is_active=True
-        ).select_related("model__category")
         self.fields["responsible_person"].queryset = RosterEntry.objects.exclude(
             entry_type=RosterEntry.EntryType.ORGANIZATION
         ).order_by("name")

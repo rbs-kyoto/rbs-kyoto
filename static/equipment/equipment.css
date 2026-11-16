@@ -829,3 +829,27 @@ body.dark-mode .equipment__status--unregistered {
 .equipment__info-text[hidden] {
     display: none;
 }
+
+/* Wide blocks inside a multi-column form group take the whole row. */
+.equipment__form-group > .equipment__table-wrap,
+.equipment__form-group > .equipment__field-pair {
+    grid-column: 1 / -1;
+}
+
+.equipment .equipment__subheading {
+    margin: 1.75rem 0 .5rem;
+}
+
+.equipment input[name^="details_"] {
+    min-width: 12rem;
+}
+
+.equipment__table-wrap input[type="text"],
+.equipment__table-wrap input[type="number"] {
+    min-width: 6rem;
+}
+
+.equipment__table-wrap input[type="checkbox"] {
+    width: 1.1rem;
+    height: 1.1rem;
+}

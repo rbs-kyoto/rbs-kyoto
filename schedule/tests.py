@@ -501,12 +501,39 @@ class EquipmentLinkTests(TestCase):
         self.assertIn("started_at=2026-11-10T13%3A00", link)
         self.assertIn("due_at=2026-11-10T16%3A00", link)
 
-        form_page = self.client.get(link)
+        # The link puts the item in the lending cart and opens the form with the
+        # event's details (quantity, times, purpose, schedule link) carried over.
+        form_page = self.client.get(link, follow=True)
         form = form_page.context["form"]
-        self.assertEqual(form.initial["equipment"], str(self.mic.pk))
-        self.assertEqual(form.initial["quantity"], 2)
+        row = form_page.context["rows"][0]
+        self.assertEqual(row["equipment"].pk, self.mic.pk)
+        self.assertEqual(row["quantity"], 2)
         self.assertEqual(form.initial["purpose"], "撮影")
+        self.assertEqual(form.initial["started_at"], "2026-11-10T13:00")
+        self.assertEqual(form.initial["due_at"], "2026-11-10T16:00")
         self.assertContains(form_page, 'name="schedule_item"')
+        self.assertContains(form_page, 'name="schedule_date"')
+
+    def test_cart_actions_keep_the_schedule_link_and_typed_details(self):
+        event = self.make_event(
+            "撮影", jst(2026, 11, 10, 13), quantity=2, end=jst(2026, 11, 10, 16)
+        )
+        item = event.equipment_items.get()
+        self.client.force_login(self.staff)
+        response = self.client.post(
+            reverse("equipment:cart_add"),
+            {
+                "equipment": [item.equipment_id],
+                f"quantity_{item.equipment_id}": "2",
+                "schedule_item": item.pk,
+                "schedule_date": "2026-11-10",
+                "purpose": "撮影",
+                "started_at": "2026-11-10T13:00",
+            },
+            follow=True,
+        )
+        self.assertContains(response, 'name="schedule_item"')
+        self.assertEqual(response.context["form"].initial["purpose"], "撮影")
 
     def register_lending(self, user, event, day="2026-11-10", quantity=2):
         item = event.equipment_items.get()
