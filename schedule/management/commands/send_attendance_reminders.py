@@ -11,8 +11,10 @@ from django.core.management.base import BaseCommand, CommandError
 from django.urls import reverse
 from django.utils import timezone
 from pywebpush import WebPushException
+from requests.exceptions import RequestException
 
-from accounts.push import PushConfigurationError, send_web_push
+from accounts.models import NotificationHistory
+from accounts.push import PushConfigurationError, record_notification, send_web_push
 from schedule.models import Attendance, AttendanceReminderDelivery, Event
 from schedule.recurrence import expand
 
@@ -97,6 +99,7 @@ class Command(BaseCommand):
                     for sub in account.push_subscriptions.all()
                     if sub.schedule_reminders_enabled
                 ]
+                history_recorded = False  # 端末が複数あっても、履歴は1通につき1件だけ残す
                 for subscription in subscriptions:
                     already_sent = AttendanceReminderDelivery.objects.filter(
                         subscription=subscription,
@@ -120,13 +123,9 @@ class Command(BaseCommand):
                         raise CommandError(
                             f"Web Push の設定を確認してください: {error}"
                         ) from error
-                    except WebPushException as error:
+                    except (WebPushException, RequestException) as error:
                         failures += 1
-                        status = (
-                            error.response.status_code
-                            if error.response is not None
-                            else "unknown"
-                        )
+                        status = getattr(getattr(error, "response", None), "status_code", None) or "unknown"
                         self.stderr.write(
                             f"Push failed for subscription {subscription.pk} (HTTP {status})."
                         )
@@ -142,6 +141,11 @@ class Command(BaseCommand):
                         days_until=days_until,
                     )
                     sent += 1
+                    if not history_recorded:
+                        record_notification(
+                            account.pk, NotificationHistory.Kind.SCHEDULE, payload
+                        )
+                        history_recorded = True
 
         if failures:
             raise CommandError(
