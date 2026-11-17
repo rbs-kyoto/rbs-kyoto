@@ -1031,7 +1031,9 @@ class RosterTableTests(TestCase):
     def setUp(self):
         from roll.models import Position
 
-        self.staff = get_user_model().objects.create_user("staff", password="pw", is_staff=True)
+        self.staff = get_user_model().objects.create_user(
+            "staff", password="pw", is_staff=True, is_superuser=True
+        )
         self.captain = Position.objects.create(name="部長")
         self.sound = Position.objects.create(name="音声係")
         self.a = RosterEntry.objects.create(
