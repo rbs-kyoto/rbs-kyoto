@@ -1,0 +1,18 @@
+{% extends "beon/base.html" %}
+{% block title %}担当者変更{% endblock %}
+{% block content %}
+<div class="view active">
+    <div class="main-header"><strong>担当者変更</strong><span class="demo-label">{{ session.name }}</span></div>
+    <div class="broadcast-content">
+        <form method="post" class="beon-form">
+            {% csrf_token %}
+            {{ form.non_field_errors }}
+            {% for field in form %}
+                <label>{{ field.label }}{{ field }}{{ field.errors }}</label>
+            {% endfor %}
+            <button type="submit">担当者を更新</button>
+        </form>
+    </div>
+    <div class="main-bottom"><a href="{% url 'beon:index' %}">戻る</a></div>
+</div>
+{% endblock %}

@@ -1,0 +1,18 @@
+{% extends "beon/base.html" %}
+{% block title %}カテゴリ選択{% endblock %}
+{% block content %}
+<div class="view active">
+    <div class="main-header"><strong>カテゴリを選択してください。</strong><span class="demo-label">be.ON</span></div>
+    <div class="broadcast-content">
+        {% for category in categories %}
+            <a class="selection-card" href="{% url 'beon:sessions' category.pk %}">
+                <strong>{{ category.name }}</strong>
+                <span>{{ category.event_date|date:"Y年n月j日"|default:"開催日未設定" }}</span>
+            </a>
+        {% empty %}
+            <p class="earthquake-message">参加可能なカテゴリはありません。管理者に担当割当を確認してください。</p>
+        {% endfor %}
+    </div>
+    <div class="main-bottom"></div>
+</div>
+{% endblock %}

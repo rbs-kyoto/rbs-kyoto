@@ -26,6 +26,9 @@
         </div>
         <form class="login-form" method="post">
             {% csrf_token %}
+            {% if next %}
+                <input type="hidden" name="next" value="{{ next }}">
+            {% endif %}
             <div class="login_without_google">
                 {% if error %}
                     <div class="login-error">
@@ -67,7 +70,7 @@
             </div>
             {% for provider in socialaccount_providers %}
             {% if provider.id == "google" %}
-            <a class="common-style white login_with_google Google-font" href="{% provider_login_url 'google' %}">
+            <a class="common-style white login_with_google Google-font" href="{% provider_login_url 'google' next=next %}">
                 <img class="login_with_google-logo" src="{% static 'main/img/Google.svg' %}" alt="Google">
                 Googleでログイン
             </a>

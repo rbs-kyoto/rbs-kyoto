@@ -1,0 +1,28 @@
+{% extends "beon/base.html" %}
+{% block title %}{{ category.name }}｜セッション選択{% endblock %}
+{% block content %}
+<div class="view active">
+    <div class="main-header"><strong>{{ category.name }}</strong><span class="demo-label">セッション選択</span></div>
+    <div class="broadcast-content">
+        {% for item in sessions %}
+            <div class="selection-card">
+                <div>
+                    <strong>{{ item.name }}</strong>
+                    <span>{{ item.get_status_display }}</span>
+                </div>
+                {% if item.is_joinable %}
+                    <form method="post" action="{% url 'beon:join' item.pk %}">
+                        {% csrf_token %}
+                        <button type="submit">入室する</button>
+                    </form>
+                {% else %}
+                    <button disabled>入室不可</button>
+                {% endif %}
+            </div>
+        {% empty %}
+            <p class="earthquake-message">このカテゴリに参加可能な担当セッションはありません。</p>
+        {% endfor %}
+    </div>
+    <div class="main-bottom"></div>
+</div>
+{% endblock %}

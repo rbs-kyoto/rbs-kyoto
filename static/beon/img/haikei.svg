@@ -1,0 +1,130 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!-- Created with Inkscape (http://www.inkscape.org/) -->
+
+<svg
+   width="2360"
+   height="1640"
+   viewBox="0 0 624.41667 433.91666"
+   version="1.1"
+   id="svg1"
+   inkscape:version="1.4.4 (dcaf3e7, 2026-05-05)"
+   sodipodi:docname="haikei.svg"
+   xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
+   xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
+   xmlns:xlink="http://www.w3.org/1999/xlink"
+   xmlns="http://www.w3.org/2000/svg"
+   xmlns:svg="http://www.w3.org/2000/svg">
+  <sodipodi:namedview
+     id="namedview1"
+     pagecolor="#ffffff"
+     bordercolor="#000000"
+     borderopacity="0.25"
+     inkscape:showpageshadow="2"
+     inkscape:pageopacity="0.0"
+     inkscape:pagecheckerboard="0"
+     inkscape:deskcolor="#d1d1d1"
+     inkscape:document-units="mm"
+     inkscape:clip-to-page="true"
+     inkscape:zoom="0.32004787"
+     inkscape:cx="1260.7489"
+     inkscape:cy="963.91831"
+     inkscape:window-width="1710"
+     inkscape:window-height="1046"
+     inkscape:window-x="0"
+     inkscape:window-y="66"
+     inkscape:window-maximized="0"
+     inkscape:current-layer="layer1" />
+  <defs
+     id="defs1">
+    <linearGradient
+       id="linearGradient1"
+       inkscape:collect="always">
+      <stop
+         style="stop-color:#72121b;stop-opacity:1;"
+         offset="0"
+         id="stop1" />
+      <stop
+         style="stop-color:#620610;stop-opacity:1;"
+         offset="0.3131783"
+         id="stop2" />
+    </linearGradient>
+    <linearGradient
+       inkscape:collect="always"
+       xlink:href="#linearGradient1"
+       id="linearGradient2"
+       x1="41.827984"
+       y1="60.854168"
+       x2="582.58868"
+       y2="373.0625"
+       gradientUnits="userSpaceOnUse" />
+    <linearGradient
+       inkscape:collect="always"
+       xlink:href="#linearGradient1"
+       id="linearGradient3"
+       gradientUnits="userSpaceOnUse"
+       x1="41.827984"
+       y1="60.854168"
+       x2="582.58868"
+       y2="373.0625"
+       gradientTransform="translate(-55.297917,113.77083)" />
+  </defs>
+  <g
+     inkscape:label="Layer 1"
+     inkscape:groupmode="layer"
+     id="layer1">
+    <rect
+       style="font-variation-settings:'wght' 700;fill:url(#linearGradient2);fill-opacity:1;stroke-width:0.4;stroke-linecap:round;paint-order:stroke fill markers"
+       id="rect1"
+       width="624.41669"
+       height="433.91666"
+       x="0"
+       y="0" />
+    <rect
+       style="font-variation-settings:'wght' 700;fill:url(#linearGradient3);fill-opacity:1;stroke-width:0.4;stroke-linecap:round;paint-order:stroke fill markers"
+       id="rect1-7"
+       width="624.41669"
+       height="433.91666"
+       x="-55.297916"
+       y="113.77083" />
+    <rect
+       style="font-variation-settings:'wght' 700;fill:#8b2d36;fill-opacity:1;stroke-width:0.406994;stroke-linecap:round;paint-order:stroke fill markers"
+       id="rect2"
+       width="550"
+       height="449.22357"
+       x="166.26762"
+       y="0"
+       transform="matrix(1,0,-0.25881905,0.96592583,0,0)" />
+    <rect
+       style="font-variation-settings:'wght' 700;fill:#a0464c;fill-opacity:1;stroke-width:0.406994;stroke-linecap:round;paint-order:stroke fill markers"
+       id="rect2-9"
+       width="550"
+       height="449.22357"
+       x="216.26762"
+       y="0"
+       transform="matrix(1,0,-0.25881905,0.96592583,0,0)" />
+    <rect
+       style="font-variation-settings:'wght' 700;fill:#620610;fill-opacity:1;stroke-width:0.406994;stroke-linecap:round;paint-order:stroke fill markers"
+       id="rect2-7"
+       width="550"
+       height="449.22357"
+       x="516.26764"
+       y="8.9797031e-06"
+       transform="matrix(1,0,-0.25881905,0.96592583,0,0)" />
+    <rect
+       style="font-variation-settings:'wght' 700;fill:#8b2d36;fill-opacity:1;stroke-width:0.406994;stroke-linecap:round;paint-order:stroke fill markers"
+       id="rect2-7-5"
+       width="550"
+       height="449.22357"
+       x="537.01129"
+       y="-1.001041e-05"
+       transform="matrix(1,0,-0.25881905,0.96592583,0,0)" />
+    <rect
+       style="font-variation-settings:'wght' 700;fill:#620610;fill-opacity:1;stroke-width:0.406994;stroke-linecap:round;paint-order:stroke fill markers"
+       id="rect2-7-56"
+       width="550"
+       height="449.22357"
+       x="649.20142"
+       y="8.9797031e-06"
+       transform="matrix(1,0,-0.25881905,0.96592583,0,0)" />
+  </g>
+</svg>

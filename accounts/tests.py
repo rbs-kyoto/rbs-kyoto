@@ -387,6 +387,33 @@ class MypageEquipmentTests(TestCase):
         subscription.refresh_from_db()
         self.assertFalse(subscription.equipment_reminders_enabled)
 
+    def test_vapid_mismatch_requests_push_subscription_refresh(self):
+        subscription = WebPushSubscription.objects.create(
+            user=self.user,
+            endpoint="https://fcm.googleapis.com/fcm/send/mismatch",
+            p256dh="public-key",
+            auth="auth-secret",
+        )
+        error = WebPushException("VAPID mismatch")
+        error.response = SimpleNamespace(status_code=403)
+        with patch("accounts.views.send_web_push", side_effect=error):
+            response = self.client.post(
+                reverse("accounts:push_subscription_preferences"),
+                data=json.dumps(
+                    {
+                        "endpoint": subscription.endpoint,
+                        "type": "news",
+                        "enabled": True,
+                    }
+                ),
+                content_type="application/json",
+            )
+
+        self.assertEqual(response.status_code, 409)
+        self.assertIn("再登録", response.json()["error"])
+        subscription.refresh_from_db()
+        self.assertFalse(subscription.news_notifications_enabled)
+
     @override_settings(
         WEBPUSH_VAPID_PUBLIC_KEY="",
         WEBPUSH_VAPID_PRIVATE_KEY="",

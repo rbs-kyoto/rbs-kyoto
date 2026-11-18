@@ -28,11 +28,33 @@ from .models import (
     User,
     WebPushSubscription,
 )
+from urllib.parse import urlsplit
+from django.utils.http import url_has_allowed_host_and_scheme
+
+
+def get_login_redirect_url(request):
+    next_url = request.POST.get("next") or request.GET.get("next")
+
+    allowed_hosts = {
+        urlsplit(url).netloc
+        for url in settings.LOGIN_REDIRECT_ALLOWED_HOSTS
+    }
+
+    if next_url and url_has_allowed_host_and_scheme(
+        next_url,
+        allowed_hosts=allowed_hosts,
+        require_https=request.is_secure(),
+    ):
+        return next_url
+
+    return reverse("accounts:mypage")
 
 
 def login_view(request):
+    redirect_url = get_login_redirect_url(request)
+
     if request.user.is_authenticated:
-        return redirect("accounts:mypage")
+        return redirect(redirect_url)
 
     if request.method == "POST":
         username = request.POST.get("username", "")
@@ -60,16 +82,25 @@ def login_view(request):
         if user is not None:
             throttle.clear(FailedAttempt.Kind.LOGIN, username)
             login(request, user)
-            return redirect("accounts:mypage")
+            return redirect(redirect_url)
 
         throttle.record_failure(FailedAttempt.Kind.LOGIN, username)
         return render(
             request,
             "accounts/login.html",
-            {"error": "ユーザー名またはパスワードが正しくありません。"},
+            {
+                "error": "ユーザー名またはパスワードが正しくありません。",
+                "next": request.POST.get("next", ""),
+            },
         )
 
-    return render(request, "accounts/login.html")
+    return render(
+        request,
+        "accounts/login.html",
+        {
+            "next": request.GET.get("next", ""),
+        },
+    )
 
 @login_required
 def mypage(request):
@@ -278,7 +309,19 @@ def push_subscription_preferences(request):
                 },
                 status=503,
             )
-        except WebPushException:
+        except WebPushException as error:
+            status_code = (
+                error.response.status_code
+                if error.response is not None
+                else None
+            )
+            if status_code == 403:
+                return JsonResponse(
+                    {
+                        "error": "通知購読を再登録します。"
+                    },
+                    status=409,
+                )
             return JsonResponse(
                 {"error": "確認通知を送信できませんでした。時間をおいて再度お試しください。"},
                 status=502,

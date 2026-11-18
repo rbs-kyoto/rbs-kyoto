@@ -101,7 +101,7 @@
         }
     }
 
-    async function toggleNotification(type, button) {
+    async function toggleNotification(type, button, allowResubscribe = true) {
         button.disabled = true;
         try {
             const nextEnabled = !enabled[type];
@@ -125,6 +125,16 @@
             if (error.status === 404) {
                 // The server lost this subscription; register it again next time.
                 serverSubscribed = false;
+            } else if (error.status === 409 && subscription && allowResubscribe) {
+                await subscription.unsubscribe();
+                subscription = null;
+                try {
+                    await toggleNotification(type, button, false);
+                    return;
+                } catch {
+                    setStatus(type, "通知購読の更新に失敗しました。ブラウザーの通知設定をご確認ください。");
+                    return;
+                }
             }
             if (error.status === 410 && subscription) {
                 await subscription.unsubscribe();
@@ -153,6 +163,9 @@
         }
         const registration = await navigator.serviceWorker.ready;
         subscription = await registration.pushManager.getSubscription();
+        if (subscription) {
+            await post(subscribeUrl, subscription.toJSON());
+        }
         await loadPreferences();
     }
 
