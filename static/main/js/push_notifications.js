@@ -77,22 +77,21 @@
     }
 
     async function ensureSubscription() {
-        if (subscription) {
-            return;
+        if (!subscription) {
+            const permission = await Notification.requestPermission();
+            if (permission !== "granted") {
+                throw new Error("通知が許可されていません。ブラウザーの設定をご確認ください。");
+            }
+            const registration = await navigator.serviceWorker.ready;
+            subscription = await registration.pushManager.subscribe({
+                userVisibleOnly: true,
+                applicationServerKey: decodeApplicationServerKey(publicKey),
+            });
         }
-        const permission = await Notification.requestPermission();
-        if (permission !== "granted") {
-            throw new Error("通知が許可されていません。ブラウザーの設定をご確認ください。");
-        }
-        const registration = await navigator.serviceWorker.ready;
-        subscription = await registration.pushManager.subscribe({
-            userVisibleOnly: true,
-            applicationServerKey: decodeApplicationServerKey(publicKey),
-        });
         await post(subscribeUrl, subscription.toJSON());
     }
 
-    async function toggleNotification(type, button) {
+    async function toggleNotification(type, button, allowResubscribe = true) {
         button.disabled = true;
         try {
             const nextEnabled = !enabled[type];
@@ -113,6 +112,17 @@
                     : "通知を停止しました。",
             );
         } catch (error) {
+            if (error.status === 409 && subscription && allowResubscribe) {
+                await subscription.unsubscribe();
+                subscription = null;
+                try {
+                    await toggleNotification(type, button, false);
+                    return;
+                } catch {
+                    setStatus(type, "通知購読の更新に失敗しました。ブラウザーの通知設定をご確認ください。");
+                    return;
+                }
+            }
             if (error.status === 410 && subscription) {
                 await subscription.unsubscribe();
                 subscription = null;
@@ -139,6 +149,9 @@
         }
         const registration = await navigator.serviceWorker.ready;
         subscription = await registration.pushManager.getSubscription();
+        if (subscription) {
+            await post(subscribeUrl, subscription.toJSON());
+        }
         await loadPreferences();
     }
 

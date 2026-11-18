@@ -291,7 +291,19 @@ def push_subscription_preferences(request):
                 },
                 status=503,
             )
-        except WebPushException:
+        except WebPushException as error:
+            status_code = (
+                error.response.status_code
+                if error.response is not None
+                else None
+            )
+            if status_code == 403:
+                return JsonResponse(
+                    {
+                        "error": "通知購読を再登録します。"
+                    },
+                    status=409,
+                )
             return JsonResponse(
                 {"error": "確認通知を送信できませんでした。時間をおいて再度お試しください。"},
                 status=502,
