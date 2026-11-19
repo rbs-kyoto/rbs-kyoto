@@ -83,6 +83,7 @@ class NotificationHistory(models.Model):
         EQUIPMENT = "equipment", "返却予定"
         NEWS = "news", "新着投稿"
         SCHEDULE = "schedule", "出欠リマインド"
+        REVISE = "revise", "Revise投稿"
 
     user = models.ForeignKey(
         settings.AUTH_USER_MODEL,

@@ -1,0 +1,128 @@
+{% extends "main/base.html" %}
+{% load static %}
+
+{% block title %}{{ post.title }} | Revise{% endblock %}
+{% block extra_css %}<link rel="stylesheet" href="{% static 'revise/revise.css' %}">{% endblock %}
+
+{% block content %}
+<main class="revise-page">
+  <p class="revise-crumb"><a href="{% url 'revise:index' %}">Revise</a> ／ 一覧にもどる</p>
+  <header class="revise-heading">
+    <div>
+      <h1>{{ post.title }} <span class="revise-meta">#{{ post.pk }}</span></h1>
+      <p class="revise-meta">
+        投稿：{{ post.author.display_name|default:post.author.username }} ・
+        {{ post.created_at|date:"Y/m/d H:i" }} ・
+        目標の尺：{% if post.target_seconds %}{{ post.target_seconds }}秒{% else %}未設定{% endif %}
+      </p>
+    </div>
+    <div>
+      {% if can_proofread %}
+      <a class="common-style reverse" href="{% url 'revise:proofread' post.pk %}">添削する</a>
+      {% endif %}
+      {% if can_close %}
+      <form method="post" action="{% url 'revise:toggle_close' post.pk %}" style="display:inline">
+        {% csrf_token %}
+        <button class="common-style" type="submit">{% if post.status == 'open' %}Closeする{% else %}Reopenする{% endif %}</button>
+      </form>
+      {% endif %}
+    </div>
+  </header>
+
+  <p class="revise-status {% if post.status == 'closed' %}closed{% endif %}">{{ post.get_status_display }}</p>
+
+  <section class="revise-instruction">
+    <div class="revise-description"><strong>投稿者からの指示</strong></div>
+    <p>{{ post.instruction|default:"指示はありません。"|linebreaksbr }}</p>
+  </section>
+
+  {% if post.is_practice %}
+  <p class="revise-badge">練習用・放送では使いません</p>
+  {% endif %}
+
+  <article class="revise-card">
+    <header class="revise-card__head">
+      <div class="revise-avatar">{{ post.author.display_name|default:post.author.username|first|upper }}</div>
+      <div>
+        <strong>{{ post.author.display_name|default:post.author.username }}</strong>
+        <span class="revise-meta">さんの原稿</span>
+      </div>
+      <span class="revise-tag">原稿</span>
+    </header>
+    <div class="revise-card__body">{{ post.body|linebreaksbr }}</div>
+    <dl class="revise-facts">
+      <div><dt>文字数</dt><dd>{{ character_count }}字</dd></div>
+      <div><dt>読み時間目安</dt><dd>約{{ reading_seconds }}秒</dd></div>
+      <div><dt>目標の尺</dt><dd>{% if post.target_seconds %}{{ post.target_seconds }}秒{% else %}未設定{% endif %}</dd></div>
+      <div><dt>60字超の文</dt><dd>{{ long_sentence_count }}文</dd></div>
+    </dl>
+  </article>
+
+  <section class="revise-section-title">
+    <h2>手動添削</h2>
+  </section>
+  {% for revision in post.manual_revisions.all %}
+  <article class="revise-card">
+    <header class="revise-card__head">
+      <div class="revise-avatar">{{ revision.author.display_name|default:revision.author.username|first|upper }}</div>
+      <div>
+        <strong>{{ revision.author.display_name|default:revision.author.username }}</strong>
+        <span class="revise-meta">・{{ revision.created_at|date:"Y/m/d H:i" }}</span>
+      </div>
+      <span class="revise-tag">手動添削</span>
+    </header>
+    <h3 class="revise-manual__title">添正文</h3>
+    <div class="revise-card__body">{{ revision.revised_body|linebreaksbr }}</div>
+    <h3 class="revise-manual__title">6観点とその他</h3>
+    <div class="revise-manual__observations">
+      {% for label, observation in revision.observations.items %}
+      {% if observation.status == "指摘あり" or observation.status == "提案あり" %}
+      <section class="revise-manual__observation">
+        <div>
+          <strong>{{ label }}</strong>
+          <span class="revise-badge">{{ observation.status|default:"未入力" }}</span>
+        </div>
+        {% if observation.text %}
+        <p>{{ observation.text|linebreaksbr }}</p>
+        {% else %}
+        <p class="revise-meta">内容の記載なし</p>
+        {% endif %}
+      </section>
+      {% endif %}
+      {% empty %}
+      <p class="revise-meta">観点の記載なし</p>
+      {% endfor %}
+    </div>
+    {% if revision.audio %}
+    <div class="revise-voice">
+      <strong>音声お手本</strong>
+      <audio controls src="{{ revision.audio.url }}"></audio>
+    </div>
+    {% endif %}
+  </article>
+  {% empty %}
+  <p class="revise-meta">手動添削はまだありません。</p>
+  {% endfor %}
+
+  <section class="revise-section-title">
+    <h2>コメント</h2>
+  </section>
+  <div class="revise-card">
+    {% for comment in post.comments.all %}
+    <article class="revise-comment">
+      <div class="revise-avatar">{{ comment.author.display_name|default:comment.author.username|first|upper }}</div>
+      <div>
+        <strong>{{ comment.author.display_name|default:comment.author.username }}</strong>
+        <time>{{ comment.created_at|date:"Y/m/d H:i" }}</time>
+        <p>{{ comment.body|linebreaksbr }}</p>
+      </div>
+    </article>
+    {% endfor %}
+    <form method="post" class="revise-comment-form">
+      {% csrf_token %}
+      <textarea name="body" rows="3" placeholder="コメントを入力" required></textarea>
+      <button class="common-style reverse" type="submit">コメント</button>
+    </form>
+  </div>
+</main>
+{% endblock %}

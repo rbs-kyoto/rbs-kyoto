@@ -1,0 +1,615 @@
+:root {
+  --revise-frame: var(--Framebordercolor);
+  --revise-band: var(--themecolor-50);
+}
+
+body.dark-mode {
+  --revise-band: var(--themecolor-950);
+}
+
+.revise-page {
+  width: min(980px, calc(100% - 2rem));
+  margin: 0 auto;
+  color: var(--Textcolor);
+}
+
+.revise-page--narrow {
+  width: min(880px, calc(100% - 2rem));
+}
+
+.revise-heading {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.revise-heading h1,
+.revise-heading h2 {
+  margin: 0;
+  color: var(--Textcolor);
+}
+
+.revise-description,
+.revise-crumb,
+.revise-meta,
+.revise-foot-note {
+  color: var(--Subtlecolor);
+  font-size: .82rem;
+}
+
+.revise-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  margin-top: 1.5rem;
+  padding: .75rem 1rem;
+  border: 1px solid var(--revise-frame);
+  border-radius: .65rem .65rem 0 0;
+  background: var(--Controlbackground);
+}
+
+.revise-tabs {
+  display: flex;
+  gap: 1rem;
+}
+
+.revise-tabs a {
+  color: var(--Subtlecolor);
+  text-decoration: none;
+  font-size: .82rem;
+}
+
+.revise-tabs a.active {
+  color: var(--Textcolor);
+  border-bottom: 2px solid var(--Textcolor);
+  font-weight: 700;
+}
+
+.revise-search {
+  margin-left: auto;
+}
+
+.revise-search input {
+  width: 230px;
+  border: 1px solid var(--Controlborder);
+  border-radius: .5rem;
+  background: var(--Controlbackground);
+  color: var(--Textcolor);
+  padding: .5rem .7rem;
+}
+
+.revise-list {
+  border: 1px solid var(--revise-frame);
+  border-top: 0;
+  border-radius: 0 0 .65rem .65rem;
+  background: var(--Controlbackground);
+}
+
+.revise-row {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  gap: .8rem;
+  padding: 1rem;
+  border-top: 1px solid var(--revise-frame);
+}
+
+.revise-row:first-child {
+  border-top: 0;
+}
+
+.revise-status,
+.revise-badge,
+.revise-tag {
+  display: inline-flex;
+  align-items: center;
+  width: fit-content;
+  border: 1px solid var(--Bordercolor);
+  border-radius: 999px;
+  padding: .15rem .55rem;
+  color: var(--Textcolor);
+  font-size: .68rem;
+  white-space: nowrap;
+}
+
+.revise-status.closed {
+  background: var(--revise-band);
+  color: var(--Subtlecolor);
+}
+
+.revise-row-title a {
+  color: var(--Textcolor);
+  font-weight: 700;
+  text-decoration: none;
+}
+
+.revise-row-instruction,
+.revise-meta,
+.revise-comments {
+  color: var(--Subtlecolor);
+  font-size: .78rem;
+}
+
+.revise-badges {
+  display: flex;
+  flex-wrap: wrap;
+  gap: .35rem;
+  margin-top: .45rem;
+}
+
+.revise-badge.solid,
+.revise-tag {
+  background: var(--revise-band);
+  border-color: var(--Bordercolor);
+}
+
+.revise-card,
+.revise-observation {
+  border: 1px solid var(--revise-frame);
+  border-radius: .65rem;
+  background: var(--Controlbackground);
+  box-shadow: 0 .2rem .8rem var(--Shadowcolor);
+}
+
+.revise-card {
+  margin-top: 1rem;
+  padding: 1rem;
+  corner-shape: superellipse(1.4);
+}
+
+.revise-card__head {
+  display: flex;
+  align-items: center;
+  gap: .65rem;
+  margin-bottom: .7rem;
+  padding-bottom: .65rem;
+  border-bottom: 1px solid var(--revise-frame);
+}
+
+.revise-avatar {
+  width: 2rem;
+  height: 2rem;
+  display: grid;
+  place-items: center;
+  border: 1px solid var(--revise-frame);
+  border-radius: 50%;
+  background: var(--revise-band);
+  color: var(--Textcolor);
+  font-weight: 700;
+}
+
+.revise-instruction {
+  margin: 1rem 0;
+  padding: .8rem 1rem;
+  border: 1px solid var(--Bordercolor);
+  border-radius: .65rem;
+  corner-shape: superellipse(1.4);
+  background: var(--revise-band);
+}
+
+.revise-facts {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  border-top: 1px solid var(--revise-frame);
+  border-bottom: 1px solid var(--revise-frame);
+}
+
+.revise-facts div {
+  padding: .65rem;
+  border-right: 1px solid var(--revise-frame);
+  text-align: center;
+  font-size: .78rem;
+}
+
+.revise-facts div:last-child {
+  border-right: 0;
+}
+
+.revise-facts dt,
+.revise-facts dd {
+  margin: 0;
+}
+
+.revise-facts dt {
+  color: var(--Subtlecolor);
+  font-size: .68rem;
+}
+
+.revise-section-title {
+  display: flex;
+  align-items: baseline;
+  gap: .6rem;
+  margin: 1.5rem 0 .35rem;
+}
+
+.revise-section-title h2 {
+  margin: 0;
+  color: var(--Textcolor);
+  font-size: 1.05rem;
+}
+
+.revise-observation {
+  padding: .8rem 1rem;
+  border: 0;
+  border-bottom: 1px solid var(--revise-frame);
+  border-radius: 0;
+  box-shadow: none;
+}
+
+.revise-observation:last-child {
+  border-bottom: 0;
+}
+
+.revise-observation textarea,
+.revise-form textarea,
+.revise-form input,
+.revise-comment-form textarea {
+  width: 100%;
+  border: 1px solid var(--Controlborder);
+  border-radius: .5rem;
+  corner-shape: superellipse(1.4);
+  background: var(--Controlbackground);
+  color: var(--Textcolor);
+  padding: .65rem .75rem;
+  font: inherit;
+}
+
+.revise-observation textarea,
+.revise-form textarea {
+  line-height: 1.8;
+}
+
+.revise-form {
+  display: grid;
+}
+
+.revise-form-card {
+  padding: 1.25rem;
+  border: 1px solid var(--revise-frame);
+  border-radius: .65rem;
+  background: var(--Controlbackground);
+}
+
+.revise-form label {
+  display: grid;
+  gap: .35rem;
+  font-weight: 600;
+  font-size: .82rem;
+}
+
+.revise-form__hint,
+.revise-flow,
+.revise-progress__hint {
+  color: var(--Subtlecolor);
+  font-size: .72rem;
+  line-height: 1.7;
+}
+
+.revise-form__row {
+  display: grid;
+  grid-template-columns: 160px 1fr;
+  gap: 1.5rem;
+  align-items: end;
+}
+
+.revise-check {
+  display: flex;
+  align-items: center;
+  gap: .5rem;
+  font-weight: 500;
+}
+
+.revise-progress {
+  display: flex;
+  align-items: center;
+  gap: .75rem;
+  margin: 1rem 0;
+  padding: .75rem 1rem;
+  border: 1px solid var(--revise-frame);
+  border-radius: .65rem;
+  background: var(--Controlbackground);
+}
+
+.revise-progress__bar {
+  flex: 1;
+  height: 8px;
+  overflow: hidden;
+  border-radius: 999px;
+  background: var(--revise-band);
+}
+
+.revise-progress__bar i {
+  display: block;
+  width: 66%;
+  height: 100%;
+  border-radius: 999px;
+  background: var(--Textcolor);
+  opacity: .55;
+}
+
+.revise-choices {
+  display: flex;
+  gap: .5rem;
+  margin: .7rem 0;
+}
+
+.revise-choice {
+  border: 1px solid var(--Bordercolor);
+  border-radius: 999px;
+  background: var(--Controlbackground);
+  color: var(--Textcolor);
+  padding: .35rem .75rem;
+  cursor: pointer;
+  font-size: .75rem;
+}
+
+.revise-choice.active {
+  background: var(--revise-band);
+  font-weight: 700;
+}
+
+.revise-voice {
+  display: flex;
+  align-items: center;
+  gap: .75rem;
+  margin-top: 1rem;
+  padding: 1rem;
+  border: 1px solid var(--revise-frame);
+  border-radius: .65rem;
+  background: var(--Controlbackground);
+}
+
+.revise-comment {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: .35rem .65rem;
+  padding: .75rem 0;
+  border-top: 1px solid var(--revise-frame);
+}
+
+.revise-comment:first-of-type {
+  border-top: 0;
+}
+
+.revise-comment time {
+  color: var(--Subtlecolor);
+  font-size: .68rem;
+}
+
+.revise-comment-form {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: .5rem;
+  margin-top: .75rem;
+}
+
+.revise-manual__title {
+  margin: .85rem 0 .35rem;
+  font-size: .82rem;
+}
+
+.revise-manual__observations {
+  display: grid;
+  gap: .45rem;
+}
+
+.revise-manual__observation {
+  padding: .65rem .75rem;
+  border: 1px solid var(--revise-frame);
+  border-radius: .55rem;
+  background: var(--Controlbackground);
+}
+
+.revise-manual__observation > div {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: .5rem;
+}
+
+.revise-manual__observation p {
+  margin: .35rem 0 0;
+  line-height: 1.75;
+}
+
+.revise-page__role {
+  margin-left: .45rem;
+  color: var(--Subtlecolor);
+  font-size: .82rem;
+  font-weight: 500;
+}
+
+.revise-instruction--proofread {
+  margin: 1rem 0;
+  padding: .75rem 1rem;
+  border: 1px solid var(--Bordercolor);
+  border-radius: .65rem;
+  background: var(--revise-band);
+}
+
+.revise-instruction--proofread span {
+  display: block;
+  margin-top: .45rem;
+  color: var(--Subtlecolor);
+  font-size: .72rem;
+}
+
+.revise-progress__text {
+  font-size: .82rem;
+  white-space: nowrap;
+}
+
+.revise-progress__text b {
+  color: var(--Textcolor);
+}
+
+.revise-observation-card {
+  overflow: hidden;
+  border: 1px solid var(--revise-frame);
+  border-radius: .65rem;
+  background: var(--Controlbackground);
+}
+
+.revise-observation-card > .revise-observation {
+  padding: .85rem 1rem;
+  border: 0;
+  border-bottom: 1px solid var(--revise-frame);
+  border-radius: 0;
+  box-shadow: none;
+  background: transparent;
+}
+
+.revise-observation-card > .revise-observation:last-child {
+  border-bottom: 0;
+}
+
+.revise-observation > strong {
+  display: block;
+  font-size: .88rem;
+}
+
+.revise-observation__head {
+  display: flex;
+  align-items: center;
+  gap: .55rem;
+  font-size: .88rem;
+}
+
+.revise-number {
+  width: 1.35rem;
+  height: 1.35rem;
+  display: inline-grid;
+  place-items: center;
+  flex: 0 0 1.35rem;
+  border-radius: 50%;
+  background: var(--revise-band);
+  color: var(--Textcolor);
+  font-size: .72rem;
+  font-weight: 700;
+}
+
+.revise-observation__state {
+  margin-left: auto;
+  color: var(--Subtlecolor);
+  font-size: .68rem;
+  font-weight: 600;
+}
+
+.revise-observation__desc {
+  margin: .35rem 0 0 1.9rem;
+  color: var(--Subtlecolor);
+  font-size: .72rem;
+  line-height: 1.65;
+}
+
+.revise-observation .revise-choices {
+  margin: .65rem 0 .65rem 1.9rem;
+}
+
+.revise-observation textarea {
+  margin-left: 1.9rem;
+  width: calc(100% - 1.9rem);
+  min-height: 3.2rem;
+  box-sizing: border-box;
+}
+
+.revise-choice {
+  display: inline-flex;
+  align-items: center;
+  border: 1px solid var(--Bordercolor);
+  border-radius: 999px;
+  background: var(--Controlbackground);
+  color: var(--Textcolor);
+  padding: .35rem .75rem;
+  cursor: pointer;
+  font-size: .72rem;
+}
+
+.revise-choice.active,
+.revise-choice:has(input:checked) {
+  border-color: var(--Textcolor);
+  background: var(--revise-band);
+  font-weight: 700;
+}
+
+.revise-voice-card {
+  margin-top: 1rem;
+  padding: 1rem;
+  border: 1px solid var(--revise-frame);
+  border-radius: .65rem;
+  background: var(--Controlbackground);
+}
+
+.revise-voice-card > strong {
+  display: flex;
+  align-items: center;
+  gap: .55rem;
+}
+
+.revise-voice-card .revise-voice {
+  margin-top: .65rem;
+  border: 0;
+  padding: 0;
+  background: transparent;
+}
+
+.revise-submit-row {
+  display: flex;
+  align-items: center;
+  gap: .85rem;
+  margin-top: 1.25rem;
+}
+
+.revise-submit-row [data-proofread-submit]:disabled {
+  border-color: var(--Bordercolor);
+  background: transparent;
+  color: var(--Subtlecolor);
+  cursor: not-allowed;
+  opacity: .75;
+}
+
+.revise-submit-row [data-proofread-submit-note] {
+  color: var(--Subtlecolor);
+  font-size: .72rem;
+}
+
+@media (max-width: 700px) {
+
+  .revise-page,
+  .revise-page--narrow {
+    width: calc(100% - 1rem);
+  }
+
+  .revise-toolbar,
+  .revise-heading,
+  .revise-form__row {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .revise-form__row {
+    display: grid;
+    grid-template-columns: 1fr;
+  }
+
+  .revise-search {
+    width: 100%;
+    margin-left: 0;
+  }
+
+  .revise-search input {
+    width: 100%;
+  }
+
+  .revise-row {
+    grid-template-columns: auto minmax(0, 1fr);
+  }
+
+  .revise-row> :last-child {
+    grid-column: 2;
+  }
+
+  .revise-facts {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}

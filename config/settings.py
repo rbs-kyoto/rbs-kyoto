@@ -28,8 +28,6 @@ SECRET_KEY = os.getenv("SECRET_KEY")
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = os.getenv("DEBUG", "False").lower() == "true"
 
-ACCOUNT_ADAPTER = "accounts.adapters.RakunanAccountAdapter"
-
 ALLOWED_HOSTS = [
     host.strip()
     for host in os.getenv("ALLOWED_HOSTS", "").split(",")
@@ -49,13 +47,13 @@ CANONICAL_DOMAIN = CANONICAL_HOST.removeprefix("www.")
 # 認証用ホスト
 AUTH_HOST = os.environ.get(
     "AUTH_HOST",
-    "http://rbs-kyoto.test:8000" if DEBUG else "https://www.rbs-kyoto.org",
+    "http://rbs-kyoto:8000" if DEBUG else "https://www.rbs-kyoto.org",
 ).strip().rstrip("/")
 
 # BeONホスト
 BEON_HOST = os.environ.get(
     "BEON_HOST",
-    "http://beon.rbs-kyoto.test:8001" if DEBUG else "https://beon.rbs-kyoto.org",
+    "http://beon.rbs-kyoto:8001" if DEBUG else "https://beon.rbs-kyoto.org",
 ).strip().rstrip("/")
 
 # ログイン
@@ -111,6 +109,8 @@ INSTALLED_APPS = [
     'equipment',
     'roll',
     'beon',
+    'gucchi',
+    'revise',
 ]
 
 ASGI_APPLICATION = 'config.asgi.application'
@@ -188,6 +188,7 @@ SOCIALACCOUNT_LOGIN_ON_GET = True
 # ユーザー名とパスワードでの自己登録は受け付けない(Googleログインと管理画面のみ)
 ACCOUNT_ADAPTER = "accounts.adapters.ClosedSignupAccountAdapter"
 SOCIALACCOUNT_ADAPTER = "accounts.adapters.RakunanSocialAccountAdapter"
+SOCIALACCOUNT_AUTO_SIGNUP = False
 
 SOCIALACCOUNT_PROVIDERS = {
     "google": {
@@ -266,10 +267,12 @@ SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
 USE_X_FORWARDED_HOST = True
 
 # Cookie共有
-COOKIE_DOMAIN = os.getenv(
-    "COOKIE_DOMAIN",
-    ".rbs-kyoto.test" if DEBUG else ".rbs-kyoto.org",
-).strip() or None
+_cookie_domain = os.getenv("COOKIE_DOMAIN", "").strip()
+COOKIE_DOMAIN = (
+    None
+    if DEBUG
+    else (_cookie_domain or ".rbs-kyoto.org")
+)
 
 SESSION_COOKIE_DOMAIN = COOKIE_DOMAIN
 CSRF_COOKIE_DOMAIN = COOKIE_DOMAIN

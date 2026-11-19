@@ -1,0 +1,143 @@
+{% extends "main/base.html" %}
+{% load static %}
+
+{% block title %}添削する | Revise{% endblock %}
+{% block extra_css %}<link rel="stylesheet" href="{% static 'revise/revise.css' %}">{% endblock %}
+
+{% block content %}
+<main class="revise-page revise-page--narrow">
+  <p class="revise-crumb"><b>Revise</b> ／ {{ post.title }} #{{ post.pk }}</p>
+  <h1>添削する <span class="revise-page__role">「添削」ロール専用</span></h1>
+
+  <section class="revise-instruction revise-instruction--proofread">
+    <strong>投稿者からの指示</strong>
+    <p>{{ post.instruction|default:"指示はありません。"|linebreaksbr }}</p>
+    <span>機械チェックの結果は各観点の下書きとして使えます。</span>
+  </section>
+
+  {% if error %}<p class="revise-form__hint">{{ error }}</p>{% endif %}
+  <div class="revise-progress" data-progress>
+    <div class="revise-progress__text">
+      6つの観点 <b><span data-completed-count>0</span> / 6</b> 入力済み
+    </div>
+    <span class="revise-progress__bar"><i data-progress-bar></i></span>
+    <span class="revise-progress__hint">全観点に触れると投稿できます</span>
+  </div>
+
+  <form method="post" enctype="multipart/form-data" class="revise-form">
+    {% csrf_token %}
+    <div class="revise-observation-card">
+      <div class="revise-observation">
+        <strong>添正文</strong>
+        <textarea name="revised_body" rows="12" required>{{ post.body }}</textarea>
+      </div>
+
+      {% for label, key in observations %}
+      {% if key == "length" %}
+      {% with description="文字数、読み時間の目安（300〜350字/分）、目標の尺への過不足、60字超の文への息継ぎ注意" %}
+      <section class="revise-observation revise-observation--{{ key }}" data-observation>
+        <div class="revise-observation__head"><span class="revise-number">{{ forloop.counter }}</span><strong>{{ label }}</strong><span class="revise-observation__state">未入力</span></div>
+        <p class="revise-observation__desc">{{ description }}</p>
+      {% endwith %}
+      {% elif key == "numbers" %}
+      <section class="revise-observation revise-observation--{{ key }}" data-observation>
+        <div class="revise-observation__head"><span class="revise-number">{{ forloop.counter }}</span><strong>{{ label }}</strong><span class="revise-observation__state">未入力</span></div>
+        <p class="revise-observation__desc">日付と曜日のズレ、存在しない日付、時刻・数字・助数詞の読み間違い（1本＝いっぽん、3本＝さんぼん、1人＝ひとりなど）</p>
+      {% elif key == "notation" %}
+      <section class="revise-observation revise-observation--{{ key }}" data-observation>
+        <div class="revise-observation__head"><span class="revise-number">{{ forloop.counter }}</span><strong>{{ label }}</strong><span class="revise-observation__state">未入力</span></div>
+        <p class="revise-observation__desc">表記ゆれ（漢字／ひらがな、数字の全角半角、送り仮名）、「です・ます」と「である」の文体混在</p>
+      {% elif key == "grammar" %}
+      <section class="revise-observation revise-observation--{{ key }}" data-observation>
+        <div class="revise-observation__head"><span class="revise-number">{{ forloop.counter }}</span><strong>{{ label }}</strong><span class="revise-observation__state">未入力</span></div>
+        <p class="revise-observation__desc">誤字脱字、助詞の抜け・重なり、主語と述語のねじれ、二重表現、敬語の崩れ、同じ言葉の繰り返し</p>
+      {% elif key == "readability" %}
+      <section class="revise-observation revise-observation--{{ key }}" data-observation>
+        <div class="revise-observation__head"><span class="revise-number">{{ forloop.counter }}</span><strong>{{ label }}</strong><span class="revise-observation__state">未入力</span></div>
+        <p class="revise-observation__desc">耳で聞いて意味が取りにくい文、同音異義語、読みにくい固有名詞、アクセント辞書と違う読み・アクセント、息継ぎしにくい文</p>
+      {% else %}
+      <section class="revise-observation revise-observation--{{ key }}" data-observation>
+        <div class="revise-observation__head"><span class="revise-number">{{ forloop.counter }}</span><strong>{{ label }}</strong><span class="revise-observation__state">未入力</span></div>
+        <p class="revise-observation__desc">長すぎる文を尺に収まるよう短くする、硬い表現を口語に直す（AIの補助も使えます）</p>
+      {% endif %}
+
+        <div class="revise-choices" role="group" aria-label="{{ label }}">
+          <label class="revise-choice">
+            <input type="radio" name="{{ key }}_status" value="指摘あり" hidden>
+            {% if key == "rewrite" %}提案あり{% else %}指摘あり{% endif %}
+          </label>
+          <label class="revise-choice">
+            <input type="radio" name="{{ key }}_status" value="指摘なし" hidden>
+            {% if key == "rewrite" %}提案なし{% else %}指摘なし{% endif %}
+          </label>
+        </div>
+        <textarea name="{{ key }}_text" rows="3" placeholder="{% if key == 'rewrite' %}言い換え案があればここに書く（なければ提案なし）{% else %}指摘があればここに書く（なければ指摘なし）{% endif %}"></textarea>
+      </section>
+      {% endfor %}
+
+      <section class="revise-observation revise-observation--other">
+        <div class="revise-observation__head"><span class="revise-number">7</span><strong>その他</strong><span class="revise-observation__state">任意</span></div>
+        <p class="revise-observation__desc">上記6観点以外の指摘があれば入力してください。</p>
+        <div class="revise-choices" role="group" aria-label="その他">
+          <label class="revise-choice"><input type="radio" name="other_status" value="指摘あり" hidden>指摘あり</label>
+          <label class="revise-choice"><input type="radio" name="other_status" value="指摘なし" hidden>指摘なし</label>
+        </div>
+        <textarea name="other_text" rows="3" placeholder="その他の指摘があれば入力"></textarea>
+      </section>
+    </div>
+
+    <div class="revise-voice-card">
+      <strong><span class="revise-number">♪</span>音声お手本（任意）</strong>
+      <div class="revise-voice">
+        <span>録音・ファイルアップロードに対応します。</span>
+        <input type="file" name="audio" accept="audio/*">
+      </div>
+    </div>
+
+    <div class="revise-submit-row">
+      <button class="common-style" type="submit" data-proofread-submit disabled>添削を投稿する</button>
+      <span data-proofread-submit-note>全6観点を入力すると投稿できます</span>
+    </div>
+  </form>
+</main>
+
+<script>
+document.querySelectorAll(".revise-choice").forEach((choice) => {
+  choice.addEventListener("change", () => {
+    const group = choice.closest(".revise-choices");
+    group.querySelectorAll(".revise-choice").forEach((item) => {
+      const radio = item.querySelector("input[type='radio']");
+      item.classList.toggle("active", radio.checked);
+    });
+    const observation = choice.closest("[data-observation]");
+    if (observation) {
+      observation.querySelector(".revise-observation__state").textContent = "入力済み";
+    }
+    updateProofreadProgress();
+  });
+});
+
+function updateProofreadProgress() {
+  const observations = document.querySelectorAll("[data-observation]");
+  let completed = 0;
+  observations.forEach((observation) => {
+    const checked = observation.querySelector('input[type="radio"]:checked');
+    if (checked) completed += 1;
+  });
+  const count = document.querySelector("[data-completed-count]");
+  const bar = document.querySelector("[data-progress-bar]");
+  const submit = document.querySelector("[data-proofread-submit]");
+  const note = document.querySelector("[data-proofread-submit-note]");
+  if (count) count.textContent = String(completed);
+  if (bar) bar.style.width = `${completed / 6 * 100}%`;
+  if (submit) submit.disabled = completed < 6;
+  if (note) {
+    note.textContent = completed >= 6
+      ? "全観点を入力済みです"
+      : `あと${6 - completed}観点を入力してください`;
+  }
+}
+
+updateProofreadProgress();
+</script>
+{% endblock %}
