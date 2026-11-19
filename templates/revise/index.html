@@ -1,0 +1,69 @@
+{% extends "main/base.html" %}
+{% load static %}
+
+{% block title %}Revise{% endblock %}
+{% block extra_css %}<link rel="stylesheet" href="{% static 'revise/revise.css' %}">{% endblock %}
+
+{% block content %}
+<main class="revise-page">
+  <header class="revise-heading">
+    <div>
+      <h1>Revise</h1>
+      <p class="revise-description">原稿を投稿すると、「添削」メンバーが添削します。手動添削は同じ画面で確認できます。</p>
+    </div>
+    <a class="common-style reverse" href="{% url 'revise:new' %}">投稿</a>
+  </header>
+
+  <form class="revise-toolbar" method="get">
+    <nav class="revise-tabs" aria-label="投稿フィルター">
+      <a class="{% if status_filter == 'open' %}active{% endif %}" href="?status=open{% if practice_only %}&practice=1{% endif %}&q={{ query|urlencode }}">Open</a>
+      <a class="{% if status_filter == 'closed' %}active{% endif %}" href="?status=closed{% if practice_only %}&practice=1{% endif %}&q={{ query|urlencode }}">Closed</a>
+      <a class="{% if not status_filter %}active{% endif %}" href="?{% if practice_only %}practice=1&{% endif %}&q={{ query|urlencode }}">すべて</a>
+      <a class="{% if practice_only %}active{% endif %}" href="?practice=1{% if status_filter %}&status={{ status_filter }}{% endif %}&q={{ query|urlencode }}">練習用</a>
+    </nav>
+    <div class="revise-search">
+      <input name="q" value="{{ query }}" placeholder="タイトル・原稿を検索">
+    </div>
+  </form>
+
+  <section class="revise-list">
+    {% for post in posts %}
+    <article class="revise-row">
+      <span class="revise-status {% if post.status == 'closed' %}closed{% endif %}">{{ post.get_status_display }}</span>
+      <div>
+        <div class="revise-row-title">
+          <a href="{% url 'revise:detail' post.pk %}">{{ post.title }}</a>
+          <span class="revise-meta">#{{ post.pk }}</span>
+        </div>
+        {% if post.instruction %}
+        <p class="revise-row-instruction">指示：{{ post.instruction }}</p>
+        {% endif %}
+        {% if post.is_practice %}
+        <p class="revise-row-instruction">練習用原稿です。放送では使いません。</p>
+        {% endif %}
+        <p class="revise-meta">
+          {{ post.author.display_name|default:post.author.username }} ・
+          {{ post.created_at|date:"Y/m/d H:i" }} ・
+          {{ post.body|length }}字
+          {% if post.target_seconds %}・目標 {{ post.target_seconds }}秒{% endif %}
+        </p>
+        <div class="revise-badges">
+          {% if post.manual_revisions.count %}
+          <span class="revise-badge solid">手動添削あり</span>
+          {% endif %}
+          {% if post.manual_revisions.first.audio %}
+          <span class="revise-badge solid">音声お手本あり</span>
+          {% endif %}
+          {% if post.is_practice %}
+          <span class="revise-badge">練習用</span>
+          {% endif %}
+        </div>
+      </div>
+      <div class="revise-comments">コメント {{ post.comments.count }}</div>
+    </article>
+    {% empty %}
+    <p class="revise-foot-note">投稿はまだありません。</p>
+    {% endfor %}
+  </section>
+</main>
+{% endblock %}

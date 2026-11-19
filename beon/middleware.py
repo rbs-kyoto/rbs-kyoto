@@ -6,8 +6,8 @@ class BeonHostMiddleware:
         host = request.get_host().split(":")[0].lower()
 
         if host in {
-            "beon.rbs-kyoto.test",
             "beon.rbs-kyoto",
+
             "beon.rbs-kyoto.org",
         }:
             request.urlconf = "beon.host_urls"

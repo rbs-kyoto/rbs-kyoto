@@ -72,6 +72,10 @@
                 {% endif %}
                 {% if is_club_member %}
                     <a href="{% url 'schedule:calendar' %}">Schedule</a>
+                    <a href="{% url 'revise:index' %}">Revise</a>
+                    {% comment %} {% if is_revise_proofreader %}
+                        <a href="{% url 'revise:pairs' %}">承認キュー</a>
+                    {% endif %} {% endcomment %}
                 {% endif %}
             </nav>
         </div>

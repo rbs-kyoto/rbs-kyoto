@@ -47,6 +47,8 @@ urlpatterns = [
     path("manuals/", include("manuals.urls")),
     path("videos/", include("video_archive.urls")),
     path("schedule/", include("schedule.urls")),
+    path("gucchi/", include("gucchi.urls")),
+    path("revise/", include("revise.urls")),
     path("places/", include("places.urls")),
     path("api/places/", include("places.api_urls")),
     path("", include("main.urls")),

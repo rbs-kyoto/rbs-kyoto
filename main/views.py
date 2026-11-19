@@ -29,6 +29,11 @@ APPS = [
         "url_name": "equipment:dashboard",
     },
     {
+        "title": "Revise",
+        "description": "原稿の投稿と添削",
+        "url_name": "revise:index",
+    },
+    {
         "title": "Places",
         "description": "場所マスターの管理(予定・機材の保管場所)",
         "url_name": "places:list",

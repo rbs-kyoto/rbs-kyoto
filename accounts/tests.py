@@ -12,10 +12,11 @@ from django.test import RequestFactory
 from django.test import TestCase, override_settings
 from django.urls import reverse
 from django.utils import timezone
+from allauth.socialaccount.models import SocialAccount
 from py_vapid import Vapid
 from pywebpush import WebPushException
 
-from .adapters import RakunanSocialAccountAdapter
+from .adapters import ClosedSignupAccountAdapter, RakunanSocialAccountAdapter
 from .audience import (
     Audience,
     audience_of,
@@ -774,10 +775,22 @@ class ClosedSignupTests(TestCase):
         response = self.client.get(reverse("accounts:mypage"))
         self.assertEqual(response.status_code, 302)
 
-    def test_first_google_login_is_still_accepted(self):
+    def test_password_signup_adapter_is_closed(self):
+        adapter = ClosedSignupAccountAdapter()
+
+        self.assertFalse(adapter.is_open_for_signup(RequestFactory().get("/")))
+
+    def test_google_signup_is_closed(self):
         adapter = RakunanSocialAccountAdapter()
 
-        self.assertTrue(adapter.is_open_for_signup(RequestFactory().get("/"), None))
+        self.assertFalse(adapter.is_open_for_signup(RequestFactory().get("/"), None))
+        existing_sociallogin = SimpleNamespace(is_existing=True)
+        self.assertTrue(
+            adapter.is_open_for_signup(
+                RequestFactory().get("/"),
+                existing_sociallogin,
+            )
+        )
 
 
 class LoginThrottleTests(TestCase):
@@ -927,12 +940,12 @@ class GoogleLoginStaffTests(TestCase):
             sociallogin.state = {}
             return complete_social_login(request, sociallogin)
 
-    def test_new_school_account_is_created_without_staff_flag(self):
+    def test_new_school_account_is_not_created(self):
         self.google_login("newbie@rakunan-h.ed.jp", "uid-1")
 
-        user = get_user_model().objects.get(email="newbie@rakunan-h.ed.jp")
-        self.assertFalse(user.is_staff)
-        self.assertTrue(is_school_non_member(user))
+        self.assertFalse(
+            get_user_model().objects.filter(email="newbie@rakunan-h.ed.jp").exists()
+        )
 
     def test_non_school_account_is_refused(self):
         self.google_login("someone@gmail.com", "uid-2")
@@ -940,8 +953,16 @@ class GoogleLoginStaffTests(TestCase):
         self.assertFalse(get_user_model().objects.filter(email="someone@gmail.com").exists())
 
     def test_returning_user_is_not_promoted_to_staff(self):
-        self.google_login("again@rakunan-h.ed.jp", "uid-3")
+        user = get_user_model().objects.create_user(
+            username="again",
+            email="again@rakunan-h.ed.jp",
+        )
+        SocialAccount.objects.create(
+            user=user,
+            provider="google",
+            uid="uid-3",
+        )
         self.google_login("again@rakunan-h.ed.jp", "uid-3")
 
-        user = get_user_model().objects.get(email="again@rakunan-h.ed.jp")
+        user.refresh_from_db()
         self.assertFalse(user.is_staff)

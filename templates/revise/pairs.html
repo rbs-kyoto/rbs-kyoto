@@ -1,0 +1,25 @@
+{% extends "main/base.html" %}
+{% load static %}
+
+{% block title %}学習ペア承認 | Revise{% endblock %}
+{% block extra_css %}<link rel="stylesheet" href="{% static 'revise/revise.css' %}">{% endblock %}
+
+{% block content %}
+<main class="revise-page revise-page--narrow">
+  <h1>学習ペア承認</h1>
+  {% for pair in pairs %}
+  <article class="revise-card">
+    <p><del>{{ pair.before_text }}</del> → <strong>{{ pair.after_text }}</strong></p>
+    {% if pair.rule_codes %}<p class="revise-meta">ルール：{{ pair.rule_codes }}</p>{% endif %}
+    <form method="post">
+      {% csrf_token %}
+      <input type="hidden" name="pair_id" value="{{ pair.pk }}">
+      <button class="common-style reverse" name="decision" value="approved">承認</button>
+      <button class="common-style" name="decision" value="rejected">却下</button>
+    </form>
+  </article>
+  {% empty %}
+  <p>承認待ちのペアはありません。</p>
+  {% endfor %}
+</main>
+{% endblock %}

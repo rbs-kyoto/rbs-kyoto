@@ -1,0 +1,45 @@
+{% extends "main/base.html" %}
+{% load static %}
+
+{% block title %}原稿を投稿 | Revise{% endblock %}
+{% block extra_css %}<link rel="stylesheet" href="{% static 'revise/revise.css' %}">{% endblock %}
+
+{% block content %}
+<main class="revise-page revise-page--narrow">
+  <p class="revise-crumb"><a href="{% url 'revise:index' %}">Revise</a> ／ 一覧にもどる</p>
+  <h1>原稿を投稿する</h1>
+  <p class="revise-description">投稿すると、「添削」メンバーに添削依頼として届きます。</p>
+
+  {% if error %}<p class="revise-form__hint">{{ error }}</p>{% endif %}
+  <form method="post" class="revise-form">
+    {% csrf_token %}
+    <div class="revise-form-card">
+      <label>タイトル
+        <input name="title" maxlength="200" required placeholder="例：文化祭のお知らせ（全校放送）">
+      </label>
+      <label>原稿
+        <textarea name="body" rows="12" required placeholder="原稿を貼り付け"></textarea>
+      </label>
+      <label>どう直したいか（指示）
+        <span class="revise-form__hint">具体的に書くほど手動添削が指示に沿います。落としてはいけない情報もここに書いてください。</span>
+        <textarea name="instruction" rows="5" placeholder="例：1分に収まるよう短くしてほしい。体育館に入れない時間帯の案内は落とさないで。"></textarea>
+      </label>
+      <div class="revise-form__row">
+        <label>目標の尺（秒）
+          <input name="target_seconds" type="number" min="1" placeholder="60">
+        </label>
+        <label class="revise-check">
+          <input type="checkbox" name="is_practice" value="1">
+          練習用・放送では使いません
+        </label>
+      </div>
+    </div>
+    <div class="revise-form-card">
+      <p class="revise-flow">
+        投稿後の流れ：<strong>①「添削」メンバーへ通知</strong> → 手動添削（音声お手本が付くことも） → コメントでやり取り → 解決したら Close
+      </p>
+    </div>
+    <button class="common-style reverse" type="submit">投稿する</button>
+  </form>
+</main>
+{% endblock %}

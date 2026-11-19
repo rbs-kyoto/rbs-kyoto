@@ -19,9 +19,10 @@ class ClosedSignupAccountAdapter(DefaultAccountAdapter):
 class RakunanSocialAccountAdapter(DefaultSocialAccountAdapter):
 
     def is_open_for_signup(self, request, sociallogin):
-        # 学校のGoogleアカウントでの初回ログインは受け付ける。
-        # ドメインの確認は pre_social_login で行う。
-        return True
+        if sociallogin is not None and sociallogin.is_existing:
+            return True
+        # 新規Googleアカウントの自己登録は受け付けない。
+        return False
 
     def pre_social_login(self, request, sociallogin):
         email = (sociallogin.user.email or "").lower().strip()
